@@ -10,6 +10,13 @@ option(TESTING OFF)
 file(GLOB PROJECT_SRC CONFIGURE_DEPENDS "container_src/*")
 add_executable(${PROJECT_NAME} ${PROJECT_SRC})
 
+FIND_PACKAGE( Boost 1.78 COMPONENTS program_options REQUIRED )
+INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
+target_link_libraries(
+  ${PROJECT_NAME}
+  Boost::program_options
+)
+
 
 #binaries for testing
 file(GLOB TEST_SRC CONFIGURE_DEPENDS "test_src/*")
