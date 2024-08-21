@@ -70,5 +70,8 @@ int main(int argc, char ** argv)
         if (vm.count("cpu")) {
             std::cout << "The 'cpu' option was set to "
                  << vm["cpu"].as<int>() << "\n";            
-        }            
+        }
+
+    cgrp_management::cgroupv2_t cgroup("/Experiment");
+    cgroup.view_cpu_max();
 }

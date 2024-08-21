@@ -18,6 +18,7 @@ namespace string_utils
         {
             res.insert(*it);
         }
+        return res;
     }
     
 }
