@@ -5,6 +5,7 @@
 #include <vector>
 #include <boost/tokenizer.hpp>
 #include <set>
+#include <fstream>
 
 
 namespace string_utils
@@ -19,6 +20,40 @@ namespace string_utils
             res.insert(*it);
         }
         return res;
+    }
+    
+}
+
+namespace file_utils
+{
+    bool append_text(const std::string& path, const std::string& data)
+    {
+        std::ofstream file(path, std::ios_base::app);
+        if(file.is_open())
+        {
+            file << data;
+
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    bool write_text(const std::string& path, const std::string& data)
+    {
+        std::ofstream file(path);
+        if(file.is_open())
+        {
+            file << data;
+            file.close();
+            if(file.good())
+            {
+                return true;
+            }
+        }
+        return false;
     }
     
 }

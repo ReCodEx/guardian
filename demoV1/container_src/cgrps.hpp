@@ -9,16 +9,44 @@
 
 #include "utils.hpp"
 
-namespace cgrp_management {
+namespace cgrp_management 
+{
     namespace fs = std::filesystem;
-    constexpr std::string CGRP_PATH = "/sys/fs/cgroup";
+    constexpr std::string_view CGRP_FS_PATH_ = "/sys/fs/cgroup";
+    constexpr std::string_view CGROUP_CONTROLLERS_ = "/cgroup.controllers";
+    constexpr std::string_view CGROUP_SUBTREE_CONTROL_ = "/cgroup.subtree_control";
+    constexpr std::string_view CPU_MAX_ = "/cpu.max";
+
+    inline std::string const& CGRP_FS_PATH()
+    {
+        static std::string path = "/sys/fs/cgroup";
+        return path;
+    }
+
+    inline std::string const& CGROUP_CONTROLLERS()
+    {
+        static std::string name = "/cgroup.controllers";
+        return name;
+    }
+
+    inline std::string const& CGROUP_SUBTREE_CONTROL()
+    {
+        static std::string name = "/cgroup.subtree_control";
+        return name;
+    }
+
+    inline std::string const& CPU_MAX()
+    {
+        static std::string name = "/cpu.max";
+        return name;
+    }
 
 
     class cgroupv2_t
     {
         const fs::path _cgrp_path;
     public:
-        cgroupv2_t(const std::string& rel_cgrp_path) : _cgrp_path(CGRP_PATH + rel_cgrp_path)
+        cgroupv2_t(const std::string& rel_cgrp_path) : _cgrp_path(CGRP_FS_PATH() + rel_cgrp_path)
         {
             bool created = fs::create_directory(_cgrp_path);
 
@@ -60,61 +88,55 @@ namespace cgrp_management {
     class cntrlr_operator
     {
     protected:
-        inline static std::string _cntrls_file = "/cgroup.controllers";
-        const std::string& _cgrp_rel_path;
-        
-        static std::string cntrls_path()
-        {
-            return CGRP_PATH + _cntrls_file;
-        }
+        const std::string& _cgrp_path;
+
+        virtual const std::string& cntrlr_type() = 0;
+
     public:
-        cntrlr_operator(const std::string& path) : _cgrp_rel_path(path) {}
+        cntrlr_operator(const std::string& path) : _cgrp_path(path) {}
 
-        static void cat_cntrls()
+        bool enable_cntrlr_root()
         {
-            std::ifstream cntrls(cntrls_path());
-            if(cntrls.is_open())
-            {
-                std::cout << cntrls.rdbuf() << std::endl;
-            }
-        }
+            //    "echo +type >> /sys/fs/cgroup/cgroup.subtree_control"
 
-    private:
-
-
-        
-    };
-
-    class cpu_cntrlr_operator : public cntrlr_operator
-    {
-    public:
-
-    };
-
-    class memory_cntrlr_operator : public cntrlr_operator
-    {
-
-    };
-
-    class cgrpv2_manager
-    {
-    public:
-        cgrpv2_manager()
-        {
-
-        }
-
-        ~cgrpv2_manager()
-        {
-
+            std::string subtree_control = _cgrp_path + CGROUP_SUBTREE_CONTROL();
+            bool success = file_utils::append_text(subtree_control, "+" + cntrlr_type());
+            return success;
         }
     private:
-        
     };
 
+    class cpu_cntrlr : public cntrlr_operator
+    {
+        inline static const std::string type = "cpu";
+    public:
+        using cntrlr_operator::cntrlr_operator;
 
-    
+        bool set_cpu_max(int out_of_100000)
+        {
+            if(out_of_100000 < 1000) return false;
 
+            std::string cpu_max_file(_cgrp_path + CPU_MAX());
+
+            std::ostringstream val;
+            val << out_of_100000 << " " << 100000;
+            bool success = file_utils::write_text(cpu_max_file, val.str());
+
+            return success;
+        }
+
+    protected:
+        const std::string& cntrlr_type() override
+        {
+            return type;
+        }
+    };
+
+    class memory_cntrlr : public cntrlr_operator
+    {
+
+    };
+        
 }
 
 #endif

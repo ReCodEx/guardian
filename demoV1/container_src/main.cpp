@@ -15,7 +15,7 @@ using namespace boost::program_options;
 
 int main(int argc, char ** argv)
 {
-    std::cout << "Hello World from container!";
+    std::cout << "Hello World from container!" << std::endl;
     std::vector<std::string> args(argv + 1, argv + argc);
 
     options_description general("General options");
@@ -72,6 +72,10 @@ int main(int argc, char ** argv)
                  << vm["cpu"].as<int>() << "\n";            
         }
 
-    cgrp_management::cgroupv2_t cgroup("/Experiment");
-    cgroup.view_cpu_max();
+    //cgrp_management::cgroupv2_t cgroup("/Experiment");
+    std::string cgrp_path("/sys/fs/cgroup/Example");
+
+    cgrp_management::cpu_cntrlr controller(cgrp_path);
+    controller.enable_cntrlr_root();
+    controller.set_cpu_max(1234);
 }
