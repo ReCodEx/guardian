@@ -6,6 +6,7 @@
 #include <set>
 #include <fstream>
 #include <filesystem>
+#include <format>
 
 #include "utils.hpp"
 
@@ -17,28 +18,34 @@ namespace cgrp_management
     constexpr std::string_view CGROUP_SUBTREE_CONTROL_ = "/cgroup.subtree_control";
     constexpr std::string_view CPU_MAX_ = "/cpu.max";
 
-    inline std::string const& CGRP_FS_PATH()
+    inline auto const& CGRP_FS_PATH()
     {
-        static std::string path = "/sys/fs/cgroup";
+        static fs::path path("/sys/fs/cgroup");
         return path;
     }
 
-    inline std::string const& CGROUP_CONTROLLERS()
+    inline auto const& CGROUP_CONTROLLERS()
     {
-        static std::string name = "/cgroup.controllers";
-        return name;
+        static fs::path fname("cgroup.controllers");
+        return fname;
     }
 
-    inline std::string const& CGROUP_SUBTREE_CONTROL()
+    inline auto const& CGROUP_SUBTREE_CONTROL()
     {
-        static std::string name = "/cgroup.subtree_control";
-        return name;
+        static fs::path fname("cgroup.subtree_control");
+        return fname;
     }
 
-    inline std::string const& CPU_MAX()
+    inline auto const& CPU_MAX()
     {
-        static std::string name = "/cpu.max";
-        return name;
+        static fs::path fname("cpu.max");
+        return fname;
+    }
+
+    inline auto const& MEMORY_MAX()
+    {
+        static fs::path fname("memory.max");
+        return fname;
     }
 
 
@@ -46,7 +53,7 @@ namespace cgrp_management
     {
         const fs::path _cgrp_path;
     public:
-        cgroupv2_t(const std::string& rel_cgrp_path) : _cgrp_path(CGRP_FS_PATH() + rel_cgrp_path)
+        cgroupv2_t(const fs::path& rel_cgrp_path) : _cgrp_path(CGRP_FS_PATH() / rel_cgrp_path)
         {
             bool created = fs::create_directory(_cgrp_path);
 
@@ -68,7 +75,7 @@ namespace cgrp_management
 
         void view_cpu_max()
         {
-            std::ifstream cntrls(_cgrp_path.string() + "/cpu.max");
+            std::ifstream cntrls(_cgrp_path / CPU_MAX());
             if(cntrls.is_open())
             {
                 std::cout << cntrls.rdbuf() << std::endl;
@@ -99,7 +106,7 @@ namespace cgrp_management
         {
             //    "echo +type >> /sys/fs/cgroup/cgroup.subtree_control"
 
-            std::string subtree_control = _cgrp_path + CGROUP_SUBTREE_CONTROL();
+            fs::path subtree_control = _cgrp_path / CGROUP_SUBTREE_CONTROL();
             bool success = file_utils::append_text(subtree_control, "+" + cntrlr_type());
             return success;
         }
@@ -112,16 +119,13 @@ namespace cgrp_management
     public:
         using cntrlr_operator::cntrlr_operator;
 
-        bool set_cpu_max(int out_of_100000)
+        bool set_cpu_max(unsigned int percentage)
         {
-            if(out_of_100000 < 1000) return false;
+            if(percentage > 100) return false;
 
-            std::string cpu_max_file(_cgrp_path + CPU_MAX());
-
-            std::ostringstream val;
-            val << out_of_100000 << " " << 100000;
-            bool success = file_utils::write_text(cpu_max_file, val.str());
-
+            fs::path cpu_max(_cgrp_path / CPU_MAX());
+            bool success = file_utils::write_formatted(cpu_max, "{} {}", percentage*1000, 100000);
+            
             return success;
         }
 
@@ -134,6 +138,19 @@ namespace cgrp_management
 
     class memory_cntrlr : public cntrlr_operator
     {
+        inline static const std::string type = "memory";
+    public:
+        using cntrlr_operator::cntrlr_operator;
+
+        bool set_memory_max(unsigned int bytes)
+        {
+            //  echo "$BYTES" > memory.max
+
+            fs::path memory_max(_cgrp_path / MEMORY_MAX());
+            bool success = file_utils::write_text(memory_max, std::to_string(bytes));
+            
+            return success;
+        }
 
     };
         

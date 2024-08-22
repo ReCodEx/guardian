@@ -77,5 +77,5 @@ int main(int argc, char ** argv)
 
     cgrp_management::cpu_cntrlr controller(cgrp_path);
     controller.enable_cntrlr_root();
-    controller.set_cpu_max(1234);
+    controller.set_cpu_max(69);
 }

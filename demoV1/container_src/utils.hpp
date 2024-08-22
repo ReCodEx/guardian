@@ -6,6 +6,7 @@
 #include <boost/tokenizer.hpp>
 #include <set>
 #include <fstream>
+#include <filesystem>
 
 
 namespace string_utils
@@ -26,34 +27,28 @@ namespace string_utils
 
 namespace file_utils
 {
-    bool append_text(const std::string& path, const std::string& data)
+    namespace fs = std::filesystem;
+
+    bool append_text(const fs::path& path, const std::string& data)
     {
         std::ofstream file(path, std::ios_base::app);
-        if(file.is_open())
-        {
-            file << data;
-
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        file << data;
+        file.close();
+        return file.good();
     }
 
-    bool write_text(const std::string& path, const std::string& data)
+    bool write_text(const fs::path& path, const std::string& data)
     {
         std::ofstream file(path);
-        if(file.is_open())
-        {
-            file << data;
-            file.close();
-            if(file.good())
-            {
-                return true;
-            }
-        }
-        return false;
+        file << data;
+        file.close();
+        return file.good();
+    }
+
+    template<typename ... Args>
+    bool write_formatted(const fs::path& path, const std::format_string<Args...> fmt, Args&&... args)
+    {
+        return write_text(path, std::vformat(fmt.get(), std::make_format_args(args...)));
     }
     
 }
