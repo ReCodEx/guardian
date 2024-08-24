@@ -9,6 +9,7 @@
 
 #include "cgrps.hpp"
 #include "utils.hpp"
+#include "process.hpp"
 
 using namespace boost;
 using namespace boost::program_options;
@@ -73,9 +74,25 @@ int main(int argc, char ** argv)
         }
 
     //cgrp_management::cgroupv2_t cgroup("/Experiment");
-    std::string cgrp_path("/sys/fs/cgroup/Example");
+    std::string cgrp_path("/sys/fs/cgroup/Example1");
+    cgrp_management::cgroupv2_t cgroup(cgrp_path);
+    cgrp_management::cpu_cntrlr cpu(cgrp_path);
+    cgrp_management::memory_cntrlr memory(cgrp_path);
 
-    cgrp_management::cpu_cntrlr controller(cgrp_path);
-    controller.enable_cntrlr_root();
-    controller.set_cpu_max(69);
+
+     std::cout << "Enabling cpu controller..." << std::endl;
+    cpu.enable_cntrlr_root();
+
+    std::cout << "Setting cpu limit..." << std::endl;
+    cpu.set_cpu_max(69);
+
+    std::cout << "Setting memory limit..." << std::endl;
+    memory.set_memory_max(1000000);
+
+    std::cout << "adding myself to cgroup... "<< std::endl;
+    cgroup.list_procs();
+    cgroup.add_me();
+    std::cout << "Processes in the cgroup:" << std::endl;
+    cgroup.list_procs();
+    std::cout << "finished!" << std::endl;
 }

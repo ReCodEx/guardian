@@ -9,6 +9,7 @@ option(TESTING OFF)
 #main pogram
 file(GLOB PROJECT_SRC CONFIGURE_DEPENDS "container_src/*")
 add_executable(${PROJECT_NAME} ${PROJECT_SRC})
+target_include_directories(${PROJECT_NAME} PRIVATE container_src/cgrps container_src/process container_src)
 
 FIND_PACKAGE( Boost 1.78 COMPONENTS program_options REQUIRED )
 INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )

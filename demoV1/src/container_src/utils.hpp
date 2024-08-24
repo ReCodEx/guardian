@@ -7,6 +7,7 @@
 #include <set>
 #include <fstream>
 #include <filesystem>
+#include <iostream>
 
 
 namespace string_utils
@@ -49,6 +50,27 @@ namespace file_utils
     bool write_formatted(const fs::path& path, const std::format_string<Args...> fmt, Args&&... args)
     {
         return write_text(path, std::vformat(fmt.get(), std::make_format_args(args...)));
+    }
+
+    void print_file(const fs::path& path)
+    {
+        std::fstream f(path);
+        
+        if(f.is_open())
+        {
+            std::cout << f.rdbuf();
+        }
+    }
+
+    void print_lines(const fs::path& path)
+    {
+        std::fstream f(path);
+        std::string line;
+        while(f)
+        {
+            getline(f, line);
+            std::cout << line;
+        }
     }
     
 }

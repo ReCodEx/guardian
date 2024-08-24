@@ -7,6 +7,7 @@
 #include <fstream>
 #include <filesystem>
 #include <format>
+#include <unistd.h>
 
 #include "utils.hpp"
 
@@ -36,6 +37,12 @@ namespace cgrp_management
         return fname;
     }
 
+    inline auto const& CGROUP_PROCS()
+    {
+        static fs::path fname("cgroup.procs");
+        return fname;
+    }
+
     inline auto const& CPU_MAX()
     {
         static fs::path fname("cpu.max");
@@ -48,6 +55,16 @@ namespace cgrp_management
         return fname;
     }
 
+    struct cgrp_config
+    {
+
+    };
+
+    class root_cgroup_manager
+    {
+    public:
+        root_cgroup_manager(const cgrp_config& config){}
+    };
 
     class cgroupv2_t
     {
@@ -65,26 +82,19 @@ namespace cgrp_management
 
         ~cgroupv2_t()
         {
-            bool removed = fs::remove(_cgrp_path);
-
-            if(!removed)
-            {
-                std::cout << "Weird, cgroup removal failed!";
-            }
+        }
+        
+        bool add_me()
+        {
+            auto mypid = getpid();
+            auto cgroup_procs(_cgrp_path / CGROUP_PROCS());
+            return file_utils::write_formatted(cgroup_procs, "{}", mypid);
         }
 
-        void view_cpu_max()
+        void list_procs()
         {
-            std::ifstream cntrls(_cgrp_path / CPU_MAX());
-            if(cntrls.is_open())
-            {
-                std::cout << cntrls.rdbuf() << std::endl;
-            }
-        }
-
-        std::string get_cgrp_path() const
-        {
-            return _cgrp_path.string();
+            auto cgroup_procs(_cgrp_path / CGROUP_PROCS());
+            file_utils::print_lines(cgroup_procs);
         }
     };
 
@@ -106,7 +116,7 @@ namespace cgrp_management
         {
             //    "echo +type >> /sys/fs/cgroup/cgroup.subtree_control"
 
-            fs::path subtree_control = _cgrp_path / CGROUP_SUBTREE_CONTROL();
+            fs::path subtree_control(_cgrp_path / CGROUP_SUBTREE_CONTROL());
             bool success = file_utils::append_text(subtree_control, "+" + cntrlr_type());
             return success;
         }
@@ -142,14 +152,22 @@ namespace cgrp_management
     public:
         using cntrlr_operator::cntrlr_operator;
 
+        /*
+        @note Rounds the limit down to the nearest power of two.
+        */
         bool set_memory_max(unsigned int bytes)
         {
             //  echo "$BYTES" > memory.max
 
             fs::path memory_max(_cgrp_path / MEMORY_MAX());
-            bool success = file_utils::write_text(memory_max, std::to_string(bytes));
+            bool success = file_utils::write_formatted(memory_max, "{}", bytes);
             
             return success;
+        }
+    protected:
+        const std::string& cntrlr_type() override
+        {
+            return type;
         }
 
     };
