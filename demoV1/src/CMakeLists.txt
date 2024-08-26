@@ -25,4 +25,5 @@ foreach( testsourcefile ${TEST_SRC} )
     # Cut off the file extension and directory path
     get_filename_component( testname ${testsourcefile} NAME_WE )
     add_executable( ${testname} ${testsourcefile} )
+    target_compile_options(${testname} PUBLIC -O0)
 endforeach( testsourcefile ${APP_SOURCES} )

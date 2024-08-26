@@ -54,6 +54,12 @@ namespace file_utils
         return write_text(path, std::vformat(fmt.get(), std::make_format_args(args...)));
     }
 
+    template<typename ... Args>
+    bool append_formatted(const fs::path& path, const std::format_string<Args...> fmt, Args&&... args)
+    {
+        return append_text(path, std::vformat(fmt.get(), std::make_format_args(args...)));
+    }
+
     void print_file(const fs::path& path)
     {
         std::fstream f(path);

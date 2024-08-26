@@ -14,9 +14,12 @@
 using namespace boost;
 using namespace boost::program_options;
 
+namespace fs = std::filesystem;
+
 int main(int argc, char ** argv)
 {
     std::cout << "Hello World from container!" << std::endl;
+    /*
     std::vector<std::string> args(argv + 1, argv + argc);
 
     options_description general("General options");
@@ -74,11 +77,11 @@ int main(int argc, char ** argv)
         }
 
     //cgrp_management::cgroupv2_t cgroup("/Experiment");
+    /*
     std::string cgrp_path("/sys/fs/cgroup/Example1");
     cgrp_management::cgroupv2_t cgroup(cgrp_path);
     cgrp_management::cpu_cntrlr cpu(cgrp_path);
     cgrp_management::memory_cntrlr memory(cgrp_path);
-
 
      std::cout << "Enabling cpu controller..." << std::endl;
     cpu.enable_cntrlr_root();
@@ -95,4 +98,41 @@ int main(int argc, char ** argv)
     std::cout << "Processes in the cgroup:" << std::endl;
     cgroup.list_procs();
     std::cout << "finished!" << std::endl;
+    */
+    config::task_config helloworld{"/sys/fs/cgroup/Example1", 
+                                   0,
+                                   "/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/helloworld",
+                                   {"./helloworld"}
+                                    };
+    config::task_config bsearch{"/sys/fs/cgroup/BsearchTest", 
+                                   0,
+                                   "/home/simonkurz/mff/rcdx_cntnr/demoV1/test_binaries/bsearch",
+                                   {}
+                                    };
+    config::task_config just_return{"/sys/fs/cgroup/just_return_contained", 
+                                   0,
+                                   "/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/just_return",
+                                   {}
+                                    };
+
+
+    tasks::task_t hello(&helloworld);
+    tasks::task_t bs(&bsearch);
+    tasks::task_t jr(&just_return);
+    //hello.run_task();
+    //bs.run_task();
+    jr.run_task();
+    std::cout << "finished!" << std::endl;
+    /*
+    config::task_config helloworld{"/sys/fs/cgroup/Example1", 
+                                   1024*1024,
+                                   "/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/helloworld",
+                                   {"1"}
+                                    };
+    auto cargs = clone_utils::convert_to_arg_array(helloworld.args);
+    static char *environ[] = { NULL };
+    int e = execve(helloworld.executable.c_str(), cargs.data(), environ);
+    std::cout << "Execve failed. Errno: " << errno << "\n";
+    std::cout << "finished!" << std::endl;*/
+     
 }

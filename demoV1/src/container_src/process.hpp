@@ -6,41 +6,35 @@
 #include "filesystem"
 #include "utils.hpp"
 
-#include <unistd.h>
-#include <sched.h>
+#include <chrono>
+#include <thread>
+
+#include <stdlib.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <errno.h>
+#include <sys/mman.h>
+
+#include <linux/sched.h>    /* Definition of struct clone_args */
+#include <sched.h>          /* Definition of CLONE_* constants */
+#include <sys/syscall.h>    /* Definition of SYS_* constants */
+#include <unistd.h>
 
 namespace clone_utils
 {
-    struct clone_args 
-    {
-        uint64_t flags;        /* Flags bit mask */
-        uint64_t pidfd;        /* Where to store PID file descriptor
-                            (int *) */
-        uint64_t child_tid;    /* Where to store child TID,
-                            in child's memory (pid_t *) */
-        uint64_t parent_tid;   /* Where to store child TID,
-                            in parent's memory (pid_t *) */
-        uint64_t exit_signal;  /* Signal to deliver to parent on
-                            child termination */
-        uint64_t stack;        /* Pointer to lowest byte of stack */
-        uint64_t stack_size;   /* Size of stack */
-        uint64_t tls;          /* Location of new TLS */
-        uint64_t set_tid;      /* Pointer to a pid_t array
-                            (since Linux 5.5) */
-        uint64_t set_tid_size; /* Number of elements in set_tid
-                            (since Linux 5.5) */
-        uint64_t cgroup;       /* File descriptor for target cgroup
-                            of child (since Linux 5.7) */
-    };
+    #define ptr_to_u64(ptr) ((__u64)((uintptr_t)(ptr)))
 
     static inline clone_args create_clone_args(const config::task_config& task_conf, void* stack, uint64_t cgrp_fd)
     {
-        clone_args args;
-        args.stack = (uint64_t)stack;
-        args.stack_size = task_conf.stack_size;
+        clone_args args{0};
+        args.exit_signal = SIGCHLD;
+        args.flags = CLONE_INTO_CGROUP;
+
+        //I guess we will skip trying to allocate a stack for now.
+        //args.stack = ptr_to_u64(stack);
+        //args.stack_size = task_conf.stack_size;
+
         args.cgroup = cgrp_fd;
         return args;
     }
@@ -58,6 +52,12 @@ namespace clone_utils
     }
 }
 
+int test(void* arg)
+{
+    std::this_thread::sleep_for(std::chrono::milliseconds(25000));
+    return 0;
+}
+
 namespace tasks
 {
     using namespace clone_utils;
@@ -70,12 +70,14 @@ namespace tasks
     public:
         task_t(config::task_config* conf) : task_(conf) 
         {
-            stack_ = std::aligned_alloc(1024, task_->stack_size);
+            //stack_ = std::aligned_alloc(task_->stack_size, task_->stack_size);
+            //stack_ = mmap(NULL, conf->stack_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
         }
 
         ~task_t()
         {
-            free(stack_);
+            //free(stack_);
+            //munmap(stack_, task_->stack_size);
         }
 
         int run_task()
@@ -91,10 +93,11 @@ namespace tasks
 
         int wait_for_task(pid_t pid)
         {
-            int stat;
+            int stat{};
             pid_t p = waitpid(pid, &stat, 0);
             if (p < 0)
-                std::cout << "Proxy waitpid() failed";
+                std::cout << "waitpid() failed. Stat: " << stat << ", RV : " << p << ", Errno: " << errno << "\n";
+            std::cout << "child exited. Signal: " << WTERMSIG(stat) << ", RV : " << p << ", Errno: " << errno << "\n";
             return stat;
         }
     private:
@@ -103,25 +106,30 @@ namespace tasks
             int cgrp_fd = open(task_->cgrp_path.c_str(), O_DIRECTORY | O_RDONLY);
             clone_args args = create_clone_args(*task_, stack_, cgrp_fd);
 
-
-            auto cpath = task_->executable.c_str();
             auto cargs = convert_to_arg_array(task_->args);
             static char *environ[] = { NULL };
 
+            //pid_t outside_pid = fork();
+            //pid_t outside_pid = clone(test, (void*)(args.stack + args.stack_size), SIGCHLD, 0);
 
-            pid_t outside_pid = syscall(SYS_clone3, args, sizeof(args));
+            pid_t outside_pid = syscall(SYS_clone3, &args, sizeof(clone_args));
             if (outside_pid < 0)
-                std::cout << "Cannot run process, fork failed\n";
+                std::cout << "Cannot run process, clone3 failed. Errno: " << errno << "\n";
             else if (!outside_pid)
             {
-                
-                execve(cpath, cargs.data(), environ);
+                //file_utils::append_formatted("/home/simonkurz/mff/rcdx_cntnr/demoV1/log", "Calling execve...");
+
+                execve(task_->executable.c_str(), cargs.data(), environ);
+
+                std::cout << "Execve failed. Errno: " << errno << "\n";
                 _exit(42);	// We should never get here
             }
-
+            std::cout << outside_pid;
             close(cgrp_fd);
             return outside_pid;
         }
+
+        
     };
 
 }
