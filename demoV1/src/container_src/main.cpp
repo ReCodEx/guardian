@@ -15,6 +15,7 @@
 #include "utils.hpp"
 #include "process.hpp"
 #include "logs.hpp"
+#include "container_core.hpp"
 
 
 
@@ -28,7 +29,7 @@ int main(int argc, char ** argv)
     config::config_parser config_factory;
     auto root_config = config_factory.generate_root_config();
 
-    process::root_container_supervisor container(root_config);
+    container_core::root_container_supervisor container(root_config);
     /*
     std::vector<std::string> args(argv + 1, argv + argc);
 
