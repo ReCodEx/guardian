@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <string>
 
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 
@@ -26,10 +26,11 @@ namespace fs = std::filesystem;
 
 int main(int argc, char ** argv)
 {
+    spdlog::set_level(spdlog::level::debug);
     config::config_parser config_factory;
     auto root_config = config_factory.generate_root_config();
 
-    container_core::root_container_supervisor container(root_config);
+    container_core::root_container_core container(root_config);
     /*
     std::vector<std::string> args(argv + 1, argv + argc);
 
@@ -120,19 +121,26 @@ int main(int argc, char ** argv)
                                    "/home/simonkurz/mff/rcdx_cntnr/demoV1/test_binaries/bsearch",
                                    {}
                                     };
-    config::task_config just_return{"/sys/fs/cgroup/just_return_contained", 
+    config::task_config just_return{"/sys/fs/cgroup/just_return2", 
                                    0,
                                    "/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/just_return",
                                    {}
+                                    };
+    config::task_config memory_test{"/sys/fs/cgroup/memory_test", 
+                                   0,
+                                   "/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/memory_test",
+                                   {"junk", "1500000"}
                                     };
 
 
     tasks::task_t hello(&helloworld);
     tasks::task_t bs(&bsearch);
     tasks::task_t jr(&just_return);
+    tasks::task_t mt(&memory_test);
     //hello.run_task();
-    bs.run_task();
-    jr.run_task();
+    //bs.run_task();
+    //jr.run_task();
+    mt.run_task();
     std::cout << "finished!" << std::endl;
     /*
     config::task_config helloworld{"/sys/fs/cgroup/Example1", 

@@ -21,7 +21,7 @@ namespace tasks
             //stack_ = std::aligned_alloc(task_->stack_size, task_->stack_size);
             //stack_ = mmap(NULL, conf->stack_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
 
-            cgrp_fd_ = get_cgrp_fd();
+            cgrp_fd_ = open(task_conf_->cgrp_path.c_str(), O_DIRECTORY | O_RDONLY);
         }
 
         ~task_t()
@@ -46,7 +46,8 @@ namespace tasks
             {
                 terminate("waitpid() failed. Stat: {}, RV : {}, Errno: {}", stat, p, errno);
             }
-            //logs::debug("Child exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
+            logs::debug("Child exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
+
             return stat;
         }
     private:
@@ -57,6 +58,7 @@ namespace tasks
 
         pid_t run_task_in_cgroup()
         {
+            logs::trace("Calling clone3 for \"{}\"", task_conf_->executable.string());
             pid_t outside_pid = clone3(*task_conf_, stack_, cgrp_fd_);
 
             if (outside_pid < 0)

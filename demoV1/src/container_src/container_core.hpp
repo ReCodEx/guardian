@@ -14,11 +14,10 @@ namespace container_core
     namespace cgrp = cgrp_management;
     namespace fs = std::filesystem;
 
-    class root_container_supervisor
+    class root_container_core
     {
-        cgrp::root_cgroup_manager cgrp_mngr;
     public:
-        root_container_supervisor(const config::main_config& config_struct) : cgrp_mngr(config_struct._cgrp)
+        root_container_core(const config::main_config& config_struct) : cgrp_mngr(config_struct._cgrp)
         {
             logs::init_default_logger();
             logs::info("Hello world from container!");
@@ -35,14 +34,15 @@ namespace container_core
         }
 
     private:
+        cgrp::root_cgroup_manager cgrp_mngr;
     };
 
-    class proxy_task_batch_supervisor
+    class proxy_container_core
     {
         config::proxy_config* _conf;
 
     public:
-        proxy_task_batch_supervisor(config::proxy_config& conf) {}
+        proxy_container_core(config::proxy_config& conf) {}
 
         int run_tasks()
         {
@@ -67,7 +67,7 @@ namespace container_core
     inline int proxy_process(void* proxy_config_ptr)
     {
         config::proxy_config* conf(static_cast<config::proxy_config*>(proxy_config_ptr));
-        proxy_task_batch_supervisor supervisor(*conf);
+        proxy_container_core supervisor(*conf);
         supervisor.run_tasks();
         supervisor.collect_results();
 
