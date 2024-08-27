@@ -12,11 +12,18 @@ add_executable(${PROJECT_NAME} ${PROJECT_SRC})
 target_include_directories(${PROJECT_NAME} PRIVATE container_src/cgrps container_src/process container_src)
 
 FIND_PACKAGE( Boost 1.78 COMPONENTS program_options REQUIRED )
-INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
+INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR})
+
+set(spdlog_DIR "../../libs/spdlog/build")
+FIND_PACKAGE(spdlog REQUIRED)
+
 target_link_libraries(
   ${PROJECT_NAME}
+  PRIVATE
   Boost::program_options
+  spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>
 )
+
 
 
 #binaries for testing

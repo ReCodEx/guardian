@@ -35,7 +35,11 @@ namespace config
     class config_parser
     {
     public:
-        
+        main_config generate_root_config()
+        {
+            main_config rc;
+            return rc;
+        }
     };
 
 }

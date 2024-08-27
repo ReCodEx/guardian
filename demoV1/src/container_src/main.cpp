@@ -3,6 +3,10 @@
 #include <algorithm>
 #include <string>
 
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
+
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -10,6 +14,9 @@
 #include "cgrps.hpp"
 #include "utils.hpp"
 #include "process.hpp"
+#include "logs.hpp"
+
+
 
 using namespace boost;
 using namespace boost::program_options;
@@ -18,7 +25,10 @@ namespace fs = std::filesystem;
 
 int main(int argc, char ** argv)
 {
-    std::cout << "Hello World from container!" << std::endl;
+    config::config_parser config_factory;
+    auto root_config = config_factory.generate_root_config();
+
+    process::root_container_supervisor container(root_config);
     /*
     std::vector<std::string> args(argv + 1, argv + argc);
 
@@ -120,7 +130,7 @@ int main(int argc, char ** argv)
     tasks::task_t bs(&bsearch);
     tasks::task_t jr(&just_return);
     //hello.run_task();
-    //bs.run_task();
+    bs.run_task();
     jr.run_task();
     std::cout << "finished!" << std::endl;
     /*
