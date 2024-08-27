@@ -32,7 +32,6 @@ inline void terminate(logs::format_string_t<Args...> fmt, Args&& ... args)
     exit(1);
 }
 
-
 namespace clone_utils
 {
     #define ptr_to_u64(ptr) ((__u64)((uintptr_t)(ptr)))
@@ -80,12 +79,6 @@ namespace clone_utils
     }
 
 
-}
-
-int test(void* arg)
-{
-    std::this_thread::sleep_for(std::chrono::milliseconds(25000));
-    return 0;
 }
 
 namespace tasks
@@ -138,15 +131,8 @@ namespace tasks
 
         pid_t run_task_in_cgroup()
         {
-            clone_args args = create_clone_args(*task_, stack_, cgrp_fd_);
+            pid_t outside_pid = clone3(*task_, stack_, cgrp_fd_);
 
-            auto cargs = convert_to_arg_array(task_->args);
-            static char *environ[] = { NULL };
-
-            //pid_t outside_pid = fork();
-            //pid_t outside_pid = clone(test, (void*)(args.stack + args.stack_size), SIGCHLD, 0);
-
-            pid_t outside_pid = syscall(SYS_clone3, &args, sizeof(clone_args));
             if (outside_pid < 0)
             {
                 terminate("Cannot run process, clone3 failed. Errno: {}", errno);
@@ -166,8 +152,6 @@ namespace tasks
         {
             return open(task_->cgrp_path.c_str(), O_DIRECTORY | O_RDONLY);
         }
-
-
 
         void* stack_;
         config::task_config* task_;
