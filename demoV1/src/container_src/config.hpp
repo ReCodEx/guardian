@@ -19,12 +19,25 @@ namespace config
 
     };
 
+    struct resource_limits
+    {
+        unsigned int cpu_time_s;
+        unsigned int memory_bytes;
+    };
+
     struct task_config
     {
         fs::path cgrp_path;
+
+        /*
+        currently unused
+        */
         unsigned int stack_size;
+
+
         fs::path executable;
         std::vector<std::string> args;
+        resource_limits rlims;
     };
 
     struct proxy_config

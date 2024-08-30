@@ -68,7 +68,7 @@ namespace process_utils
         execve(exec.c_str(), cargs.data(), environ);
     }
 
-    inline pid_t clone3(const config::task_config& task_conf, void* stack, uint64_t cgrp_fd)
+    inline pid_t clone3_task(const config::task_config& task_conf, void* stack, uint64_t cgrp_fd)
     {
         //pid_t outside_pid = fork();
         //pid_t outside_pid = clone(test, (void*)(args.stack + args.stack_size), SIGCHLD, 0);

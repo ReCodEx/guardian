@@ -5,6 +5,8 @@
 
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 namespace tasks
 {
@@ -13,8 +15,6 @@ namespace tasks
 
     class task_t
     {
-
-        
     public:
         task_t(config::task_config* conf) : task_conf_(conf) 
         {
@@ -58,8 +58,8 @@ namespace tasks
 
         pid_t run_task_in_cgroup()
         {
-            logs::trace("Calling clone3 for \"{}\"", task_conf_->executable.string());
-            pid_t outside_pid = clone3(*task_conf_, stack_, cgrp_fd_);
+            logs::debug("Calling clone3 for \"{}\"", task_conf_->executable.string());
+            pid_t outside_pid = clone3_task(*task_conf_, stack_, cgrp_fd_);
 
             if (outside_pid < 0)
             {
@@ -68,6 +68,8 @@ namespace tasks
                 
             else if (!outside_pid)
             {
+                set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use cgroup freezer.
+
                 cpp_execve(task_conf_->executable, task_conf_->args);
 
                 // We should never get here
@@ -79,6 +81,33 @@ namespace tasks
         int get_cgrp_fd()
         {
             return open(task_conf_->cgrp_path.c_str(), O_DIRECTORY | O_RDONLY);
+        }
+
+        void set_resource_limits()
+        {
+            auto& limits = task_conf_->rlims;
+            
+            //std::cout << std::format("Setting memory limit to {} bytes and cpu time limit to {} seconds.", limits.memory_bytes, limits.cpu_time_s) << std::endl;
+            set_mem_limit(limits.memory_bytes);
+            set_cpu_limit(limits.cpu_time_s);
+        }
+
+        void set_mem_limit(unsigned int bytes)
+        {
+            rlimit mem{bytes,bytes};
+            if(setrlimit(RLIMIT_AS, &mem));
+            {
+                std::cout << std::format("Failed to set memory limit for the child process. Errno: {}", errno);
+            }
+        }
+
+        void set_cpu_limit(unsigned int s)
+        {
+            rlimit cpu_time{s,s};
+            if(setrlimit(RLIMIT_CPU, &cpu_time))
+            {
+                std::cout << std::format("Failed to set cpu_time limit for the child process. Errno: {}", errno);
+            }
         }
 
         void* stack_;

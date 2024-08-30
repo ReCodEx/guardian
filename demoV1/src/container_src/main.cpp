@@ -114,22 +114,26 @@ int main(int argc, char ** argv)
     config::task_config helloworld{"/sys/fs/cgroup/Example1", 
                                    0,
                                    "/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/helloworld",
-                                   {"./helloworld"}
+                                   {"./helloworld"},
+                                   {60, 1000000}
                                     };
     config::task_config bsearch{"/sys/fs/cgroup/BsearchTest", 
                                    0,
                                    "/home/simonkurz/mff/rcdx_cntnr/demoV1/test_binaries/bsearch",
-                                   {}
+                                   {},
+                                   {60, 1000000}
                                     };
     config::task_config just_return{"/sys/fs/cgroup/just_return2", 
                                    0,
                                    "/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/just_return",
-                                   {}
+                                   {},
+                                   {60, 1000000}
                                     };
     config::task_config memory_test{"/sys/fs/cgroup/memory_test", 
                                    0,
-                                   "/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/memory_test",
-                                   {"junk", "1500000"}
+                                   "/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/memory_test_fuzzy",
+                                   {"junk", "2000000"},
+                                   {60, 1000000}
                                     };
 
 
