@@ -8,6 +8,7 @@
 #include "cgrps.hpp"
 #include "namespaces.hpp"
 #include "utils.hpp"
+#include "terminate.hpp"
 
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -24,7 +25,7 @@ namespace config
     class root_config
     {
     public:
-        bool ready_tasks()
+        bool ready_tasks() const
         {
             return false;
         }
@@ -44,8 +45,8 @@ namespace config
         resource_limits(unsigned int cpu_time, unsigned int mem) : cpu_time_s_(cpu_time), memory_bytes_(mem) 
         {}
 
-        auto cpu_time() { return cpu_time_s_; }
-        auto memory() { return memory_bytes_; }
+        auto cpu_time() const { return cpu_time_s_; }
+        auto memory() const { return memory_bytes_; }
 
         void set_cpu_time(unsigned int s) { cpu_time_s_ = s; }
         void set_memory(unsigned int bytes) { memory_bytes_ = bytes; }
@@ -59,12 +60,25 @@ namespace config
        std::vector<std::unique_ptr<task_config>> tasks;
     };
 
-    struct task_config
+    class task_config
     {
-        fs::path executable;
-        std::vector<std::string> args;
-        resource_limits rlims;
-        fs::path cgrp_path;
+    public:
+        task_config(const fs::path& exec, const std::vector<std::string>& args, const resource_limits& rlims, const fs::path& cgrp_path_) : 
+        exec_(exec), args_(args), rlims_(rlims), cgrp_path_(cgrp_path_) {}
+
+        task_config(fs::path&& exec, std::vector<std::string>&& args, resource_limits&& rlims, fs::path&& cgrp_path_): 
+        exec_(std::move(exec)), args_(std::move(args)), rlims_(std::move(rlims)), cgrp_path_(std::move(cgrp_path_)){}
+
+        const auto& exec_path() { return exec_; }
+        auto& exec_args() { return args_; }
+        const auto& rlims()     { return rlims_; }
+        const auto& cg_path()   { return cgrp_path_; }
+
+    private:
+        fs::path exec_;
+        std::vector<std::string> args_;
+        resource_limits rlims_;
+        fs::path cgrp_path_;
 
         /*
         currently unused
@@ -113,12 +127,12 @@ namespace config
             // Declare an options description instance which will include
             // all the options
             options::options_description all("Allowed options");
-            all.add(general).add(rsrcs);
+            all.add(general).add(rsrcs).add(exec);
 
             // Declare an options description instance which will be shown
             // to the user
             options::options_description visible("Allowed options");
-            visible.add(general).add(rsrcs);
+            visible.add(general).add(rsrcs).add(exec);
             
 
             options::variables_map vm;
@@ -140,32 +154,66 @@ namespace config
                 }
                 return 0;
             }
+            
             if (vm.count("f"))
             {
-                return parse_config_file();
+                return configure_from_file();
             }
-
-            task_config task;
-
-
-            if (vm.count("memory")) 
+            else
             {
-                std::cout << "The 'memory' option was set to "
-                    << vm["memory"].as<int>() << "\n";
-
+                auto task = configure_task_from_options(vm);
+                root_config_.add_task(std::move(task));
+                return 0;
             }
-            if (vm.count("cpu")) {
-                std::cout << "The 'cpu' option was set to "
-                    << vm["cpu"].as<int>() << "\n";            
-            }
-            return 0;
         }
     private:
         root_config root_config_;
 
-        int parse_config_file()
+        int configure_from_file()
         {
             return 0;
+        }
+
+        std::unique_ptr<task_config> configure_task_from_options(const options::variables_map& vm)
+        {
+            fs::path path;
+            std::vector<std::string> args;
+            resource_limits rlims;
+            fs::path cg_path;
+
+            if(vm.contains("path"))
+            {
+                path = fs::path(vm["path"].as<std::string>());
+            }
+            else
+            {
+                terminate("No path to executable provided");
+            }
+
+            if(vm.contains("args"))
+            {
+                args = std::vector<std::string>(vm["args"].as<std::vector<std::string>>());
+            }
+
+            rlims = rlims_from_options(vm);
+
+            return std::make_unique<task_config>(std::move(path), std::move(args), std::move(rlims), std::move(cg_path));
+        }
+
+        resource_limits rlims_from_options(const options::variables_map& vm)
+        {
+            resource_limits rlims;
+
+            if (vm.contains("mem")) 
+            {
+                rlims.set_memory(vm["mem"].as<unsigned int>());
+            }
+            if (vm.contains("time")) 
+            {
+                rlims.set_cpu_time(vm["time"].as<unsigned int>());
+            }
+
+            return std::move(rlims);
         }
     };
 

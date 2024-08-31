@@ -23,12 +23,7 @@
 #include <sys/syscall.h>    /* Definition of SYS_* constants */
 #include <unistd.h>
 
-template<typename ... Args>
-inline void terminate(logs::format_string_t<Args...> fmt, Args&& ... args)
-{
-    logs::critical(fmt, std::forward<Args>(args)...);
-    exit(1);
-}
+
 
 namespace process_utils
 {

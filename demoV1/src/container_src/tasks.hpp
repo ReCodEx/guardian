@@ -8,6 +8,8 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
+#include "terminate.hpp"
+
 namespace tasks
 {
     using namespace process_utils;
@@ -21,7 +23,7 @@ namespace tasks
             //stack_ = std::aligned_alloc(task_->stack_size, task_->stack_size);
             //stack_ = mmap(NULL, conf->stack_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
 
-            cgrp_fd_ = open(task_conf_->cgrp_path.c_str(), O_DIRECTORY | O_RDONLY);
+            cgrp_fd_ = open(task_conf_->cg_path().c_str(), O_DIRECTORY | O_RDONLY);
         }
 
         ~task_t()
@@ -58,7 +60,7 @@ namespace tasks
 
         pid_t run_task_in_cgroup()
         {
-            logs::debug("Calling clone3 for \"{}\"", task_conf_->executable.string());
+            logs::debug("Calling clone3 for \"{}\"", task_conf_->exec_path().string());
             pid_t outside_pid = clone3_task(*task_conf_, stack_, cgrp_fd_);
 
             if (outside_pid < 0)
@@ -70,7 +72,7 @@ namespace tasks
             {
                 set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use for example cgroup freezer.
 
-                cpp_execve(task_conf_->executable, task_conf_->args);
+                cpp_execve(task_conf_->exec_path(), task_conf_->exec_args());
 
                 // We should never get here
                 terminate("Execve failed. Errno: {}", errno);
@@ -80,19 +82,25 @@ namespace tasks
 
         int get_cgrp_fd()
         {
-            return open(task_conf_->cgrp_path.c_str(), O_DIRECTORY | O_RDONLY);
+            return open(task_conf_->cg_path().c_str(), O_DIRECTORY | O_RDONLY);
         }
 
         void set_resource_limits()
         {
-            auto& limits = task_conf_->rlims;
+            auto& limits = task_conf_->rlims();
             
             //std::cout << std::format("Setting memory limit to {} bytes and cpu time limit to {} seconds.", limits.memory_bytes, limits.cpu_time_s) << std::endl;
-            set_mem_limit(limits.memory().value());
-            set_cpu_limit(limits.cpu_time().value());
+            if(limits.memory())
+            {
+                set_mem_limit(limits.memory().value());
+            }
+            if(limits.cpu_time())
+            {
+                set_cpu_limit(limits.cpu_time().value());
+            }
         }
 
-        void set_mem_limit(unsigned int bytes)
+        static void set_mem_limit(unsigned int bytes)
         {
             rlimit mem{bytes,bytes};
             if(setrlimit(RLIMIT_AS, &mem));
@@ -101,7 +109,7 @@ namespace tasks
             }
         }
 
-        void set_cpu_limit(unsigned int s)
+        static void set_cpu_limit(unsigned int s)
         {
             rlimit cpu_time{s,s};
             if(setrlimit(RLIMIT_CPU, &cpu_time))

@@ -22,35 +22,32 @@ int main(int argc, char ** argv)
 
     config::configurator configurator;
     configurator.parse_options(argc, argv);
-    if(!configurator.ready_tasks())
+    auto& root_config = configurator.get_root_config(argc, argv);
+    if(!root_config.ready_tasks())
     {
         exit(0);
     }
-    auto& root_config = configurator.get_root_config(argc, argv);
+    
 
     config::task_config helloworld{"/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/helloworld",
                                      {"./helloworld"},
-                                     {60, 1000000},
-                                    "/sys/fs/cgroup/Example1", 
-                                    0
+                                     config::resource_limits{60, 1000000},
+                                    "/sys/fs/cgroup/Example1"
                                     };
     config::task_config bsearch {"/home/simonkurz/mff/rcdx_cntnr/demoV1/test_binaries/bsearch",
                                 {},
                                 {60, 1000000},
                                 "/sys/fs/cgroup/BsearchTest", 
-                                0,
                                 };
     config::task_config just_return{"/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/just_return",
                                     {},
                                    {60, 1000000},
-                                    "/sys/fs/cgroup/just_return2", 
-                                   0
+                                    "/sys/fs/cgroup/just_return2"
                                     };
     config::task_config memory_test{"/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/memory_test_fuzzy",
                                    {"junk", "2000000"},
                                    {60, 1000000},
-                                   "/sys/fs/cgroup/memory_test", 
-                                   0,
+                                   "/sys/fs/cgroup/memory_test"
                                     };
                                     
 
