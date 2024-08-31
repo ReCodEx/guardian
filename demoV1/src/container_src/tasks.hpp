@@ -68,7 +68,7 @@ namespace tasks
                 
             else if (!outside_pid)
             {
-                set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use cgroup freezer.
+                set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use for example cgroup freezer.
 
                 cpp_execve(task_conf_->executable, task_conf_->args);
 
@@ -88,8 +88,8 @@ namespace tasks
             auto& limits = task_conf_->rlims;
             
             //std::cout << std::format("Setting memory limit to {} bytes and cpu time limit to {} seconds.", limits.memory_bytes, limits.cpu_time_s) << std::endl;
-            set_mem_limit(limits.memory_bytes);
-            set_cpu_limit(limits.cpu_time_s);
+            set_mem_limit(limits.memory().value());
+            set_cpu_limit(limits.cpu_time().value());
         }
 
         void set_mem_limit(unsigned int bytes)

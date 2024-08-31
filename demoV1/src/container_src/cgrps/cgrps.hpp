@@ -63,6 +63,7 @@ namespace cgrp_management
     class root_cgroup_manager
     {
     public:
+        root_cgroup_manager() {}
         root_cgroup_manager(const cgrp_config& config){}
     };
 

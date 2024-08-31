@@ -17,7 +17,7 @@ namespace container_core
     class root_container_core
     {
     public:
-        root_container_core(const config::main_config& config_struct) : cgrp_mngr(config_struct._cgrp)
+        root_container_core(const config::root_config& config_struct)
         {
             logs::init_default_logger();
             logs::info("Hello world from container!");
@@ -53,8 +53,6 @@ namespace container_core
             }
             return 0;
         }
-
-        
 
         void collect_results()
         {
