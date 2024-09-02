@@ -8,6 +8,7 @@
 #include <fstream>
 #include <filesystem>
 #include <iostream>
+#include <format>
 
 
 
@@ -78,6 +79,31 @@ namespace file_utils
             getline(f, line);
             std::cout << line;
         }
+    }
+
+    std::ifstream& skip_lines(std::ifstream &is, std::streamsize n)
+    {
+        while(is.good() && n--)
+        {
+            is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+        return is;
+    }
+
+    std::string read_row_col(std::ifstream& f, unsigned int row, unsigned int col)
+    {
+        auto& s = skip_lines(f, row);
+
+        std::string line;
+        getline(s, line);
+        std::stringstream ss(line);
+    
+        std::string word;
+        while (!ss.eof() && col-- >= 0) 
+        {
+            ss >> word;
+        }
+        return std::move(word);
     }
     
 }

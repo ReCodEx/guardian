@@ -11,7 +11,7 @@
 namespace container_core
 {
     using namespace tasks;
-    namespace cgrp = cgrp_management;
+    namespace cgrp = cgroup;
     namespace fs = std::filesystem;
 
     class root_container_core
@@ -28,7 +28,8 @@ namespace container_core
             for(auto&& task : conf_->tasks())
             {
                 tasks::task_t task_(task.get());
-                std::cout << task_.run_task() << '\n'; 
+                auto stats = task_.run_task(); 
+                std::cout << std::format("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.total_time_usec, stats.total_mem_bytes);
             }
             return 0;
         }
@@ -55,7 +56,7 @@ namespace container_core
             for(auto&& task : _conf->tasks)
             {
                 tasks::task_t task_(task.get());
-                std::cout << task_.run_task() << '\n'; 
+                task_.run_task();
             }
             return 0;
         }

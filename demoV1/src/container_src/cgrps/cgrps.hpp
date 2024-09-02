@@ -11,7 +11,7 @@
 
 #include "utils.hpp"
 
-namespace cgrp_management 
+namespace cgroup 
 {
     namespace fs = std::filesystem;
     constexpr std::string_view CGRP_FS_PATH_ = "/sys/fs/cgroup";
@@ -19,7 +19,7 @@ namespace cgrp_management
     constexpr std::string_view CGROUP_SUBTREE_CONTROL_ = "/cgroup.subtree_control";
     constexpr std::string_view CPU_MAX_ = "/cpu.max";
 
-    inline auto const& CGRP_FS_PATH()
+    inline auto const& CG_FS_PATH()
     {
         static fs::path path("/sys/fs/cgroup");
         return path;
@@ -49,11 +49,41 @@ namespace cgrp_management
         return fname;
     }
 
+    inline auto const& CPU_STAT()
+    {
+        static fs::path fname("cpu.stat");
+        return fname;
+    }
+
     inline auto const& MEMORY_MAX()
     {
         static fs::path fname("memory.max");
         return fname;
     }
+
+    inline auto const& MEMORY_PEAK()
+    {
+        static fs::path fname("memory.peak");
+        return fname;
+    }
+
+    inline fs::path cg_abs_path(const fs::path& cg_rel_path)
+    {
+        return fs::path(CG_FS_PATH() / cg_rel_path);
+    }
+
+    inline size_t cpu_usage_usec(const fs::path& cg_rel_path)
+    {
+        std::ifstream cpu_stat(CG_FS_PATH() / cg_rel_path / CPU_STAT());
+        return std::stoi(file_utils::read_row_col(cpu_stat,0,0));
+    }
+
+    inline size_t memory_usage_bytes(const fs::path& cg_rel_path)
+    {
+        std::ifstream memory_peak(CG_FS_PATH() / cg_rel_path / CPU_STAT());
+        return std::stoi(file_utils::read_row_col(memory_peak,0,0));
+    }
+
 
     struct cgrp_config
     {
@@ -71,7 +101,7 @@ namespace cgrp_management
     {
         const fs::path _cgrp_path;
     public:
-        cgroupv2_t(const fs::path& rel_cgrp_path) : _cgrp_path(CGRP_FS_PATH() / rel_cgrp_path)
+        cgroupv2_t(const fs::path& rel_cgrp_path) : _cgrp_path(CG_FS_PATH() / rel_cgrp_path)
         {
             bool created = fs::create_directory(_cgrp_path);
 
@@ -134,7 +164,7 @@ namespace cgrp_management
         {
             if(percentage > 100) return false;
 
-            fs::path cpu_max(_cgrp_path / CPU_MAX());
+            fs::path cpu_max(_cgrp_path / CPU_STAT());
             bool success = file_utils::write_formatted(cpu_max, "{} {}", percentage*1000, 100000);
             
             return success;

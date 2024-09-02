@@ -16,7 +16,7 @@
 
 namespace config
 {
-    namespace cgrp = cgrp_management;
+    namespace cgrp = cgroup;
     namespace fs = std::filesystem;
     namespace options = boost::program_options;
 
@@ -43,11 +43,11 @@ namespace config
         std::vector<std::unique_ptr<task_config>> tasks_;
     };
 
-    class resource_limits
+    class r_limits
     {
     public:
-        resource_limits() {}
-        resource_limits(unsigned int cpu_time, unsigned int mem) : cpu_time_s_(cpu_time), memory_bytes_(mem) 
+        r_limits() {}
+        r_limits(unsigned int cpu_time, unsigned int mem) : cpu_time_s_(cpu_time), memory_bytes_(mem) 
         {}
 
         auto cpu_time() const { return cpu_time_s_; }
@@ -65,30 +65,43 @@ namespace config
        std::vector<std::unique_ptr<task_config>> tasks;
     };
 
+    struct task_stats
+    {
+        const int exit_code;
+        const int err_no;
+        const int signal;
+
+        const size_t total_mem_bytes;
+        const size_t total_time_usec;
+    };
+
     class task_config
     {
     public:
-        task_config(const fs::path& exec, const std::vector<std::string>& args, const resource_limits& rlims, const fs::path& cgrp_path_) : 
-        exec_(exec), args_(args), rlims_(rlims), cgrp_path_(cgrp_path_) {}
+        task_config(const fs::path& exec, const std::vector<std::string>& args, const r_limits& rlims, const fs::path& cg_rel_path) : 
+        exec_(exec), args_(args), rlims_(rlims), cg_rel_path_(cg_rel_path) {}
 
-        task_config(fs::path&& exec, std::vector<std::string>&& args, resource_limits&& rlims, fs::path&& cgrp_path_): 
-        exec_(std::move(exec)), args_(std::move(args)), rlims_(std::move(rlims)), cgrp_path_(std::move(cgrp_path_)){}
+        task_config(fs::path&& exec, std::vector<std::string>&& args, r_limits&& rlims, fs::path&& cg_rel_path): 
+        exec_(std::move(exec)), args_(std::move(args)), rlims_(std::move(rlims)), cg_rel_path_(std::move(cg_rel_path)){}
 
-        const auto& exec_path() { return exec_; }
-        auto& exec_args() { return args_; }
-        const auto& rlims()     { return rlims_; }
-        const auto& cg_path()   { return cgrp_path_; }
+        const auto& exec_path() const   { return exec_; }
+        auto& exec_args()               { return args_; }
+        const auto& rlims() const       { return rlims_; }
+        const auto& cg_rel_path() const { return cg_rel_path_; }
+
+        void assign_stats(std::unique_ptr<task_stats>&& stats)
+        {
+            task_stats_ = std::move(stats);
+        }
 
     private:
         fs::path exec_;
         std::vector<std::string> args_;
-        resource_limits rlims_;
-        fs::path cgrp_path_;
+        r_limits rlims_;
+        fs::path cg_rel_path_;
+        size_t stack_size;//currently unused
 
-        /*
-        currently unused
-        */
-        unsigned int stack_size;
+        std::unique_ptr<task_stats> task_stats_;
     };
 
     class configurator
@@ -125,7 +138,7 @@ namespace config
             options::options_description rsrcs("Options for resource limitation");
             rsrcs.add_options()
                 ("mem", options::value<unsigned int>(), "maximum amount of used virtual memory")
-                ("mem-total", options::value<unsigned int>(), "address space size limit")
+                ("as", options::value<unsigned int>(), "address space size limit")
                 ("time", options::value<unsigned int>(), "cpu time limit")
                 ;
 
@@ -184,8 +197,8 @@ namespace config
         {
             fs::path path;
             std::vector<std::string> args;
-            resource_limits rlims;
-            fs::path cg_path{"/sys/fs/cgroup/rcdx"};
+            r_limits rlims;
+            fs::path cg_rel_path{"rcdx"};
 
             if(vm.contains("path"))
             {
@@ -203,12 +216,12 @@ namespace config
 
             rlims = rlims_from_options(vm);
 
-            return std::make_unique<task_config>(std::move(path), std::move(args), std::move(rlims), std::move(cg_path));
+            return std::make_unique<task_config>(std::move(path), std::move(args), std::move(rlims), std::move(cg_rel_path));
         }
 
-        resource_limits rlims_from_options(const options::variables_map& vm)
+        r_limits rlims_from_options(const options::variables_map& vm)
         {
-            resource_limits rlims;
+            r_limits rlims;
 
             if (vm.contains("mem")) 
             {

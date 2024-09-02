@@ -33,7 +33,7 @@ int main(int argc, char ** argv)
     
     /*config::task_config helloworld{"/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/helloworld",
                                      {"./helloworld"},
-                                     config::resource_limits{60, 1000000},
+                                     config::r_limits{60, 1000000},
                                     "/sys/fs/cgroup/Example1"
                                     };
     config::task_config bsearch {"/home/simonkurz/mff/rcdx_cntnr/demoV1/test_binaries/bsearch",

@@ -9,6 +9,7 @@
 #include <sys/resource.h>
 
 #include "terminate.hpp"
+#include "cgrps.hpp"
 
 namespace tasks
 {
@@ -23,7 +24,7 @@ namespace tasks
             //stack_ = std::aligned_alloc(task_->stack_size, task_->stack_size);
             //stack_ = mmap(NULL, conf->stack_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
 
-            cgrp_fd_ = open(task_conf_->cg_path().c_str(), O_DIRECTORY | O_RDONLY);
+            cgrp_fd_ = get_cgrp_fd();
         }
 
         ~task_t()
@@ -33,13 +34,13 @@ namespace tasks
             close(cgrp_fd_);
         }
 
-        int run_task()
+        config::task_stats run_task()
         {
             pid_t pid = launch_task();
             return wait_for_task(pid);
         }
 
-        int wait_for_task(pid_t pid)
+        config::task_stats wait_for_task(pid_t pid)
         {
             int stat{};
             pid_t p = waitpid(pid, &stat, 0);
@@ -50,9 +51,18 @@ namespace tasks
             }
             logs::debug("Child exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
 
-            return stat;
+            return config::task_stats   {
+                                .exit_code = WIFEXITED(stat),
+                                .err_no = errno,
+                                .signal = WTERMSIG(stat),
+
+                                .total_mem_bytes = cgroup::memory_usage_bytes(task_conf_->cg_rel_path()),
+                                .total_time_usec = cgroup::cpu_usage_usec(task_conf_->cg_rel_path())
+                                        };
         }
+
     private:
+
         pid_t launch_task()
         {
             return run_task_in_cgroup();
@@ -82,7 +92,8 @@ namespace tasks
 
         int get_cgrp_fd()
         {
-            return open(task_conf_->cg_path().c_str(), O_DIRECTORY | O_RDONLY);
+            fs::path cg_path(cgroup::cg_abs_path(task_conf_->cg_rel_path()));
+            return open(cg_path.c_str(), O_DIRECTORY | O_RDONLY);
         }
 
         void set_resource_limits()
@@ -118,8 +129,8 @@ namespace tasks
             }
         }
 
-        void* stack_;
-        config::task_config* task_conf_;
+        void* stack_ = nullptr;
+        config::task_config* const task_conf_;
         int cgrp_fd_;
     };
 
