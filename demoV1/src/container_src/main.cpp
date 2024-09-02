@@ -25,11 +25,13 @@ int main(int argc, char ** argv)
     auto& root_config = configurator.get_root_config(argc, argv);
     if(!root_config.ready_tasks())
     {
-        exit(0);
+        //exit(0);
     }
-    
 
-    config::task_config helloworld{"/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/helloworld",
+    container_core::root_container_core core(root_config);
+    core.run_directly();
+    
+    /*config::task_config helloworld{"/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/helloworld",
                                      {"./helloworld"},
                                      config::resource_limits{60, 1000000},
                                     "/sys/fs/cgroup/Example1"
@@ -59,6 +61,7 @@ int main(int argc, char ** argv)
     //hello.run_task();
     //bs.run_task();
     //jr.run_task();
-    mt.run_task();
+    mt.run_task();*/
+    
     std::cout << "finished!" << std::endl;
 }

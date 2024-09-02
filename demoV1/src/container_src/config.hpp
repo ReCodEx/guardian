@@ -32,10 +32,15 @@ namespace config
 
         void add_task(std::unique_ptr<task_config>&& task)
         {
-            task_configs_.push_back(std::move(task));
+            tasks_.push_back(std::move(task));
+        }
+
+        auto& tasks()
+        {
+            return tasks_;
         }
     private:
-        std::vector<std::unique_ptr<task_config>> task_configs_;
+        std::vector<std::unique_ptr<task_config>> tasks_;
     };
 
     class resource_limits
@@ -94,7 +99,7 @@ namespace config
             return root_config_.ready_tasks();
         }
 
-        const root_config& get_root_config(int argc, char** argv)
+        root_config& get_root_config(int argc, char** argv)
         {
             return root_config_;
         }
@@ -114,13 +119,14 @@ namespace config
             exec.add_options()
                 ("path", options::value<std::string>(), "path to the program")
                 ("args", options::value<std::vector<std::string>>(), "list of arguments for the program")
+                ("cg", options::value<std::string>(), "relative cgroup path (from /sys/fs/cgroup) to run the task in")
                 ;
 
             options::options_description rsrcs("Options for resource limitation");
             rsrcs.add_options()
-                ("mem", options::value<int>(), "maximum amount of used virtual memory")
-                ("mem-total", options::value<int>(), "address space size limit")
-                ("time", options::value<int>(), "cpu time limit")
+                ("mem", options::value<unsigned int>(), "maximum amount of used virtual memory")
+                ("mem-total", options::value<unsigned int>(), "address space size limit")
+                ("time", options::value<unsigned int>(), "cpu time limit")
                 ;
 
                 
@@ -179,7 +185,7 @@ namespace config
             fs::path path;
             std::vector<std::string> args;
             resource_limits rlims;
-            fs::path cg_path;
+            fs::path cg_path{"/sys/fs/cgroup/rcdx"};
 
             if(vm.contains("path"))
             {

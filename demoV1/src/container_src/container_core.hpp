@@ -17,7 +17,7 @@ namespace container_core
     class root_container_core
     {
     public:
-        root_container_core(const config::root_config& config_struct)
+        root_container_core(config::root_config& conf) : conf_(&conf)
         {
             logs::init_default_logger();
             logs::info("Hello world from container!");
@@ -25,6 +25,11 @@ namespace container_core
 
         int run_directly()
         {
+            for(auto&& task : conf_->tasks())
+            {
+                tasks::task_t task_(task.get());
+                std::cout << task_.run_task() << '\n'; 
+            }
             return 0;
         }
 
@@ -35,6 +40,7 @@ namespace container_core
 
     private:
         cgrp::root_cgroup_manager cgrp_mngr;
+        config::root_config* conf_;
     };
 
     class proxy_container_core
