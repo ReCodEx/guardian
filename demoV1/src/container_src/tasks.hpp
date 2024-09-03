@@ -37,7 +37,10 @@ namespace tasks
         config::task_stats run_task()
         {
             pid_t pid = launch_task();
-            return wait_for_task(pid);
+
+            auto stats = wait_for_task(pid);
+            gen_report_file(stats);
+            return stats;
         }
 
         config::task_stats wait_for_task(pid_t pid)
@@ -114,18 +117,33 @@ namespace tasks
         static void set_mem_limit(unsigned int bytes)
         {
             rlimit mem{bytes,bytes};
-            if(setrlimit(RLIMIT_AS, &mem));
+            if(setrlimit(RLIMIT_AS, &mem) == -1)
             {
-                std::cout << std::format("Failed to set memory limit for the child process. Errno: {}", errno);
+                std::cout << std::format("Failed to set memory limit for the child process. Arg: {} Errno: {}", bytes, errno);
             }
         }
 
         static void set_cpu_limit(unsigned int s)
         {
             rlimit cpu_time{s,s};
-            if(setrlimit(RLIMIT_CPU, &cpu_time))
+            if(setrlimit(RLIMIT_CPU, &cpu_time) == -1)
             {
                 std::cout << std::format("Failed to set cpu_time limit for the child process. Errno: {}", errno);
+            }
+        }
+
+        /*
+        */
+        void gen_report_file(const config::task_stats& stats)
+        {
+            std::ofstream f("/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/logs/task_report.txt");
+            if(stats.signal)
+            {
+                f << "KILLED";
+            }
+            else
+            {
+                f << "OK";
             }
         }
 

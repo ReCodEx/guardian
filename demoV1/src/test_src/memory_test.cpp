@@ -11,7 +11,9 @@
 int main(int argc, char** argv)
 {
     std::vector<std::string> args(argv, argv + argc);
-    int bytes = std::stoi(argv[1]);
+    
+    int bytes = std::stoi(args.back());
+
     void* ptr = std::aligned_alloc(1024, bytes);
     std::cout << std::format("Survived allocating {} bytes", bytes) << std::endl;
     for(int i = 0; i < bytes; i+=8*16)

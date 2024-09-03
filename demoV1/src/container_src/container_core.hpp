@@ -28,7 +28,8 @@ namespace container_core
             for(auto&& task : conf_->tasks())
             {
                 tasks::task_t task_(task.get());
-                auto stats = task_.run_task(); 
+                auto stats = task_.run_task();
+                 
                 std::cout << std::format("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.total_time_usec, stats.total_mem_bytes);
             }
             return 0;
