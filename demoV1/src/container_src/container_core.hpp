@@ -17,22 +17,21 @@ namespace container_core
     class root_container_core
     {
     public:
-        root_container_core(config::root_config& conf) : conf_(&conf)
+        root_container_core(config::root_interface& conf) : root_intfc_(&conf)
         {
             logs::init_default_logger();
             logs::info("Hello world from container!");
         }
 
-        int run_directly()
+        config::root_stats execute_tasks_directly()
         {
-            for(auto&& task : conf_->tasks())
+            for(auto&& task_intfc : root_intfc_->tasks())
             {
-                tasks::task_t task_(task.get());
+                tasks::task_t task_(*task_intfc);
                 auto stats = task_.run_task();
-                 
-                std::cout << std::format("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.total_time_usec, stats.total_mem_bytes);
+                logs::debug("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.total_time_usec, stats.total_mem_bytes);
             }
-            return 0;
+            return config::root_stats();
         }
 
         int run_with_proxy_process()
@@ -42,43 +41,8 @@ namespace container_core
 
     private:
         cgrp::root_cgroup_manager cgrp_mngr;
-        config::root_config* conf_;
+        config::root_interface* root_intfc_;
     };
-
-    class proxy_container_core
-    {
-        config::proxy_config* _conf;
-
-    public:
-        proxy_container_core(config::proxy_config& conf) {}
-
-        int run_tasks()
-        {
-            for(auto&& task : _conf->tasks)
-            {
-                tasks::task_t task_(task.get());
-                task_.run_task();
-            }
-            return 0;
-        }
-
-        void collect_results()
-        {
-
-        }
-
-    private:
-    };
-
-    inline int proxy_process(void* proxy_config_ptr)
-    {
-        config::proxy_config* conf(static_cast<config::proxy_config*>(proxy_config_ptr));
-        proxy_container_core supervisor(*conf);
-        supervisor.run_tasks();
-        supervisor.collect_results();
-
-        return 0;
-    }
 }
 
 #endif

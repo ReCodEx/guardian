@@ -10,8 +10,6 @@
 #include <iostream>
 #include <format>
 
-
-
 namespace string_utils
 {
 
@@ -107,7 +105,5 @@ namespace file_utils
     }
     
 }
-
-
 
 #endif 

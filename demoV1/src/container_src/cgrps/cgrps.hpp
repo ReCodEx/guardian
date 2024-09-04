@@ -80,7 +80,7 @@ namespace cgroup
 
     inline size_t memory_usage_bytes(const fs::path& cg_rel_path)
     {
-        std::ifstream memory_peak(CG_FS_PATH() / cg_rel_path / CPU_STAT());
+        std::ifstream memory_peak(CG_FS_PATH() / cg_rel_path / MEMORY_PEAK());
         return std::stoi(file_utils::read_row_col(memory_peak,0,0));
     }
 

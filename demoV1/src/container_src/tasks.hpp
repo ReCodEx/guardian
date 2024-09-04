@@ -19,29 +19,27 @@ namespace tasks
     class task_t
     {
     public:
-        task_t(config::task_config* conf) : task_conf_(conf) 
+        task_t(config::task_intfc& conf) : task_intfc_(&conf) 
         {
-            //stack_ = std::aligned_alloc(task_->stack_size, task_->stack_size);
-            //stack_ = mmap(NULL, conf->stack_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
-
             cgrp_fd_ = get_cgrp_fd();
         }
 
         ~task_t()
         {
-            //free(stack_);
-            //munmap(stack_, task_->stack_size);
             close(cgrp_fd_);
         }
 
         config::task_stats run_task()
         {
             pid_t pid = launch_task();
-
             auto stats = wait_for_task(pid);
-            gen_report_file(stats);
+            task_intfc_->assign_stats(stats);
             return stats;
         }
+
+        
+
+    private:
 
         config::task_stats wait_for_task(pid_t pid)
         {
@@ -50,21 +48,21 @@ namespace tasks
 
             if (p < 0)
             {
-                terminate("waitpid() failed. Stat: {}, RV : {}, Errno: {}", stat, p, errno);
+                terminate("waitpid() failed. Stat: {}, Errno: {}", stat, errno);
             }
             logs::debug("Child exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
 
             return config::task_stats   {
-                                .exit_code = WIFEXITED(stat),
+                                .exited_normally = WIFEXITED(stat),
+                                .signalled = WIFSIGNALED(stat),
+                                .exit_code = WEXITSTATUS(stat),
                                 .err_no = errno,
                                 .signal = WTERMSIG(stat),
 
-                                .total_mem_bytes = cgroup::memory_usage_bytes(task_conf_->cg_rel_path()),
-                                .total_time_usec = cgroup::cpu_usage_usec(task_conf_->cg_rel_path())
+                                .total_mem_bytes = cgroup::memory_usage_bytes(task_intfc_->cg_rel_path()),
+                                .total_time_usec = cgroup::cpu_usage_usec(task_intfc_->cg_rel_path())
                                         };
         }
-
-    private:
 
         pid_t launch_task()
         {
@@ -73,8 +71,8 @@ namespace tasks
 
         pid_t run_task_in_cgroup()
         {
-            logs::debug("Calling clone3 for \"{}\"", task_conf_->exec_path().string());
-            pid_t outside_pid = clone3_task(*task_conf_, stack_, cgrp_fd_);
+            logs::debug("Calling clone3 for \"{}\"", task_intfc_->exec_path().string());
+            pid_t outside_pid = clone3_task(*task_intfc_, stack_, cgrp_fd_);
 
             if (outside_pid < 0)
             {
@@ -85,7 +83,7 @@ namespace tasks
             {
                 set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use for example cgroup freezer.
 
-                cpp_execve(task_conf_->exec_path(), task_conf_->exec_args());
+                cpp_execve(task_intfc_->exec_path(), task_intfc_->exec_args());
 
                 // We should never get here
                 terminate("Execve failed. Errno: {}", errno);
@@ -95,13 +93,13 @@ namespace tasks
 
         int get_cgrp_fd()
         {
-            fs::path cg_path(cgroup::cg_abs_path(task_conf_->cg_rel_path()));
+            fs::path cg_path(cgroup::cg_abs_path(task_intfc_->cg_rel_path()));
             return open(cg_path.c_str(), O_DIRECTORY | O_RDONLY);
         }
 
         void set_resource_limits()
         {
-            auto& limits = task_conf_->rlims();
+            auto& limits = task_intfc_->rlims();
             
             //std::cout << std::format("Setting memory limit to {} bytes and cpu time limit to {} seconds.", limits.memory_bytes, limits.cpu_time_s) << std::endl;
             if(limits.memory())
@@ -132,27 +130,10 @@ namespace tasks
             }
         }
 
-        /*
-        */
-        void gen_report_file(const config::task_stats& stats)
-        {
-            std::ofstream f("/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/logs/task_report.txt");
-            if(stats.signal)
-            {
-                f << "KILLED";
-            }
-            else
-            {
-                f << "OK";
-            }
-        }
-
         void* stack_ = nullptr;
-        config::task_config* const task_conf_;
+        config::task_intfc* const task_intfc_;
         int cgrp_fd_;
     };
-
-
 }
 
 

@@ -20,28 +20,9 @@ namespace config
     namespace fs = std::filesystem;
     namespace options = boost::program_options;
 
-    struct task_config;
+    struct task_intfc;
 
-    class root_config
-    {
-    public:
-        bool ready_tasks() const
-        {
-            return false;
-        }
 
-        void add_task(std::unique_ptr<task_config>&& task)
-        {
-            tasks_.push_back(std::move(task));
-        }
-
-        auto& tasks()
-        {
-            return tasks_;
-        }
-    private:
-        std::vector<std::unique_ptr<task_config>> tasks_;
-    };
 
     class r_limits
     {
@@ -60,38 +41,76 @@ namespace config
         std::optional<unsigned int> memory_bytes_;
     };
 
-    struct proxy_config
+    struct root_stats
     {
-       std::vector<std::unique_ptr<task_config>> tasks;
+
     };
 
     struct task_stats
     {
-        const int exit_code;
-        const int err_no;
-        const int signal;
+        bool exited_normally;
+        bool signalled;
+        int exit_code;
+        int err_no;
+        int signal;
 
-        const size_t total_mem_bytes;
-        const size_t total_time_usec;
+        size_t total_mem_bytes;
+        size_t total_time_usec;
     };
 
-    class task_config
+    inline void create_stats_file(const fs::path& path, const task_stats& stats)
+    {
+        std::ofstream f(path);
+        if(stats.exited_normally && stats.exit_code == 0)
+        {
+            f << "OK";
+        }
+        else if (stats.signalled)
+        {
+            f << "KILLED";
+        }
+        else if (stats.exit_code)
+        {
+            f << "NON ZERO EXIT CODE";
+        }
+    }
+
+    class task_intfc
     {
     public:
-        task_config(const fs::path& exec, const std::vector<std::string>& args, const r_limits& rlims, const fs::path& cg_rel_path) : 
+        task_intfc(const fs::path& exec, const std::vector<std::string>& args, const r_limits& rlims, const fs::path& cg_rel_path) : 
         exec_(exec), args_(args), rlims_(rlims), cg_rel_path_(cg_rel_path) {}
 
-        task_config(fs::path&& exec, std::vector<std::string>&& args, r_limits&& rlims, fs::path&& cg_rel_path): 
+        task_intfc(fs::path&& exec, std::vector<std::string>&& args, r_limits&& rlims, fs::path&& cg_rel_path): 
         exec_(std::move(exec)), args_(std::move(args)), rlims_(std::move(rlims)), cg_rel_path_(std::move(cg_rel_path)){}
 
         const auto& exec_path() const   { return exec_; }
         auto& exec_args()               { return args_; }
         const auto& rlims() const       { return rlims_; }
         const auto& cg_rel_path() const { return cg_rel_path_; }
+        const auto& stats_path() const  { return stats_path_; }
 
-        void assign_stats(std::unique_ptr<task_stats>&& stats)
+        void assign_stats(const task_stats& stats)
         {
-            task_stats_ = std::move(stats);
+            task_stats_ = stats;
+        }
+
+        void generate_stats_file()
+        {
+            if(!task_stats_ || !stats_path_)
+            {
+                terminate("Missing task statistics or a path to write them to!");
+            }
+            create_stats_file(*stats_path_, *task_stats_);
+        }
+
+        void generate_stats_file(const fs::path& path)
+        {
+            if(!task_stats_)
+            {
+                terminate("Missing task statistics!");
+            }
+            create_stats_file(path, *task_stats_);
         }
 
     private:
@@ -101,7 +120,34 @@ namespace config
         fs::path cg_rel_path_;
         size_t stack_size;//currently unused
 
-        std::unique_ptr<task_stats> task_stats_;
+        std::optional<fs::path>   stats_path_;
+        std::optional<task_stats> task_stats_;
+    };
+
+        class root_interface
+    {
+    public:
+        bool ready_tasks() const
+        {
+            return false;
+        }
+
+        void add_task(std::unique_ptr<task_intfc>&& task)
+        {
+            tasks_.push_back(std::move(task));
+        }
+
+        auto& tasks()
+        {
+            return tasks_;
+        }
+
+        void generate_results()
+        {
+            tasks_[0]->generate_stats_file(fs::path("/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/TASK_RESULTS.txt"));
+        }
+    private:
+        std::vector<std::unique_ptr<task_intfc>> tasks_;
     };
 
     class configurator
@@ -112,7 +158,7 @@ namespace config
             return root_config_.ready_tasks();
         }
 
-        root_config& get_root_config(int argc, char** argv)
+        root_interface& get_root_interface(int argc, char** argv)
         {
             return root_config_;
         }
@@ -186,14 +232,14 @@ namespace config
             }
         }
     private:
-        root_config root_config_;
+        root_interface root_config_;
 
         int configure_from_file()
         {
             return 0;
         }
 
-        std::unique_ptr<task_config> configure_task_from_options(const options::variables_map& vm)
+        std::unique_ptr<task_intfc> configure_task_from_options(const options::variables_map& vm)
         {
             fs::path path;
             std::vector<std::string> args;
@@ -216,7 +262,7 @@ namespace config
 
             rlims = rlims_from_options(vm);
 
-            return std::make_unique<task_config>(std::move(path), std::move(args), std::move(rlims), std::move(cg_rel_path));
+            return std::make_unique<task_intfc>(std::move(path), std::move(args), std::move(rlims), std::move(cg_rel_path));
         }
 
         r_limits rlims_from_options(const options::variables_map& vm)
