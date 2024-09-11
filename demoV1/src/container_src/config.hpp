@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <vector>
 #include <optional>
+#include <memory>
 
 #include "cgrps.hpp"
 #include "namespaces.hpp"
@@ -129,7 +130,7 @@ namespace config
     public:
         bool ready_tasks() const
         {
-            return false;
+            return tasks_.size();
         }
 
         void add_task(std::unique_ptr<task_intfc>&& task)
@@ -153,14 +154,19 @@ namespace config
     class configurator
     {
     public:
-        bool ready_tasks()
+        configurator()
         {
-            return root_config_.ready_tasks();
+            root_config_ = std::make_unique<root_interface>();
         }
 
-        root_interface& get_root_interface(int argc, char** argv)
+        bool ready_tasks()
         {
-            return root_config_;
+            return root_config_->ready_tasks();
+        }
+
+        std::unique_ptr<root_interface> get_root_interface(int argc, char** argv)
+        {
+            return std::move(root_config_);
         }
 
         int parse_options(int argc, char** argv)
@@ -227,12 +233,12 @@ namespace config
             else
             {
                 auto task = configure_task_from_options(vm);
-                root_config_.add_task(std::move(task));
+                root_config_->add_task(std::move(task));
                 return 0;
             }
         }
     private:
-        root_interface root_config_;
+        std::unique_ptr<root_interface> root_config_;
 
         int configure_from_file()
         {

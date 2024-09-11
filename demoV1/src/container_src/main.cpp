@@ -22,16 +22,16 @@ int main(int argc, char ** argv)
 
     config::configurator configurator;
     configurator.parse_options(argc, argv);
-    auto& root_interface = configurator.get_root_interface(argc, argv);
-    if(!root_interface.ready_tasks())
-    {
-        //exit(0);
-    }
-    container_core::root_container_core core(root_interface);
+    auto root_interface = configurator.get_root_interface(argc, argv);
 
-    //tasks will pass result structs into the root interface
-    auto res = core.execute_tasks_directly();
-    root_interface.generate_results();
+    if(!root_interface->ready_tasks())
+    {
+        exit(0);
+    }
+    container_core::root_container_core core(std::move(root_interface));
+
+    core.execute_tasks_directly();
+    core.generate_results();
     
     std::cout << "finished!" << std::endl;
 }

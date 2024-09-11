@@ -1,7 +1,7 @@
 #ifndef CONTAINER_CORE
 #define CONTAINER_CORE
 
-
+#include "config.hpp"
 #include "process.hpp"
 #include "tasks.hpp"
 
@@ -17,7 +17,7 @@ namespace container_core
     class root_container_core
     {
     public:
-        root_container_core(config::root_interface& conf) : root_intfc_(&conf)
+        root_container_core(std::unique_ptr<config::root_interface>&& conf) : root_intfc_(std::move(conf))
         {
             logs::init_default_logger();
             logs::info("Hello world from container!");
@@ -39,9 +39,14 @@ namespace container_core
             return 0;
         }
 
+        void generate_results()
+        {
+            root_intfc_->generate_results();
+        }
+
     private:
         cgrp::root_cgroup_manager cgrp_mngr;
-        config::root_interface* root_intfc_;
+        std::unique_ptr<config::root_interface> root_intfc_;
     };
 }
 
