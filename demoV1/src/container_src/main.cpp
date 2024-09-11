@@ -21,8 +21,7 @@ int main(int argc, char ** argv)
     spdlog::set_level(spdlog::level::debug);
 
     config::configurator configurator;
-    configurator.parse_options(argc, argv);
-    auto root_interface = configurator.get_root_interface(argc, argv);
+    auto root_interface = configurator.generate_root_interface(argc, argv);
 
     if(!root_interface->ready_tasks())
     {

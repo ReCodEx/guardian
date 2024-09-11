@@ -164,8 +164,9 @@ namespace config
             return root_config_->ready_tasks();
         }
 
-        std::unique_ptr<root_interface> get_root_interface(int argc, char** argv)
+        std::unique_ptr<root_interface> generate_root_interface(int argc, char** argv)
         {
+            parse_options(argc, argv);
             return std::move(root_config_);
         }
 
