@@ -17,6 +17,7 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/resource.h>
 
 #include <linux/sched.h>    /* Definition of struct clone_args */
 #include <sched.h>          /* Definition of CLONE_* constants */
@@ -71,6 +72,18 @@ namespace process_utils
         return syscall(SYS_clone3, &args, sizeof(clone_args));
     }
 
+    inline rusage get_children_rusage()
+    {
+        rusage r_usage;
+        auto rv = getrusage(RUSAGE_CHILDREN, &r_usage);
+        logs::debug("getrusage returned {}", rv);
+        return r_usage;
+    }
+
+    inline long rusage_total_time_usec(const rusage& r_usage)
+    {
+        return (r_usage.ru_utime.tv_sec + r_usage.ru_stime.tv_sec)*1000000 + r_usage.ru_utime.tv_usec + r_usage.ru_utime.tv_usec;
+    }
 
 }
 
