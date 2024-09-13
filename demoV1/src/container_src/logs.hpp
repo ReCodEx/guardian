@@ -11,8 +11,8 @@ namespace logs
 
     inline void init_default_logger()
     {
-        auto my_logger = spdlog::basic_logger_mt("basic_logger", "logs/log.txt");
-        spdlog::set_default_logger(my_logger);
+        //auto my_logger = spdlog::basic_logger_mt("basic_logger", "logs/log.txt");
+        //spdlog::set_default_logger(my_logger);
     }
 
     template <typename... Args>

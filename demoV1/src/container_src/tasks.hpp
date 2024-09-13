@@ -5,6 +5,11 @@
 
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+
+#include "terminate.hpp"
+#include "cgrps.hpp"
 
 namespace tasks
 {
@@ -13,44 +18,52 @@ namespace tasks
 
     class task_t
     {
-
-        
     public:
-        task_t(config::task_config* conf) : task_conf_(conf) 
+        task_t(config::task_intfc& conf) : task_intfc_(&conf) 
         {
-            //stack_ = std::aligned_alloc(task_->stack_size, task_->stack_size);
-            //stack_ = mmap(NULL, conf->stack_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
-
-            cgrp_fd_ = open(task_conf_->cgrp_path.c_str(), O_DIRECTORY | O_RDONLY);
+            cgrp_fd_ = get_cgrp_fd();
         }
 
         ~task_t()
         {
-            //free(stack_);
-            //munmap(stack_, task_->stack_size);
             close(cgrp_fd_);
         }
 
-        int run_task()
+        config::task_stats run_task()
         {
             pid_t pid = launch_task();
-            return wait_for_task(pid);
+            auto stats = wait_for_task(pid);
+            task_intfc_->assign_stats(stats);
+            return stats;
         }
 
-        int wait_for_task(pid_t pid)
+        
+
+    private:
+
+        config::task_stats wait_for_task(pid_t pid)
         {
             int stat{};
             pid_t p = waitpid(pid, &stat, 0);
 
             if (p < 0)
             {
-                terminate("waitpid() failed. Stat: {}, RV : {}, Errno: {}", stat, p, errno);
+                terminate("waitpid() failed. Stat: {}, Errno: {}", stat, errno);
             }
             logs::debug("Child exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
 
-            return stat;
+            return config::task_stats   {
+                                .exited_normally = WIFEXITED(stat),
+                                .signalled = WIFSIGNALED(stat),
+                                .exit_code = WEXITSTATUS(stat),
+                                .err_no = errno,
+                                .signal = WTERMSIG(stat),
+
+                                .total_mem_bytes = cgroup::memory_usage_bytes(task_intfc_->cg_rel_path()),
+                                .total_time_usec = cgroup::cpu_usage_usec(task_intfc_->cg_rel_path())
+                                        };
         }
-    private:
+
         pid_t launch_task()
         {
             return run_task_in_cgroup();
@@ -58,8 +71,8 @@ namespace tasks
 
         pid_t run_task_in_cgroup()
         {
-            logs::trace("Calling clone3 for \"{}\"", task_conf_->executable.string());
-            pid_t outside_pid = clone3(*task_conf_, stack_, cgrp_fd_);
+            logs::debug("Calling clone3 for \"{}\"", task_intfc_->exec_path().string());
+            pid_t outside_pid = clone3_task(*task_intfc_, stack_, cgrp_fd_);
 
             if (outside_pid < 0)
             {
@@ -68,7 +81,9 @@ namespace tasks
                 
             else if (!outside_pid)
             {
-                cpp_execve(task_conf_->executable, task_conf_->args);
+                set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use for example cgroup freezer.
+
+                cpp_execve(task_intfc_->exec_path(), task_intfc_->exec_args());
 
                 // We should never get here
                 terminate("Execve failed. Errno: {}", errno);
@@ -78,15 +93,47 @@ namespace tasks
 
         int get_cgrp_fd()
         {
-            return open(task_conf_->cgrp_path.c_str(), O_DIRECTORY | O_RDONLY);
+            fs::path cg_path(cgroup::cg_abs_path(task_intfc_->cg_rel_path()));
+            return open(cg_path.c_str(), O_DIRECTORY | O_RDONLY);
         }
 
-        void* stack_;
-        config::task_config* task_conf_;
+        void set_resource_limits()
+        {
+            auto& limits = task_intfc_->rlims();
+            
+            //std::cout << std::format("Setting memory limit to {} bytes and cpu time limit to {} seconds.", limits.memory_bytes, limits.cpu_time_s) << std::endl;
+            if(limits.memory())
+            {
+                set_mem_limit(limits.memory().value());
+            }
+            if(limits.cpu_time())
+            {
+                set_cpu_limit(limits.cpu_time().value());
+            }
+        }
+
+        static void set_mem_limit(unsigned int bytes)
+        {
+            rlimit mem{bytes,bytes};
+            if(setrlimit(RLIMIT_AS, &mem) == -1)
+            {
+                std::cout << std::format("Failed to set memory limit for the child process. Arg: {} Errno: {}", bytes, errno);
+            }
+        }
+
+        static void set_cpu_limit(unsigned int s)
+        {
+            rlimit cpu_time{s,s};
+            if(setrlimit(RLIMIT_CPU, &cpu_time) == -1)
+            {
+                std::cout << std::format("Failed to set cpu_time limit for the child process. Errno: {}", errno);
+            }
+        }
+
+        void* stack_ = nullptr;
+        config::task_intfc* const task_intfc_;
         int cgrp_fd_;
     };
-
-
 }
 
 

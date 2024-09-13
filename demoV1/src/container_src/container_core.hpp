@@ -1,7 +1,7 @@
 #ifndef CONTAINER_CORE
 #define CONTAINER_CORE
 
-
+#include "config.hpp"
 #include "process.hpp"
 #include "tasks.hpp"
 
@@ -11,21 +11,28 @@
 namespace container_core
 {
     using namespace tasks;
-    namespace cgrp = cgrp_management;
+    namespace cgrp = cgroup;
     namespace fs = std::filesystem;
 
     class root_container_core
     {
     public:
-        root_container_core(const config::main_config& config_struct) : cgrp_mngr(config_struct._cgrp)
+
+        root_container_core(int argc, char** argv) : root_intfc_(argc, argv)
         {
             logs::init_default_logger();
             logs::info("Hello world from container!");
         }
 
-        int run_directly()
+        config::root_stats run_tasks_directly()
         {
-            return 0;
+            for(auto&& task_intfc : root_intfc_.tasks())
+            {
+                tasks::task_t task_(*task_intfc);
+                auto stats = task_.run_task();
+                logs::debug("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.total_time_usec, stats.total_mem_bytes);
+            }
+            return config::root_stats();
         }
 
         int run_with_proxy_process()
@@ -33,46 +40,15 @@ namespace container_core
             return 0;
         }
 
-    private:
-        cgrp::root_cgroup_manager cgrp_mngr;
-    };
-
-    class proxy_container_core
-    {
-        config::proxy_config* _conf;
-
-    public:
-        proxy_container_core(config::proxy_config& conf) {}
-
-        int run_tasks()
+        void generate_results()
         {
-            for(auto&& task : _conf->tasks)
-            {
-                tasks::task_t task_(task.get());
-                std::cout << task_.run_task() << '\n'; 
-            }
-            return 0;
-        }
-
-        
-
-        void collect_results()
-        {
-
+            root_intfc_.generate_results();
         }
 
     private:
+        cgrp::root_cgroup_manager cgrp_mngr_;
+        config::root_interface root_intfc_;
     };
-
-    inline int proxy_process(void* proxy_config_ptr)
-    {
-        config::proxy_config* conf(static_cast<config::proxy_config*>(proxy_config_ptr));
-        proxy_container_core supervisor(*conf);
-        supervisor.run_tasks();
-        supervisor.collect_results();
-
-        return 0;
-    }
 }
 
 #endif
