@@ -114,23 +114,25 @@ namespace config
 
         static void create_stats_file(const fs::path& path, const task_stats& stats)
         {
+            pt::ptree stat_tree;
             std::ofstream f(path);
             if(stats.exited_normally && stats.exit_code == 0)
             {
-                f << "OK";
+                stat_tree.put("result", "OK");
             }
             else if (stats.signalled)
             {
-                f << "KILLED";
+                stat_tree.put("result", "KILLED");
             }
             else if (stats.exit_code)
             {
-                f << "NON ZERO EXIT CODE";
+                stat_tree.put("result", "NON ZERO EXIT CODE");
             }
 
-            f << stats.total_time_usec;
-            f << stats.total_mem_bytes;
+            stat_tree.put("cg_total_time_usec", stats.total_time_usec);
+            stat_tree.put("cg_total_mem_bytes", stats.total_mem_bytes);
 
+            pt::write_xml(f, stat_tree);
         }
     };
 
@@ -225,7 +227,8 @@ namespace config
             
             if (vm.count("f"))
             {
-                return configure_from_file();
+                configure_from_file(fs::path(vm["f"].as<std::string>()));
+                return 0;
             }
             else
             {
@@ -235,11 +238,10 @@ namespace config
             }
         }
 
-        int configure_from_file()
+        void configure_from_file(const fs::path& f)
         {
+            pt::read_xml(f.string(), config_tree_);
 
-
-            return 0;
         }
 
         static std::unique_ptr<task_intfc> configure_task_from_options(const options::variables_map& vm)
