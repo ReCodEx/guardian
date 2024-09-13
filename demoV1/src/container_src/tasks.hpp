@@ -40,19 +40,8 @@ namespace tasks
         
 
     private:
-
-        config::task_stats wait_for_task(pid_t pid)
+        config::task_stats generate_task_stats(int stat)
         {
-            int stat{};
-            
-            pid_t p = waitpid(pid, &stat, 0);
-
-            if (p < 0)
-            {
-                terminate("waitpid() failed. Stat: {}, Errno: {}", stat, errno);
-            }
-            logs::debug("Child exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
-
             auto r_usage = get_children_rusage();
 
             return config::task_stats   {
@@ -69,6 +58,22 @@ namespace tasks
                                 .rusage_total_time_usec = rusage_total_time_usec(r_usage),
 
                                 };
+        }
+
+        config::task_stats wait_for_task(pid_t pid)
+        {
+            int stat{};
+            
+            pid_t p = waitpid(pid, &stat, 0);
+
+            if (p < 0)
+            {
+                terminate("waitpid() failed. Stat: {}, Errno: {}", stat, errno);
+            }
+            logs::debug("Child exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
+
+
+            return generate_task_stats(stat);
         }
 
         pid_t launch_task()
