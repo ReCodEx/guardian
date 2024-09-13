@@ -138,7 +138,10 @@ namespace config
     {
     public:
         root_interface(const fs::path& config_xml) {}
-        root_interface() {}
+        root_interface(int argc, char** argv) 
+        {
+            parse_options(argc, argv);
+        }
 
         bool ready_tasks() const
         {
@@ -163,27 +166,6 @@ namespace config
         pt::ptree config_tree_;
         std::vector<std::unique_ptr<task_intfc>> tasks_;
         
-    };
-
-    class configurator
-    {
-    public:
-        configurator()
-        {
-            root_config_ = std::make_unique<root_interface>();
-        }
-
-        bool ready_tasks()
-        {
-            return root_config_->ready_tasks();
-        }
-
-        std::unique_ptr<root_interface> generate_root_interface(int argc, char** argv)
-        {
-            parse_options(argc, argv);
-            return std::move(root_config_);
-        }
-
         int parse_options(int argc, char** argv)
         {
             options::options_description general("General options");
@@ -248,19 +230,19 @@ namespace config
             else
             {
                 auto task = configure_task_from_options(vm);
-                root_config_->add_task(std::move(task));
+                add_task(std::move(task));
                 return 0;
             }
         }
-    private:
-        std::unique_ptr<root_interface> root_config_;
 
         int configure_from_file()
         {
+
+
             return 0;
         }
 
-        std::unique_ptr<task_intfc> configure_task_from_options(const options::variables_map& vm)
+        static std::unique_ptr<task_intfc> configure_task_from_options(const options::variables_map& vm)
         {
             fs::path path;
             std::vector<std::string> args;
@@ -286,7 +268,7 @@ namespace config
             return std::make_unique<task_intfc>(std::move(path), std::move(args), std::move(rlims), std::move(cg_rel_path));
         }
 
-        r_limits rlims_from_options(const options::variables_map& vm)
+        static r_limits rlims_from_options(const options::variables_map& vm)
         {
             r_limits rlims;
 
@@ -301,10 +283,9 @@ namespace config
 
             return std::move(rlims);
         }
+
     };
-
 }
-
 
 
 #endif

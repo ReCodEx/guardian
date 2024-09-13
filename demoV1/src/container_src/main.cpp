@@ -19,15 +19,7 @@ namespace fs = std::filesystem;
 int main(int argc, char ** argv)
 {
     spdlog::set_level(spdlog::level::debug);
-
-    config::configurator configurator;
-    auto root_interface = configurator.generate_root_interface(argc, argv);
-
-    if(!root_interface->ready_tasks())
-    {
-        exit(0);
-    }
-    container_core::root_container_core core(std::move(root_interface));
+    container_core::root_container_core core(argc, argv);
 
     core.run_tasks_directly();
     core.generate_results();

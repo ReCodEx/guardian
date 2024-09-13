@@ -17,7 +17,8 @@ namespace container_core
     class root_container_core
     {
     public:
-        root_container_core(std::unique_ptr<config::root_interface>&& conf) : root_intfc_(std::move(conf))
+
+        root_container_core(int argc, char** argv) : root_intfc_(argc, argv)
         {
             logs::init_default_logger();
             logs::info("Hello world from container!");
@@ -25,7 +26,7 @@ namespace container_core
 
         config::root_stats run_tasks_directly()
         {
-            for(auto&& task_intfc : root_intfc_->tasks())
+            for(auto&& task_intfc : root_intfc_.tasks())
             {
                 tasks::task_t task_(*task_intfc);
                 auto stats = task_.run_task();
@@ -41,12 +42,12 @@ namespace container_core
 
         void generate_results()
         {
-            root_intfc_->generate_results();
+            root_intfc_.generate_results();
         }
 
     private:
         cgrp::root_cgroup_manager cgrp_mngr;
-        std::unique_ptr<config::root_interface> root_intfc_;
+        config::root_interface root_intfc_;
     };
 }
 
