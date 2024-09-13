@@ -60,8 +60,12 @@ namespace config
         int err_no;
         int signal;
 
-        size_t total_mem_bytes;
-        size_t total_time_usec;
+        size_t cg_total_mem_bytes;
+        size_t cg_total_time_usec;
+
+        long rusage_total_mem_bytes;
+        long rusage_total_time_usec;
+
     };
 
     class task_intfc
@@ -107,7 +111,6 @@ namespace config
         std::vector<std::string> args_;
         r_limits rlims_;
         fs::path cg_rel_path_;
-        size_t stack_size;//currently unused
 
         std::optional<fs::path>   stats_path_;
         std::optional<task_stats> task_stats_;
@@ -129,8 +132,10 @@ namespace config
                 stat_tree.put("result", "NON ZERO EXIT CODE");
             }
 
-            stat_tree.put("cg_total_time_usec", stats.total_time_usec);
-            stat_tree.put("cg_total_mem_bytes", stats.total_mem_bytes);
+            stat_tree.put("cg_total_time_usec", stats.cg_total_time_usec);
+            stat_tree.put("cg_total_mem_bytes", stats.cg_total_mem_bytes);
+            stat_tree.put("rusage_total_time_usec", stats.rusage_total_time_usec);
+            stat_tree.put("rusage_total_mem_bytes", stats.rusage_total_mem_bytes);
 
             pt::write_xml(f, stat_tree);
         }

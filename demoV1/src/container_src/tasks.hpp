@@ -44,6 +44,7 @@ namespace tasks
         config::task_stats wait_for_task(pid_t pid)
         {
             int stat{};
+            
             pid_t p = waitpid(pid, &stat, 0);
 
             if (p < 0)
@@ -52,6 +53,8 @@ namespace tasks
             }
             logs::debug("Child exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
 
+            auto r_usage = get_children_rusage();
+
             return config::task_stats   {
                                 .exited_normally = WIFEXITED(stat),
                                 .signalled = WIFSIGNALED(stat),
@@ -59,9 +62,13 @@ namespace tasks
                                 .err_no = errno,
                                 .signal = WTERMSIG(stat),
 
-                                .total_mem_bytes = cgroup::memory_usage_bytes(task_intfc_->cg_rel_path()),
-                                .total_time_usec = cgroup::cpu_usage_usec(task_intfc_->cg_rel_path())
-                                        };
+                                .cg_total_mem_bytes = cgroup::memory_usage_bytes(task_intfc_->cg_rel_path()),
+                                .cg_total_time_usec = cgroup::cpu_usage_usec(task_intfc_->cg_rel_path()),
+
+                                .rusage_total_mem_bytes = r_usage.ru_maxrss*1000,
+                                .rusage_total_time_usec = rusage_total_time_usec(r_usage),
+
+                                };
         }
 
         pid_t launch_task()

@@ -30,7 +30,7 @@ namespace container_core
             {
                 tasks::task_t task_(*task_intfc);
                 auto stats = task_.run_task();
-                logs::debug("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.total_time_usec, stats.total_mem_bytes);
+                logs::debug("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.cg_total_time_usec, stats.cg_total_mem_bytes);
             }
             return config::root_stats();
         }
