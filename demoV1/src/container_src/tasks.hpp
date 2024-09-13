@@ -63,16 +63,38 @@ namespace tasks
         config::task_stats wait_for_task(pid_t pid)
         {
             int stat{};
-            
-            pid_t p = waitpid(pid, &stat, 0);
+            pid_t p;
+            auto stime = std::chrono::system_clock::now();
+            auto wall_limit = std::chrono::seconds(task_intfc_->rlims().wall_time());
 
-            if (p < 0)
+            while(true)
             {
-                terminate("waitpid() failed. Stat: {}, Errno: {}", stat, errno);
+                p = waitpid(pid, &stat, WNOHANG);
+
+                if (p < 0)
+                {
+                    terminate("waitpid() failed. Stat: {}, Errno: {}", stat, errno);
+                }
+                else if (p == 0) 
+                {
+                    auto ctime = std::chrono::system_clock::now();
+                    if(ctime - stime < wall_limit)
+                    {
+                        logs::debug("task still running after {} s", std::chrono::duration_cast<std::chrono::seconds>(ctime - stime).count());
+                        std::this_thread::sleep_for(wait_time());
+                    }
+                    else
+                    {
+                        logs::debug("task killed for exceeding wall time limit");
+                        kill(pid, SIGKILL);
+                        p = waitpid(pid, &stat, 0);
+                        break;
+                    }
+                    
+                }
+                else break;
             }
             logs::debug("Child exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
-
-
             return generate_task_stats(stat);
         }
 
@@ -140,6 +162,11 @@ namespace tasks
             {
                 std::cout << std::format("Failed to set cpu_time limit for the child process. Errno: {}", errno);
             }
+        }
+
+        std::chrono::milliseconds wait_time()
+        {
+            return std::chrono::milliseconds(1000);
         }
 
         void* stack_ = nullptr;

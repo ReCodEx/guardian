@@ -34,17 +34,21 @@ namespace config
     {
     public:
         r_limits() {}
-        r_limits(unsigned int cpu_time, unsigned int mem) : cpu_time_s_(cpu_time), memory_bytes_(mem) 
+        r_limits(size_t cpu_time, size_t mem) : cpu_time_s_(cpu_time), memory_bytes_(mem) 
         {}
 
         auto cpu_time() const { return cpu_time_s_; }
         auto memory() const { return memory_bytes_; }
+        auto wall_time() const { return wall_time_s_; }
 
-        void set_cpu_time(unsigned int s) { cpu_time_s_ = s; }
-        void set_memory(unsigned int bytes) { memory_bytes_ = bytes; }
+        void set_cpu_time(size_t s) { cpu_time_s_ = s; }
+        void set_memory(size_t bytes) { memory_bytes_ = bytes; }
+        void set_wall_time(size_t s) { wall_time_s_ = s; }
     private:
-        std::optional<unsigned int> cpu_time_s_; 
-        std::optional<unsigned int> memory_bytes_;
+        std::optional<size_t> cpu_time_s_; 
+        std::optional<size_t> memory_bytes_;
+        
+        size_t wall_time_s_ = 60; 
     };
 
     struct root_stats
@@ -193,9 +197,10 @@ namespace config
 
             options::options_description rsrcs("Options for resource limitation");
             rsrcs.add_options()
-                ("mem", options::value<unsigned int>(), "maximum amount of used virtual memory")
-                ("as", options::value<unsigned int>(), "address space size limit")
-                ("time", options::value<unsigned int>(), "cpu time limit")
+                ("mem", options::value<size_t>(), "maximum amount of used virtual memory")
+                ("as", options::value<size_t>(), "address space size limit")
+                ("time", options::value<size_t>(), "cpu time limit")
+                ("wall-time", options::value<size_t>(), "wall time limit")
                 ;
 
                 
@@ -281,11 +286,15 @@ namespace config
 
             if (vm.contains("mem")) 
             {
-                rlims.set_memory(vm["mem"].as<unsigned int>());
+                rlims.set_memory(vm["mem"].as<size_t>());
             }
             if (vm.contains("time")) 
             {
-                rlims.set_cpu_time(vm["time"].as<unsigned int>());
+                rlims.set_cpu_time(vm["time"].as<size_t>());
+            }
+            if (vm.contains("wall-time")) 
+            {
+                rlims.set_wall_time(vm["wall-time"].as<size_t>());
             }
 
             return std::move(rlims);
