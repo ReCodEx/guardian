@@ -15,11 +15,16 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/foreach.hpp>
+
 namespace config
 {
     namespace cgrp = cgroup;
     namespace fs = std::filesystem;
     namespace options = boost::program_options;
+    namespace pt = boost::property_tree;
 
     struct task_intfc;
 
@@ -44,7 +49,7 @@ namespace config
 
     struct root_stats
     {
-
+        
     };
 
     struct task_stats
@@ -58,23 +63,6 @@ namespace config
         size_t total_mem_bytes;
         size_t total_time_usec;
     };
-
-    inline void create_stats_file(const fs::path& path, const task_stats& stats)
-    {
-        std::ofstream f(path);
-        if(stats.exited_normally && stats.exit_code == 0)
-        {
-            f << "OK";
-        }
-        else if (stats.signalled)
-        {
-            f << "KILLED";
-        }
-        else if (stats.exit_code)
-        {
-            f << "NON ZERO EXIT CODE";
-        }
-    }
 
     class task_intfc
     {
@@ -123,11 +111,35 @@ namespace config
 
         std::optional<fs::path>   stats_path_;
         std::optional<task_stats> task_stats_;
+
+        static void create_stats_file(const fs::path& path, const task_stats& stats)
+        {
+            std::ofstream f(path);
+            if(stats.exited_normally && stats.exit_code == 0)
+            {
+                f << "OK";
+            }
+            else if (stats.signalled)
+            {
+                f << "KILLED";
+            }
+            else if (stats.exit_code)
+            {
+                f << "NON ZERO EXIT CODE";
+            }
+
+            f << stats.total_time_usec;
+            f << stats.total_mem_bytes;
+
+        }
     };
 
-        class root_interface
+    class root_interface
     {
     public:
+        root_interface(const fs::path& config_xml) {}
+        root_interface() {}
+
         bool ready_tasks() const
         {
             return tasks_.size();
@@ -148,7 +160,9 @@ namespace config
             tasks_[0]->generate_stats_file(fs::path("/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/TASK_RESULTS.txt"));
         }
     private:
+        pt::ptree config_tree_;
         std::vector<std::unique_ptr<task_intfc>> tasks_;
+        
     };
 
     class configurator

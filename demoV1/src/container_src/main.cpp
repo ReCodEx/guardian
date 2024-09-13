@@ -29,7 +29,7 @@ int main(int argc, char ** argv)
     }
     container_core::root_container_core core(std::move(root_interface));
 
-    core.execute_tasks_directly();
+    core.run_tasks_directly();
     core.generate_results();
     
     std::cout << "finished!" << std::endl;

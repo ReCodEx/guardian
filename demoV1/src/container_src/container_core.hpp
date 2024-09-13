@@ -23,7 +23,7 @@ namespace container_core
             logs::info("Hello world from container!");
         }
 
-        config::root_stats execute_tasks_directly()
+        config::root_stats run_tasks_directly()
         {
             for(auto&& task_intfc : root_intfc_->tasks())
             {
