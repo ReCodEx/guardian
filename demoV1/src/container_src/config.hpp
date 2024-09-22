@@ -114,7 +114,7 @@ namespace config
         exec_(std::move(exec)), args_(std::move(args)), rlims_(std::move(rlims)), cg_rel_path_(std::move(cg_rel_path)){}
 
         task_intfc(pt::ptree task_tree) :   exec_(fs::path(task_tree.get<std::string>(option_names::EXEC_PATH))), 
-                                            args_(std::move(string_utils::split(task_tree.get<std::string>(option_names::EXEC_ARGS)))),
+                                            args_(std::move(string_utils::split(task_tree.get(option_names::EXEC_ARGS, "")))),
                                             rlims_(task_tree.get_child(option_names::RLIMS)),
                                             cg_rel_path_(fs::path(task_tree.get<std::string>(option_names::TASK_CG)))
         {}
