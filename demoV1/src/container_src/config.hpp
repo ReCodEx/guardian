@@ -28,8 +28,11 @@ namespace config
 
     struct task_intfc;
 
+    constexpr size_t DEFAULT_WALL_TIME = 60;
+
     namespace option_names
     {
+        constexpr std::string RLIMS = "rlims";
         constexpr std::string CPU_TIME = "cpu-time";
         constexpr std::string WALL_TIME = "wall-time";
         constexpr std::string MEMORY = "mem";
@@ -60,6 +63,12 @@ namespace config
         r_limits(size_t cpu_time, size_t mem) : cpu_time_s_(cpu_time), memory_bytes_(mem) 
         {}
 
+        r_limits(const pt::ptree& limits_tree) : 
+                                        cpu_time_s_(type_utils::to_std_optional(limits_tree.get_optional<size_t>(option_names::CPU_TIME))),
+                                        memory_bytes_(type_utils::to_std_optional(limits_tree.get_optional<size_t>(option_names::MEMORY))),
+                                        wall_time_s_(limits_tree.get(option_names::WALL_TIME, DEFAULT_WALL_TIME))
+        {}
+
         auto cpu_time() const { return cpu_time_s_; }
         auto memory() const { return memory_bytes_; }
         auto wall_time() const { return wall_time_s_; }
@@ -71,7 +80,7 @@ namespace config
         std::optional<size_t> cpu_time_s_; 
         std::optional<size_t> memory_bytes_;
         
-        size_t wall_time_s_ = 60; 
+        size_t wall_time_s_ = DEFAULT_WALL_TIME; 
     };
 
     struct root_stats
@@ -103,6 +112,12 @@ namespace config
 
         task_intfc(fs::path&& exec, std::vector<std::string>&& args, r_limits&& rlims, fs::path&& cg_rel_path): 
         exec_(std::move(exec)), args_(std::move(args)), rlims_(std::move(rlims)), cg_rel_path_(std::move(cg_rel_path)){}
+
+        task_intfc(pt::ptree task_tree) :   exec_(fs::path(task_tree.get<std::string>(option_names::EXEC_PATH))), 
+                                            args_(std::move(string_utils::split(task_tree.get<std::string>(option_names::EXEC_ARGS)))),
+                                            rlims_(task_tree.get_child(option_names::RLIMS)),
+                                            cg_rel_path_(fs::path(task_tree.get<std::string>(option_names::TASK_CG)))
+        {}
 
         const auto& exec_path() const   { return exec_; }
         auto& exec_args()               { return args_; }

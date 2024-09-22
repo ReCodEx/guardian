@@ -4,11 +4,25 @@
 #include <string>
 #include <vector>
 #include <boost/tokenizer.hpp>
+#include <boost/optional.hpp>
 #include <set>
 #include <fstream>
 #include <filesystem>
 #include <iostream>
 #include <format>
+
+namespace type_utils
+{
+    template<typename T>
+    inline constexpr auto to_std_optional(boost::optional<T> opt) 
+    {
+        if (opt.has_value()) {
+            return std::make_optional(std::forward<decltype(opt)>(opt).value());
+        } else {
+            return std::optional<T>();
+        }
+    };
+}
 
 namespace string_utils
 {
@@ -20,6 +34,17 @@ namespace string_utils
         for(boost::tokenizer<>::iterator it = tok.begin(); it != tok.end(); ++it)
         {
             res.insert(*it);
+        }
+        return res;
+    }
+
+    inline std::vector<std::string> split(const std::string& str)
+    {
+        boost::tokenizer<> tok(str);
+        std::vector<std::string> res;
+        for(boost::tokenizer<>::iterator it = tok.begin(); it != tok.end(); ++it)
+        {
+            res.push_back(*it);
         }
         return res;
     }
