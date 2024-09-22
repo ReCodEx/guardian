@@ -1,10 +1,9 @@
 #!/usr/bin/python3
 
-
 import os
 import sys
-import xml.etree.ElementTree as ET
-from .. import basic_utils
+import xml.etree.ElementTree as ETree
+from ...basic_utils import run_in_container, testing_cg
 
 sys.path.append("/home/simonkurz/.local/lib/python3.11/site-packages")
 import matplotlib.pyplot as plt
@@ -20,10 +19,10 @@ def cg_memory_peak(results_xml):
 def rusage_rss(results_xml):
     return 0
 
-def measure_allocation(exec, alloc, results_xml, config_xml = None):
-    
-    return (cg_memory_peak(results_xml), rusage_rss(results_xml))
+def results_tree(results_xml):
+    return ETree.parse(results_xml)
 
-cntnr_path = "../src/build/rcdx_cntnr_demo"
-tree = ET.parse('country_data.xml')
-root = tree.getroot()
+#TODO: config.xml support in the container
+def allocation_test(exec, alloc, results_xml, config_xml = None):
+    run_in_container(exec, config_xml, exec_args=f"{alloc}")
+    return results_tree(results_xml)

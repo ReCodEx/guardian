@@ -2,14 +2,22 @@
 
 import os
 import sys
+import xml.etree.ElementTree as ETree
 
 cg_fs_path = "/sys/fs/cgroup"
+cntnr_path = "../src/build/rcdx_cntntr_demo"
 
-def run_contained_executable(cntnr_path, exec, config_xml = None, config_args = None):
+
+#TODO: config.xml support in the container
+def testing_cg():
+    return ETree.parse("test_config.xml").find()
+
+def run_in_container(exec, config_xml = None, config_args = None, exec_args = None):
     command = f"{cntnr_path} --path=\"{exec}\""
     
     if config_xml != None:  command += f"--f={config_xml}"
     if config_args != None: command += config_args
+    if exec_args != None:   command += f"--args={exec_args}"
         
     os.system(command)
 
