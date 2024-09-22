@@ -28,7 +28,30 @@ namespace config
 
     struct task_intfc;
 
+    namespace option_names
+    {
+        constexpr std::string CPU_TIME = "cpu-time";
+        constexpr std::string WALL_TIME = "wall-time";
+        constexpr std::string MEMORY = "mem";
 
+        constexpr std::string EXEC_PATH = "path";
+        constexpr std::string TASK_CG = "task-cg";
+        constexpr std::string STATS_PATH = "stats";
+        constexpr std::string EXEC_ARGS = "args";
+        constexpr std::string CONFIG_F = "f";
+    }
+
+    namespace results
+    {
+        constexpr std::string STATUS = "status";
+        constexpr std::string OK = "ok";
+        constexpr std::string KILLED = "killed";
+        static std::string NON_ZERO_EXIT_CODE = "non zero exit code";
+        static std::string CG_TOTAL_TIME_USEC = "cg_total_time_usec";
+        static std::string CG_TOTAL_MEM_BYTES = "cg_total_mem_bytes";
+        static std::string RUSAGE_TOTAL_TIME_USEC = "rusage_total_time_usec";
+        static std::string RUSAGE_TOTAL_MEM_BYTES = "rusage_total_mem_bytes";
+    }
 
     class r_limits
     {
@@ -125,21 +148,21 @@ namespace config
             std::ofstream f(path);
             if(stats.exited_normally && stats.exit_code == 0)
             {
-                stat_tree.put("result", "OK");
+                stat_tree.put(results::STATUS, results::OK);
             }
             else if (stats.signalled)
             {
-                stat_tree.put("result", "KILLED");
+                stat_tree.put(results::STATUS, results::KILLED);
             }
             else if (stats.exit_code)
             {
-                stat_tree.put("result", "NON ZERO EXIT CODE");
+                stat_tree.put(results::STATUS, results::NON_ZERO_EXIT_CODE);
             }
 
-            stat_tree.put("cg_total_time_usec", stats.cg_total_time_usec);
-            stat_tree.put("cg_total_mem_bytes", stats.cg_total_mem_bytes);
-            stat_tree.put("rusage_total_time_usec", stats.rusage_total_time_usec);
-            stat_tree.put("rusage_total_mem_bytes", stats.rusage_total_mem_bytes);
+            stat_tree.put(results::CG_TOTAL_TIME_USEC, stats.cg_total_time_usec);
+            stat_tree.put(results::CG_TOTAL_MEM_BYTES, stats.cg_total_mem_bytes);
+            stat_tree.put(results::RUSAGE_TOTAL_TIME_USEC, stats.rusage_total_time_usec);
+            stat_tree.put(results::RUSAGE_TOTAL_MEM_BYTES, stats.rusage_total_mem_bytes);
 
             pt::write_xml(f, stat_tree);
         }
@@ -169,6 +192,7 @@ namespace config
             return tasks_;
         }
 
+        //TODO: add support for stats option
         void generate_results()
         {
             tasks_[0]->generate_stats_file(fs::path("/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/TASK_RESULTS.txt"));
@@ -185,22 +209,22 @@ namespace config
                 ("help-module", options::value<std::string>(),
                     "produce a help for a given module")
                 ("version", "output the version number")
-                ("f", options::value<std::string>(), "read the configuration from a config file")
+                (option_names::CONFIG_F.c_str(), options::value<std::string>(), "read the configuration from a config file")
                 ;
 
             options::options_description exec("Options to specify the executable and arguments");
             exec.add_options()
-                ("path", options::value<std::string>(), "path to the program")
-                ("args", options::value<std::vector<std::string>>(), "list of arguments for the program")
-                ("cg", options::value<std::string>(), "relative cgroup path (from /sys/fs/cgroup) to run the task in")
+                (option_names::EXEC_PATH.c_str(), options::value<std::string>(), "path to the program")
+                (option_names::EXEC_ARGS.c_str(), options::value<std::vector<std::string>>(), "list of arguments for the program")
+                (option_names::TASK_CG.c_str(), options::value<std::string>(), "relative cgroup path (from /sys/fs/cgroup) to run the task in")
                 ;
 
             options::options_description rsrcs("Options for resource limitation");
             rsrcs.add_options()
-                ("mem", options::value<size_t>(), "maximum amount of used virtual memory")
+                (option_names::MEMORY.c_str(), options::value<size_t>(), "maximum amount of used virtual memory")
                 ("as", options::value<size_t>(), "address space size limit")
-                ("time", options::value<size_t>(), "cpu time limit")
-                ("wall-time", options::value<size_t>(), "wall time limit")
+                (option_names::CPU_TIME.c_str(), options::value<size_t>(), "cpu time limit")
+                (option_names::WALL_TIME.c_str(), options::value<size_t>(), "wall time limit")
                 ;
 
                 
@@ -235,9 +259,9 @@ namespace config
                 return 0;
             }
             
-            if (vm.count("f"))
+            if (vm.count(option_names::CONFIG_F))
             {
-                configure_from_file(fs::path(vm["f"].as<std::string>()));
+                configure_from_xml(fs::path(vm[option_names::CONFIG_F].as<std::string>()));
                 return 0;
             }
             else
@@ -248,10 +272,14 @@ namespace config
             }
         }
 
-        void configure_from_file(const fs::path& f)
+        void configure_from_xml(const fs::path& f)
         {
             pt::read_xml(f.string(), config_tree_);
+        }
 
+        auto generate_tasks(pt::ptree config_tree)
+        {
+            std::vector<std::unique_ptr<task_intfc>> tasks;
         }
 
         static std::unique_ptr<task_intfc> configure_task_from_options(const options::variables_map& vm)
@@ -261,18 +289,18 @@ namespace config
             r_limits rlims;
             fs::path cg_rel_path{"rcdx"};
 
-            if(vm.contains("path"))
+            if(vm.contains(option_names::EXEC_PATH))
             {
-                path = fs::path(vm["path"].as<std::string>());
+                path = fs::path(vm[option_names::EXEC_PATH].as<std::string>());
             }
             else
             {
                 terminate("No path to executable provided");
             }
 
-            if(vm.contains("args"))
+            if(vm.contains(option_names::EXEC_ARGS))
             {
-                args = std::vector<std::string>(vm["args"].as<std::vector<std::string>>());
+                args = std::vector<std::string>(vm[option_names::EXEC_ARGS].as<std::vector<std::string>>());
             }
 
             rlims = rlims_from_options(vm);
@@ -284,17 +312,17 @@ namespace config
         {
             r_limits rlims;
 
-            if (vm.contains("mem")) 
+            if (vm.contains(option_names::MEMORY)) 
             {
-                rlims.set_memory(vm["mem"].as<size_t>());
+                rlims.set_memory(vm[option_names::MEMORY].as<size_t>());
             }
-            if (vm.contains("time")) 
+            if (vm.contains(option_names::CPU_TIME)) 
             {
-                rlims.set_cpu_time(vm["time"].as<size_t>());
+                rlims.set_cpu_time(vm[option_names::CPU_TIME].as<size_t>());
             }
-            if (vm.contains("wall-time")) 
+            if (vm.contains(option_names::WALL_TIME)) 
             {
-                rlims.set_wall_time(vm["wall-time"].as<size_t>());
+                rlims.set_wall_time(vm[option_names::WALL_TIME].as<size_t>());
             }
 
             return std::move(rlims);
