@@ -46,8 +46,9 @@ namespace container_core
         }
 
     private:
-        cgrp::root_cgroup_manager cgrp_mngr_;
+        
         config::root_interface root_intfc_;
+        cgroup::cgroupv2_t root_cgrp_;
     };
 }
 

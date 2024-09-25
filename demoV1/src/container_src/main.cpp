@@ -18,6 +18,10 @@ namespace fs = std::filesystem;
 
 int main(int argc, char ** argv)
 {
+    cgroup::cgroupv2_t root_cgrp;
+
+
+
     spdlog::set_level(spdlog::level::debug);
     container_core::root_container_core core(argc, argv);
 

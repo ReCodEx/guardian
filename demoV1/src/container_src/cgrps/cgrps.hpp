@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <format>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "utils.hpp"
 
@@ -19,9 +20,9 @@ namespace cgroup
     constexpr std::string_view CGROUP_SUBTREE_CONTROL_ = "/cgroup.subtree_control";
     constexpr std::string_view CPU_MAX_ = "/cpu.max";
 
-    inline auto const& CG_FS_PATH()
+    inline auto const& ROOT_CG_PATH()
     {
-        static fs::path path("/sys/fs/cgroup");
+        static fs::path path("/sys/fs/cgroup/rcdx");
         return path;
     }
 
@@ -69,18 +70,30 @@ namespace cgroup
 
     inline fs::path cg_abs_path(const fs::path& cg_rel_path)
     {
-        return fs::path(CG_FS_PATH() / cg_rel_path);
+        return fs::path(ROOT_CG_PATH() / cg_rel_path);
     }
 
-    inline size_t cpu_usage_usec(const fs::path& cg_rel_path)
+    inline size_t cpu_usage_usec_rel(const fs::path& cg_rel_path)
     {
-        std::ifstream cpu_stat(CG_FS_PATH() / cg_rel_path / CPU_STAT());
+        std::ifstream cpu_stat(ROOT_CG_PATH() / cg_rel_path / CPU_STAT());
         return std::stoi(file_utils::read_row_col(cpu_stat,0,0));
     }
 
-    inline size_t memory_usage_bytes(const fs::path& cg_rel_path)
+    inline size_t cpu_usage_usec_abs(const fs::path& cg_path)
     {
-        std::ifstream memory_peak(CG_FS_PATH() / cg_rel_path / MEMORY_PEAK());
+        std::ifstream cpu_stat(cg_path / CPU_STAT());
+        return std::stoi(file_utils::read_row_col(cpu_stat,0,0));
+    }
+
+    inline size_t memory_usage_bytes_rel(const fs::path& cg_rel_path)
+    {
+        std::ifstream memory_peak(ROOT_CG_PATH() / cg_rel_path / MEMORY_PEAK());
+        return std::stoi(file_utils::read_row_col(memory_peak,0,0));
+    }
+
+    inline size_t memory_usage_bytes_abs(const fs::path& cg_path)
+    {
+        std::ifstream memory_peak(cg_path / MEMORY_PEAK());
         return std::stoi(file_utils::read_row_col(memory_peak,0,0));
     }
 
@@ -97,37 +110,6 @@ namespace cgroup
         root_cgroup_manager(const cgrp_config& config){}
     };
 
-    class cgroupv2_t
-    {
-        const fs::path _cgrp_path;
-    public:
-        cgroupv2_t(const fs::path& rel_cgrp_path) : _cgrp_path(CG_FS_PATH() / rel_cgrp_path)
-        {
-            bool created = fs::create_directory(_cgrp_path);
-
-            if(!created)
-            {
-                throw std::runtime_error("Creating the cgroup failed");
-            }
-        }
-
-        ~cgroupv2_t()
-        {
-        }
-        
-        bool add_me()
-        {
-            auto mypid = getpid();
-            auto cgroup_procs(_cgrp_path / CGROUP_PROCS());
-            return file_utils::write_formatted(cgroup_procs, "{}", mypid);
-        }
-
-        void list_procs()
-        {
-            auto cgroup_procs(_cgrp_path / CGROUP_PROCS());
-            file_utils::print_lines(cgroup_procs);
-        }
-    };
 
 
     /**
@@ -136,18 +118,19 @@ namespace cgroup
     class cntrlr_operator
     {
     protected:
-        const std::string& _cgrp_path;
+        const fs::path* cgrp_path_;
 
         virtual const std::string& cntrlr_type() = 0;
 
     public:
-        cntrlr_operator(const std::string& path) : _cgrp_path(path) {}
+        cntrlr_operator(const fs::path& path) : cgrp_path_(&path) {}
 
-        bool enable_cntrlr_root()
+        bool enable_cntrlr()
         {
             //    "echo +type >> /sys/fs/cgroup/cgroup.subtree_control"
 
-            fs::path subtree_control(_cgrp_path / CGROUP_SUBTREE_CONTROL());
+            fs::path subtree_control(*cgrp_path_ / CGROUP_SUBTREE_CONTROL());
+            std::string text("+" + cntrlr_type());
             bool success = file_utils::append_text(subtree_control, "+" + cntrlr_type());
             return success;
         }
@@ -164,7 +147,7 @@ namespace cgroup
         {
             if(percentage > 100) return false;
 
-            fs::path cpu_max(_cgrp_path / CPU_STAT());
+            fs::path cpu_max(*cgrp_path_ / CPU_STAT());
             bool success = file_utils::write_formatted(cpu_max, "{} {}", percentage*1000, 100000);
             
             return success;
@@ -190,7 +173,7 @@ namespace cgroup
         {
             //  echo "$BYTES" > memory.max
 
-            fs::path memory_max(_cgrp_path / MEMORY_MAX());
+            fs::path memory_max(*cgrp_path_ / MEMORY_MAX());
             bool success = file_utils::write_formatted(memory_max, "{}", bytes);
             
             return success;
@@ -203,6 +186,95 @@ namespace cgroup
 
     };
         
+
+    class cgroupv2_t
+    {
+    public:
+        cgroupv2_t() :  cgrp_path_(ROOT_CG_PATH()),
+                        cpu_(ROOT_CG_PATH()),
+                        mem_(ROOT_CG_PATH())
+        {
+            init_path();
+            enable_all_cntrlrs();
+        }
+
+        cgroupv2_t(const fs::path& rel_cgrp_path) : cgrp_path_(ROOT_CG_PATH() / rel_cgrp_path),
+                                                    cpu_(cgrp_path_),
+                                                    mem_(cgrp_path_)
+        {
+            init_path();
+            //enable_all_cntrlrs();
+        }
+
+        ~cgroupv2_t()
+        {
+            close_fd();
+        }
+
+        int open_fd()
+        {
+            fd_ = open(cgrp_path_.c_str(), O_DIRECTORY | O_RDONLY);
+            return fd_.value();
+        }
+
+        void close_fd()
+        {
+            if(fd_.has_value())
+            {
+                close(fd_.value());
+                fd_.reset();
+            }
+        }
+        
+        bool add_me()
+        {
+            auto mypid = getpid();
+            auto cgroup_procs(cgrp_path_ / CGROUP_PROCS());
+            return file_utils::write_formatted(cgroup_procs, "{}", mypid);
+        }
+
+        size_t cpu_usage_usec()
+        {
+            return cpu_usage_usec_abs(cgrp_path_);
+        }
+
+        size_t memory_usage_bytes()
+        {
+            return memory_usage_bytes_abs(cgrp_path_);
+        }
+
+        void list_procs()
+        {
+            auto cgroup_procs(cgrp_path_ / CGROUP_PROCS());
+            file_utils::print_lines(cgroup_procs);
+        }
+    private:
+        void init_path()
+        {
+            if(!fs::is_directory(cgrp_path_))
+            {
+                if(!fs::create_directory(cgrp_path_))
+                {
+                    throw std::runtime_error("Creating the cgroup failed");
+                }
+            }
+        }
+
+        void enable_all_cntrlrs()
+        {
+            cpu_.enable_cntrlr();
+            mem_.enable_cntrlr();
+        }
+
+
+        const fs::path cgrp_path_;
+        
+
+        cpu_cntrlr cpu_;
+        memory_cntrlr mem_;
+        std::optional<int> fd_;
+    };
+
 }
 
 #endif

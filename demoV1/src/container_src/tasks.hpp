@@ -19,15 +19,11 @@ namespace tasks
     class task_t
     {
     public:
-        task_t(config::task_intfc& conf) : task_intfc_(&conf) 
-        {
-            cgrp_fd_ = get_cgrp_fd();
-        }
+        task_t(config::task_intfc& conf) : task_intfc_(&conf), task_cgrp_(conf.cg_rel_path())
+        {}
 
         ~task_t()
-        {
-            close(cgrp_fd_);
-        }
+        {}
 
         config::task_stats run_task()
         {
@@ -51,8 +47,8 @@ namespace tasks
                                 .err_no = errno,
                                 .signal = WTERMSIG(stat),
 
-                                .cg_total_mem_bytes = cgroup::memory_usage_bytes(task_intfc_->cg_rel_path()),
-                                .cg_total_time_usec = cgroup::cpu_usage_usec(task_intfc_->cg_rel_path()),
+                                .cg_total_mem_bytes = task_cgrp_.memory_usage_bytes(),
+                                .cg_total_time_usec = task_cgrp_.cpu_usage_usec(),
 
                                 .rusage_total_mem_bytes = r_usage.ru_maxrss*1000,
                                 .rusage_total_time_usec = rusage_total_time_usec(r_usage),
@@ -106,7 +102,7 @@ namespace tasks
         pid_t run_task_in_cgroup()
         {
             logs::debug("Calling clone3 for \"{}\"", task_intfc_->exec_path().string());
-            pid_t outside_pid = clone3_task(*task_intfc_, stack_, cgrp_fd_);
+            pid_t outside_pid = clone3_task(*task_intfc_, stack_, task_cgrp_.open_fd());
 
             if (outside_pid < 0)
             {
@@ -171,7 +167,7 @@ namespace tasks
 
         void* stack_ = nullptr;
         config::task_intfc* const task_intfc_;
-        int cgrp_fd_;
+        cgroup::cgroupv2_t task_cgrp_;
     };
 }
 
