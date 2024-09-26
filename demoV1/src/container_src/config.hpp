@@ -30,7 +30,7 @@ namespace config
 
     constexpr size_t DEFAULT_WALL_TIME = 60;
 
-    namespace option_names
+    namespace config_names
     {
         constexpr std::string RLIMS = "rlims";
         constexpr std::string CPU_TIME = "cpu-time";
@@ -39,7 +39,7 @@ namespace config
 
         constexpr std::string EXEC_PATH = "path";
         constexpr std::string TASK_CG = "task-cg";
-        constexpr std::string STATS_PATH = "stats";
+        constexpr std::string STATS_XML = "stats-xml";
         constexpr std::string EXEC_ARGS = "args";
         constexpr std::string CONFIG_XML = "xml";
     }
@@ -64,10 +64,26 @@ namespace config
         {}
 
         r_limits(const pt::ptree& limits_tree) : 
-                                        cpu_time_s_(type_utils::to_std_optional(limits_tree.get_optional<size_t>(option_names::CPU_TIME))),
-                                        memory_bytes_(type_utils::to_std_optional(limits_tree.get_optional<size_t>(option_names::MEMORY))),
-                                        wall_time_s_(limits_tree.get(option_names::WALL_TIME, DEFAULT_WALL_TIME))
+                                        cpu_time_s_(type_utils::to_std_optional(limits_tree.get_optional<size_t>(config_names::CPU_TIME))),
+                                        memory_bytes_(type_utils::to_std_optional(limits_tree.get_optional<size_t>(config_names::MEMORY))),
+                                        wall_time_s_(limits_tree.get(config_names::WALL_TIME, DEFAULT_WALL_TIME))
         {}
+
+        r_limits(const options::variables_map& options_map)
+        {
+            if (options_map.contains(config_names::MEMORY)) 
+            {
+                memory_bytes_ = options_map[config_names::MEMORY].as<size_t>();
+            }
+            if (options_map.contains(config_names::CPU_TIME)) 
+            {
+                cpu_time_s_ = options_map[config_names::CPU_TIME].as<size_t>();
+            }
+            if (options_map.contains(config_names::WALL_TIME)) 
+            {
+                wall_time_s_ = options_map[config_names::WALL_TIME].as<size_t>();
+            }
+        }
 
         auto cpu_time() const { return cpu_time_s_; }
         auto memory() const { return memory_bytes_; }
@@ -108,50 +124,75 @@ namespace config
     {
     public:
         task_intfc(const fs::path& exec, const std::vector<std::string>& args, const r_limits& rlims, const fs::path& cg_rel_path) : 
-        exec_(exec), args_(args), rlims_(rlims), cg_rel_path_(cg_rel_path) {}
+        exec_(exec), args_(args), rlimits_(rlims), cg_rel_path_(cg_rel_path) 
+        {}
 
         task_intfc(fs::path&& exec, std::vector<std::string>&& args, r_limits&& rlims, fs::path&& cg_rel_path): 
-        exec_(std::move(exec)), args_(std::move(args)), rlims_(std::move(rlims)), cg_rel_path_(std::move(cg_rel_path)){}
-
-        task_intfc(pt::ptree task_tree) :   exec_(fs::path(task_tree.get<std::string>(option_names::EXEC_PATH))), 
-                                            args_(std::move(string_utils::split(task_tree.get(option_names::EXEC_ARGS, "")))),
-                                            rlims_(task_tree.get_child(option_names::RLIMS)),
-                                            cg_rel_path_(fs::path(task_tree.get<std::string>(option_names::TASK_CG)))
+        exec_(std::move(exec)), args_(std::move(args)), rlimits_(std::move(rlims)), cg_rel_path_(std::move(cg_rel_path))
         {}
+
+        task_intfc(const pt::ptree& task_tree) :   exec_(fs::path(task_tree.get<std::string>(config_names::EXEC_PATH))), 
+                                            args_(std::move(string_utils::split(task_tree.get(config_names::EXEC_ARGS, "")))),
+                                            rlimits_(task_tree.get_child(config_names::RLIMS)),
+                                            cg_rel_path_(fs::path(task_tree.get<std::string>(config_names::TASK_CG))),
+                                            stats_path_(type_utils::to_std_optional(task_tree.get_optional<std::string>(config_names::STATS_XML)))
+        {}
+
+        task_intfc(const options::variables_map& options_map) : rlimits_(options_map)
+        {
+            if(options_map.contains(config_names::EXEC_PATH))
+            {
+                exec_ = fs::path(options_map[config_names::EXEC_PATH].as<std::string>());
+            }
+            else
+            {
+                terminate("No path to executable provided");
+            }
+
+            if(options_map.contains(config_names::EXEC_ARGS))
+            {
+                args_ = options_map[config_names::EXEC_ARGS].as<std::vector<std::string>>();
+            }
+
+            if(options_map.contains(config_names::STATS_XML))
+            {
+                stats_path_ = fs::path(options_map[config_names::STATS_XML].as<std::string>());
+            }
+
+            if(options_map.contains(config_names::TASK_CG))
+            {
+                cg_rel_path_ = fs::path(options_map[config_names::TASK_CG].as<std::string>());
+            }
+        }
 
         const auto& exec_path() const   { return exec_; }
         auto& exec_args()               { return args_; }
-        const auto& rlims() const       { return rlims_; }
+        const auto& rlimits() const       { return rlimits_; }
         const auto& cg_rel_path() const { return cg_rel_path_; }
         const auto& stats_path() const  { return stats_path_; }
 
-        void assign_stats(const task_stats& stats)
+        void finalize_task(const task_stats& stats)
         {
             task_stats_ = stats;
-        }
-
-        void generate_stats_file()
-        {
-            if(!task_stats_ || !stats_path_)
+            if(stats_path_.has_value())
             {
-                terminate("Missing task statistics or a path to write them to!");
+                create_stats_file(stats_path_.value(), task_stats_.value());
             }
-            create_stats_file(*stats_path_, *task_stats_);
         }
 
         void generate_stats_file(const fs::path& path)
         {
             if(!task_stats_)
             {
-                terminate("Missing task statistics!");
+                terminate("Task hasn't been finalized!");
             }
-            create_stats_file(path, *task_stats_);
+            create_stats_file(path, task_stats_.value());
         }
 
     private:
         fs::path exec_;
         std::vector<std::string> args_;
-        r_limits rlims_;
+        r_limits rlimits_;
         fs::path cg_rel_path_;
 
         std::optional<fs::path>   stats_path_;
@@ -197,20 +238,14 @@ namespace config
             return tasks_.size();
         }
 
-        void add_task(std::unique_ptr<task_intfc>&& task)
-        {
-            tasks_.push_back(std::move(task));
-        }
-
         auto& tasks()
         {
             return tasks_;
         }
-
-        //TODO: add support for stats option
+        
         void generate_results()
         {
-            tasks_[0]->generate_stats_file(fs::path("/home/simonkurz/mff/rcdx_cntnr/demoV1/src/build/TASK_RESULTS.txt"));
+
         }
     private:
         pt::ptree config_tree_;
@@ -224,42 +259,44 @@ namespace config
                 ("help-module", options::value<std::string>(),
                     "produce a help for a given module")
                 ("version", "output the version number")
-                (option_names::CONFIG_XML.c_str(), options::value<std::string>(), "read the configuration from a config file")
+                (config_names::CONFIG_XML.c_str(), options::value<std::string>(), "read the configuration from a config file")
                 ;
 
             options::options_description exec("Options to specify the executable and arguments");
             exec.add_options()
-                (option_names::EXEC_PATH.c_str(), options::value<std::string>(), "path to the program")
-                (option_names::EXEC_ARGS.c_str(), options::value<std::vector<std::string>>(), "list of arguments for the program")
-                (option_names::TASK_CG.c_str(), options::value<std::string>(), "relative cgroup path (from /sys/fs/cgroup) to run the task in")
+                (config_names::EXEC_PATH.c_str(), options::value<std::string>(), "path to the program")
+                (config_names::EXEC_ARGS.c_str(), options::value<std::vector<std::string>>(), "list of arguments for the program")
                 ;
 
             options::options_description rsrcs("Options for resource limitation");
             rsrcs.add_options()
-                (option_names::MEMORY.c_str(), options::value<size_t>(), "maximum amount of used virtual memory")
+                (config_names::MEMORY.c_str(), options::value<size_t>(), "maximum amount of used virtual memory")
                 ("as", options::value<size_t>(), "address space size limit")
-                (option_names::CPU_TIME.c_str(), options::value<size_t>(), "cpu time limit")
-                (option_names::WALL_TIME.c_str(), options::value<size_t>(), "wall time limit")
+                (config_names::CPU_TIME.c_str(), options::value<size_t>(), "cpu time limit")
+                (config_names::WALL_TIME.c_str(), options::value<size_t>(), "wall time limit")
                 ;
 
+            options::options_description results("Options for generating files with task results");
+            results.add_options()
+                (config_names::STATS_XML.c_str(), options::value<std::string>(), "path to an xml file with task results")
+                ;
+
+            options::options_description cgroups("Options for cgroup configuration");
+            cgroups.add_options()
+                (config_names::TASK_CG.c_str(), options::value<std::string>(), "relative path to cgroup from the default that will be created for the task")
+                ;
                 
             // Declare an options description instance which will include
             // all the options
             options::options_description all("Allowed options");
-            all.add(general).add(rsrcs).add(exec);
-
-            // Declare an options description instance which will be shown
-            // to the user
-            options::options_description visible("Allowed options");
-            visible.add(general).add(rsrcs).add(exec);
-            
+            all.add(general).add(rsrcs).add(exec).add(results).add(cgroups);
 
             options::variables_map options_map;
             options::store(options::parse_command_line(argc, argv, all), options_map);
 
             if (options_map.contains("help")) 
             {
-                std::cout << visible;
+                std::cout << all;
                 return 0;
             }
             if (options_map.contains("help-module")) {
@@ -274,15 +311,14 @@ namespace config
                 return 0;
             }
             
-            if (options_map.contains(option_names::CONFIG_XML))
+            if (options_map.contains(config_names::CONFIG_XML))
             {
-                configure_from_xml(fs::path(options_map[option_names::CONFIG_XML].as<std::string>()));
+                configure_from_xml(fs::path(options_map[config_names::CONFIG_XML].as<std::string>()));
                 return 0;
             }
             else
             {
-                auto task = configure_task_from_options(options_map);
-                add_task(std::move(task));
+                tasks_.push_back(std::make_unique<task_intfc>(options_map));
                 return 0;
             }
         }
@@ -295,58 +331,6 @@ namespace config
                 tasks_.push_back(std::make_unique<task_intfc>(task_conf.second));
             }
         }
-
-        auto generate_tasks(pt::ptree config_tree)
-        {
-            std::vector<std::unique_ptr<task_intfc>> tasks;
-        }
-
-        static std::unique_ptr<task_intfc> configure_task_from_options(const options::variables_map& options_map)
-        {
-            fs::path path;
-            std::vector<std::string> args;
-            r_limits rlims;
-            fs::path cg_rel_path{"rcdx"};
-
-            if(options_map.contains(option_names::EXEC_PATH))
-            {
-                path = fs::path(options_map[option_names::EXEC_PATH].as<std::string>());
-            }
-            else
-            {
-                terminate("No path to executable provided");
-            }
-
-            if(options_map.contains(option_names::EXEC_ARGS))
-            {
-                args = std::vector<std::string>(options_map[option_names::EXEC_ARGS].as<std::vector<std::string>>());
-            }
-
-            rlims = rlimits_from_options(options_map);
-
-            return std::make_unique<task_intfc>(std::move(path), std::move(args), std::move(rlims), std::move(cg_rel_path));
-        }
-
-        static r_limits rlimits_from_options(const options::variables_map& options_map)
-        {
-            r_limits rlims;
-
-            if (options_map.contains(option_names::MEMORY)) 
-            {
-                rlims.set_memory(options_map[option_names::MEMORY].as<size_t>());
-            }
-            if (options_map.contains(option_names::CPU_TIME)) 
-            {
-                rlims.set_cpu_time(options_map[option_names::CPU_TIME].as<size_t>());
-            }
-            if (options_map.contains(option_names::WALL_TIME)) 
-            {
-                rlims.set_wall_time(options_map[option_names::WALL_TIME].as<size_t>());
-            }
-
-            return std::move(rlims);
-        }
-
     };
 }
 

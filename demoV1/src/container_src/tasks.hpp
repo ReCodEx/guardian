@@ -29,7 +29,7 @@ namespace tasks
         {
             pid_t pid = launch_task();
             auto stats = wait_for_task(pid);
-            task_intfc_->assign_stats(stats);
+            task_intfc_->finalize_task(stats);
             return stats;
         }
 
@@ -61,7 +61,7 @@ namespace tasks
             int stat{};
             pid_t p;
             auto stime = std::chrono::system_clock::now();
-            auto wall_limit = std::chrono::seconds(task_intfc_->rlims().wall_time());
+            auto wall_limit = std::chrono::seconds(task_intfc_->rlimits().wall_time());
 
             while(true)
             {
@@ -129,7 +129,7 @@ namespace tasks
 
         void set_resource_limits()
         {
-            auto& limits = task_intfc_->rlims();
+            auto& limits = task_intfc_->rlimits();
             
             //std::cout << std::format("Setting memory limit to {} bytes and cpu time limit to {} seconds.", limits.memory_bytes, limits.cpu_time_s) << std::endl;
             if(limits.memory())
