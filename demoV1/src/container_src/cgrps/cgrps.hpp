@@ -202,7 +202,7 @@ namespace cgroup
                                                     cpu_(cgrp_path_),
                                                     mem_(cgrp_path_)
         {
-            init_path();
+            reset_path();
             //enable_all_cntrlrs();
         }
 
@@ -257,6 +257,18 @@ namespace cgroup
                 {
                     throw std::runtime_error("Creating the cgroup failed");
                 }
+            }
+        }
+
+        void reset_path()
+        {
+            if(fs::is_directory(cgrp_path_))
+            {
+                fs::remove(cgrp_path_);
+            }
+            if(!fs::create_directory(cgrp_path_))
+            {
+                throw std::runtime_error("Creating the cgroup failed");
             }
         }
 
