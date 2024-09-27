@@ -11,7 +11,7 @@
 int main(int argc, char** argv)
 {
     std::vector<std::string> args(argv, argv + argc);
-    int bytes = std::stoi(argv[1]);
+    int bytes = std::stoi(args.back());
     for(int i = 0; i < bytes; i+=1024)
     {
         void* ptr = malloc(1024);
