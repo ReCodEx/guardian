@@ -39,7 +39,10 @@ def delete_cgroup(cg_rel_path):
 
 def test():
     #run_in_container(f"{build_path}/memory_test_fuzzy", config_args="--task-cg=test", exec_args="1000000")
-    run_in_container(f"{build_path}/memory_test_fuzzy", config_args="--task-cg=test", exec_args="1000000")
+    #TODO: look into following bug
+    #note: segfaulted when trying to print out the execve argv array so error should most likely be there  
+    run_in_container(f"{build_path}/memory_test_fuzzy", config_args="--task-cg=xdtest", exec_args="1000000") #fails
+    run_in_container(f"{build_path}/memory_test_fuzzy", config_args="--task-cg=test", exec_args="1000000") #succeeds
 
 if __name__ == '__main__':
     test()
