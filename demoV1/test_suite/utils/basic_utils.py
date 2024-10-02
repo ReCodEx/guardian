@@ -38,7 +38,7 @@ def delete_cgroup(cg_rel_path):
         os.rmdir(path)
 
 def test():
-    run_in_container(f"{build_path}/memory_test_fuzzy", config_args="--task-cg=xdtest", exec_args="1000000")
+    run_in_container(f"{build_path}/memory_test_fuzzy", config_args="--task-cg=test", exec_args="1000000")
 
 if __name__ == '__main__':
     test()

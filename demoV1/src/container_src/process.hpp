@@ -62,14 +62,7 @@ namespace process_utils
     {
         auto cargs = convert_to_argv(args);
         static char *environ[] = { NULL };
-        /*
-        auto ptr = cargs.data();
-        while (*ptr != NULL)
-        {
-            printf("%s\n", *ptr);
-            ptr++;
-        }
-        */
+        
         execve(exec.c_str(), cargs.data(), environ);
     }
 
