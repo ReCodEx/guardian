@@ -1,10 +1,12 @@
+
+   
 #!/usr/bin/python3
 
 import os
 import sys
 import xml.etree.ElementTree as ETree
 sys.path.append('../../utils')
-from basic_utils import run_in_container, build_path
+from basic_utils import run_in_container, testing_cg, build_path, results_tree
 
 sys.path.append("/home/simonkurz/.local/lib/python3.11/site-packages")
 import matplotlib.pyplot as plt
@@ -17,24 +19,14 @@ def status():
     return 0
     #print(cg_memory_peak(results_tree("results.xml")))
 
-def cg_memory_peak(results_tree: ETree):
-    return int(results_tree.find('cg_total_mem_bytes').text)
+def cg_total_time(results_tree: ETree):
+    return int(results_tree.find('cg_total_time_usec').text)
 
-def rusage_rss(results_tree: ETree):
-    return results_tree.find('rusage_total_mem_bytes').text
+def rusage_total_time(results_tree: ETree):
+    return results_tree.find('rusage_total_time_usec').text
 
-def results_tree(results_xml):
-    with open(results_xml) as f:
-        xml = f.read()
-        tree = ETree.fromstring(re.sub(r"(<\?xml[^>]+\?>)", r"\1<root>", xml) + "</root>")
-    return tree
 
-def allocation_test(exec: os.PathLike, alloc: int, results_xml : os.PathLike = "test_run.xml"):
-    cntnr_config = f"--stats-xml=\"{results_xml}\" --task-cg=\"test\""
-    run_in_container(f"{build_path}/{exec}", config_args=cntnr_config, exec_args=str(alloc))
-    return results_tree(results_xml)
-
-class MemStats:
+class TimeStats:
   def __init__(self, allocated, runs, mean, std, delta):
     self.allocated = allocated
     self.runs = runs
@@ -55,7 +47,7 @@ def allocation_statistics(test: os.PathLike, alloc: int, runs: int):
     for i in range(runs):
         cg_mem_peak = cg_memory_peak(allocation_test(test, alloc))
         cg_values.append(cg_mem_peak)
-    return MemStats(alloc, runs, np.mean(cg_values), np.std(cg_values), cg_values[1] - cg_values[0])
+    return TimeStats(alloc, runs, np.mean(cg_values), np.std(cg_values), cg_values[1] - cg_values[0])
 
         
 
@@ -67,6 +59,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 

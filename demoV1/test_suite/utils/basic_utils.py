@@ -3,7 +3,7 @@
 import os
 import sys
 import xml.etree.ElementTree as ETree
-
+import et_utils
 
 
 cg_fs_path = "/sys/fs/cgroup"
@@ -11,10 +11,6 @@ cg_fs_path = "/sys/fs/cgroup"
 repo_path = "/home/simonkurz/mff/rcdx_cntnr/demoV1"
 build_path = f"{repo_path}/src/build"
 cntnr_path = f"{build_path}/rcdx_cntnr_demo"
-
-
-def testing_cg():
-    return ETree.parse("test_config.xml").find()
 
 def run_in_container(exec, config_xml = None, config_args = None, exec_args = None):
     command = f"{cntnr_path} --path={exec}"
@@ -27,15 +23,10 @@ def run_in_container(exec, config_xml = None, config_args = None, exec_args = No
         
     os.system(command)
 
-def create_cgroup(cg_rel_path):
-    path = os.path.join(cg_fs_path, cg_rel_path)
-    delete_cgroup(cg_rel_path)
-    os.mkdir(path)
-
-def delete_cgroup(cg_rel_path):
-    path = os.path.join(cg_fs_path, cg_rel_path)
-    if os.path.exists(path):
-        os.rmdir(path)
+def allocation_test(exec: os.PathLike, alloc: int, results_xml : os.PathLike = "test_run.xml"):
+    cntnr_config = f"--stats-xml=\"{results_xml}\" --task-cg=\"test\""
+    run_in_container(f"{build_path}/{exec}", config_args=cntnr_config, exec_args=str(alloc))
+    return et_utils.results_tree(results_xml)
 
 def test():
     run_in_container(f"{build_path}/memory_test_fuzzy", config_args="--task-cg=test", exec_args="1000000")
