@@ -27,17 +27,6 @@ namespace type_utils
 namespace string_utils
 {
 
-    inline std::set<std::string> split_to_set(const std::string& str)
-    {
-        boost::tokenizer<> tok(str);
-        std::set<std::string> res;
-        for(boost::tokenizer<>::iterator it = tok.begin(); it != tok.end(); ++it)
-        {
-            res.insert(*it);
-        }
-        return res;
-    }
-
     inline std::vector<std::string> split(const std::string& str)
     {
         boost::tokenizer<> tok(str);

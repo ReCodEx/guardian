@@ -33,8 +33,6 @@ namespace tasks
             return stats;
         }
 
-        
-
     private:
         config::task_stats generate_task_stats(int stat)
         {

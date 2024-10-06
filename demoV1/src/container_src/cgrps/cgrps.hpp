@@ -15,10 +15,6 @@
 namespace cgroup 
 {
     namespace fs = std::filesystem;
-    constexpr std::string_view CGRP_FS_PATH_ = "/sys/fs/cgroup";
-    constexpr std::string_view CGROUP_CONTROLLERS_ = "/cgroup.controllers";
-    constexpr std::string_view CGROUP_SUBTREE_CONTROL_ = "/cgroup.subtree_control";
-    constexpr std::string_view CPU_MAX_ = "/cpu.max";
 
     inline auto const& ROOT_CG_PATH()
     {
@@ -96,20 +92,6 @@ namespace cgroup
         std::ifstream memory_peak(cg_path / MEMORY_PEAK());
         return std::stoi(file_utils::read_row_col(memory_peak,0,0));
     }
-
-
-    struct cgrp_config
-    {
-
-    };
-
-    class root_cgroup_manager
-    {
-    public:
-        root_cgroup_manager() {}
-        root_cgroup_manager(const cgrp_config& config){}
-    };
-
 
 
     /**

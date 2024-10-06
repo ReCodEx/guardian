@@ -36,7 +36,7 @@ namespace process_utils
         args.exit_signal = SIGCHLD;
         args.flags = CLONE_INTO_CGROUP;
 
-        //I guess we will skip trying to allocate a stack for now.
+        //we will skip trying to allocate a stack for now.
 
         //args.stack = ptr_to_u64(stack);
         //args.stack_size = task_conf.stack_size;
