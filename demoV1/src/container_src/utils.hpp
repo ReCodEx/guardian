@@ -16,9 +16,12 @@ namespace type_utils
     template<typename T>
     inline constexpr auto to_std_optional(boost::optional<T> opt) 
     {
-        if (opt.has_value()) {
+        if (opt.has_value()) 
+        {
             return std::make_optional(std::forward<decltype(opt)>(opt).value());
-        } else {
+        }
+        else 
+        {
             return std::optional<T>();
         }
     };
@@ -43,7 +46,6 @@ namespace string_utils
 namespace file_utils
 {
     namespace fs = std::filesystem;
-
     bool append_text(const fs::path& path, const std::string& data)
     {
         std::ofstream file(path, std::ios_base::app);
