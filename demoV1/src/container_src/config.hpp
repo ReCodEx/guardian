@@ -32,6 +32,7 @@ namespace config
 
     namespace config_names
     {
+        constexpr std::string AS_SIZE = "as-size";
         constexpr std::string RLIMS = "rlims";
         constexpr std::string CPU_TIME = "cpu-time";
         constexpr std::string WALL_TIME = "wall-time";
@@ -83,18 +84,25 @@ namespace config
             {
                 wall_time_s_ = options_map[config_names::WALL_TIME].as<size_t>();
             }
+            if (options_map.contains(config_names::AS_SIZE)) 
+            {
+                as_size_bytes_ = options_map[config_names::AS_SIZE].as<size_t>();
+            }
         }
 
         auto cpu_time() const { return cpu_time_s_; }
         auto memory() const { return memory_bytes_; }
         auto wall_time() const { return wall_time_s_; }
+        auto as_size() const { return as_size_bytes_; }
 
         void set_cpu_time(size_t s) { cpu_time_s_ = s; }
         void set_memory(size_t bytes) { memory_bytes_ = bytes; }
         void set_wall_time(size_t s) { wall_time_s_ = s; }
+        void set_as_size(size_t s) { as_size_bytes_ = s; }
     private:
         std::optional<size_t> cpu_time_s_; 
         std::optional<size_t> memory_bytes_;
+        std::optional<size_t> as_size_bytes_;
         
         size_t wall_time_s_ = DEFAULT_WALL_TIME; 
     };
@@ -271,7 +279,7 @@ namespace config
             options::options_description rsrcs("Options for resource limitation");
             rsrcs.add_options()
                 (config_names::MEMORY.c_str(), options::value<size_t>(), "maximum amount of used virtual memory")
-                ("as", options::value<size_t>(), "address space size limit")
+                (config_names::AS_SIZE.c_str(), options::value<size_t>(), "address space size limit")
                 (config_names::CPU_TIME.c_str(), options::value<size_t>(), "cpu time limit")
                 (config_names::WALL_TIME.c_str(), options::value<size_t>(), "wall time limit")
                 ;

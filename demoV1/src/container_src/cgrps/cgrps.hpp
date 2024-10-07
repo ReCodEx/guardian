@@ -64,6 +64,11 @@ namespace cgroup
         return fname;
     }
 
+    inline auto const& MEMORY_MIN()
+    {
+        static fs::path fname("memory.min");
+        return fname;
+    }
     inline fs::path cg_abs_path(const fs::path& cg_rel_path)
     {
         return fs::path(ROOT_CG_PATH() / cg_rel_path);
@@ -143,7 +148,7 @@ namespace cgroup
     };
 
     class memory_cntrlr : public cntrlr_operator
-    {
+    {   
         inline static const std::string type = "memory";
     public:
         using cntrlr_operator::cntrlr_operator;
@@ -157,6 +162,15 @@ namespace cgroup
 
             fs::path memory_max(*cgrp_path_ / MEMORY_MAX());
             bool success = file_utils::write_formatted(memory_max, "{}", bytes);
+            
+            return success;
+        }
+        bool set_memory_min_to_max()
+        {
+            //  echo max > memory.min
+
+            fs::path memory_min(*cgrp_path_ / MEMORY_MIN());
+            bool success = file_utils::write_formatted(memory_min,"max");
             
             return success;
         }
@@ -223,6 +237,12 @@ namespace cgroup
         size_t memory_usage_bytes()
         {
             return memory_usage_bytes_abs(cgrp_path_);
+        }
+
+        void set_strict_memory_limit(size_t bytes)
+        {
+            mem_.set_memory_max(bytes);
+            mem_.set_memory_min_to_max();
         }
 
         void list_procs()

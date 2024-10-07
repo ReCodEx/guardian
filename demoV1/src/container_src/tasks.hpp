@@ -138,14 +138,23 @@ namespace tasks
             {
                 set_cpu_limit(limits.cpu_time().value());
             }
+            if(limits.as_size())
+            {
+                set_as_size_limit(limits.as_size().value());
+            }
         }
 
-        static void set_mem_limit(unsigned int bytes)
+        void set_mem_limit(unsigned int bytes)
         {
-            rlimit mem{bytes,bytes};
-            if(setrlimit(RLIMIT_AS, &mem) == -1)
+            task_cgrp_.set_strict_memory_limit(bytes);
+        }
+
+        static void set_as_size_limit(unsigned int bytes)
+        {
+            rlimit as{bytes,bytes};
+            if(setrlimit(RLIMIT_AS, &as) == -1)
             {
-                std::cout << std::format("Failed to set memory limit for the child process. Arg: {} Errno: {}", bytes, errno);
+                std::cout << std::format("Failed to set address space limit for the child process. Arg: {} Errno: {}", bytes, errno);
             }
         }
 
