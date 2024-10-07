@@ -45,9 +45,9 @@ class MemStats:
 def readable_memstats(stats: MemStats):
     return f"""{stats.runs} runs of allocating {stats.allocated} bytes:
             CGROUP ACCOUNTING:
-                mean: {stats.mean}
-                std:  {stats.std}
-                delta between first two runs: {stats.delta}
+                mean: {stats.mean} B
+                std:  {stats.std} B
+                delta between first two runs: {stats.delta} B
                 """
 
 def allocation_statistics(test: os.PathLike, alloc: int, runs: int):

@@ -35,9 +35,9 @@ class TimeStats:
 def readable_timestats(stats: TimeStats):
     return f"""{stats.runs} runs of allocating {stats.allocated} bytes:
             CGROUP ACCOUNTING:
-                mean: {stats.mean}
-                std:  {stats.std}
-                delta between first two runs: {stats.delta}
+                mean: {stats.mean} us
+                std:  {stats.std} us
+                delta between first two runs: {stats.delta} us
                 """
 
 def allocation_statistics(test: os.PathLike, alloc: int, runs: int):
