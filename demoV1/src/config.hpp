@@ -31,7 +31,8 @@ namespace config
     struct task_intfc;
 
     constexpr size_t DEFAULT_WALL_TIME = 60;
-    constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID; 
+
+    constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWCGROUP | CLONE_NEWUTS;  //user namespaces might not always be supported
 
     namespace config_names
     {
