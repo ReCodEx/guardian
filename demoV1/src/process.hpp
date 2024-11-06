@@ -34,12 +34,22 @@ namespace process_utils
     {
         clone_args args{0};
         args.exit_signal = SIGCHLD;
-        args.flags = CLONE_INTO_CGROUP;
+        args.flags = CLONE_INTO_CGROUP | config::DEFAULT_CLONE_FLAGS;
 
         //we will skip trying to allocate a stack for now.
 
         //args.stack = ptr_to_u64(stack);
         //args.stack_size = task_conf.stack_size;
+
+        args.cgroup = cgrp_fd;
+        return args;
+    }
+
+    inline clone_args create_clone_args(const config::namespace_config& config, void* stack, uint64_t cgrp_fd)
+    {
+        clone_args args{0};
+        args.exit_signal = SIGCHLD;
+        args.flags = CLONE_INTO_CGROUP | config.get_clone_flags();
 
         args.cgroup = cgrp_fd;
         return args;

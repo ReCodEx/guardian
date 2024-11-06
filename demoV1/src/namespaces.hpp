@@ -1,10 +1,11 @@
 #ifndef NMSPCS
 #define NMSPCS
 
+#include "config.hpp"
 namespace namespaces
 {
 
-    struct namespace_config {};
+    
 
 }
 

@@ -19,6 +19,8 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/foreach.hpp>
 
+#include <signal.h>
+
 namespace config
 {
     namespace cgrp = cgroup;
@@ -29,6 +31,7 @@ namespace config
     struct task_intfc;
 
     constexpr size_t DEFAULT_WALL_TIME = 60;
+    constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID; 
 
     namespace config_names
     {
@@ -127,6 +130,17 @@ namespace config
         long rusage_total_time_usec;
 
     };
+
+    class namespace_config
+    {
+    public:
+        int get_clone_flags() const
+        {
+            return clone_flags_;
+        }
+    private:
+        int clone_flags_ = DEFAULT_CLONE_FLAGS;
+    }; 
 
     class task_intfc
     {
@@ -258,6 +272,7 @@ namespace config
     private:
         pt::ptree config_tree_;
         std::vector<std::unique_ptr<task_intfc>> tasks_;
+        namespace_config namespace_config_;
         
         int parse_options(int argc, char** argv)
         {
