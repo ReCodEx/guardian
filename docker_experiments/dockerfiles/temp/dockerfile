@@ -1,0 +1,6 @@
+# syntax=docker/dockerfile:1
+
+FROM alpine
+WORKDIR /app
+RUN apk add python3
+ENTRYPOINT ["python3", "1+2"]
