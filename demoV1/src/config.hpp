@@ -142,6 +142,22 @@ namespace config
     private:
         int clone_flags_ = DEFAULT_CLONE_FLAGS;
     }; 
+    
+    class chroot_config
+    {
+    public:
+        chroot_config()
+        {
+            
+        }
+
+        fs::path get_chroot_directory()
+        {
+            return chroot_directory;
+        }
+    private:
+        fs::path chroot_directory;
+    };
 
     class task_intfc
     {

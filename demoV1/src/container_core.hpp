@@ -35,9 +35,11 @@ namespace container_core
             return config::root_stats();
         }
 
-        int run_with_proxy_process()
+        void run_tasks_with_proxy()
         {
-            return 0;
+            setup_for_proxy();
+            run_proxy();
+            generate_results();
         }
 
         void generate_results()
@@ -49,6 +51,92 @@ namespace container_core
         
         config::root_interface root_intfc_;
         cgroup::cgroupv2_t root_cgrp_;
+        
+        void setup_for_proxy()
+        {
+            cg_setup_for_proxy();
+            env_setup_for_proxy(); 
+        }
+        
+        void cg_setup_for_proxy()
+        {
+
+        }
+
+        void env_setup_for_proxy()
+        {
+
+        }
+
+        void run_proxy()
+        {
+
+        } 
+    };
+    
+    class proxy_container_core
+    {
+    public:
+
+        proxy_container_core(config::root_interface& root_intfc) : root_intfc_(&root_intfc)
+        {}
+
+        void run_proxy()
+        {
+            logs::info("Hello world from the proxy!");
+            proxy_setup();
+            chroot();
+            run_tasks();
+            generate_results();
+        }
+
+    private:
+        
+        config::root_interface* root_intfc_;
+        cgroup::cgroupv2_t root_cgrp_;
+        
+        void init_proxy_logger()
+        {
+
+        }
+
+        void proxy_setup()
+        {
+
+            init_proxy_logger();
+            namespace_setup();
+            chroot_setup();
+        }
+
+        void chroot()
+        {
+        }
+        
+        config::root_stats run_tasks()
+        {
+            for(auto&& task_intfc : root_intfc_->tasks())
+            {
+                tasks::task_t task_(*task_intfc);
+                auto stats = task_.run_task();
+                logs::debug("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.cg_total_time_usec, stats.cg_total_mem_bytes);
+            }
+            return config::root_stats();
+        }
+
+        void generate_results()
+        {
+            root_intfc_->generate_results();
+        }
+        
+        void namespace_setup()
+        {
+            
+        }
+        
+        void chroot_setup()
+        {
+            
+        }
     };
 }
 
