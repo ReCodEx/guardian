@@ -19,6 +19,8 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/foreach.hpp>
 
+#include "yaml-cpp/yaml.h"
+
 #include <signal.h>
 
 namespace config
@@ -47,6 +49,7 @@ namespace config
         constexpr std::string STATS_XML = "stats-xml";
         constexpr std::string EXEC_ARGS = "args";
         constexpr std::string CONFIG_XML = "xml";
+        constexpr std::string CONFIG_YAML = "yaml";
     }
 
     namespace stats_names
@@ -132,33 +135,6 @@ namespace config
 
     };
 
-    class namespace_config
-    {
-    public:
-        int get_clone_flags() const
-        {
-            return clone_flags_;
-        }
-    private:
-        int clone_flags_ = DEFAULT_CLONE_FLAGS;
-    }; 
-    
-    class chroot_config
-    {
-    public:
-        chroot_config()
-        {
-            
-        }
-
-        fs::path get_chroot_directory()
-        {
-            return chroot_directory;
-        }
-    private:
-        fs::path chroot_directory;
-    };
-
     class task_intfc
     {
     public:
@@ -177,6 +153,11 @@ namespace config
                                             stats_path_(type_utils::to_std_optional(task_tree.get_optional<std::string>(config_names::STATS_XML)))
         {}
 
+        task_intfc(const YAML::Node& node)
+        {
+            if(node[config_names::EXEC_PATH]) exec_ = fs::path(node[config_names::EXEC_PATH].as<std::string>());
+            else terminate("Missing path to executable for task \"{}\"", name_);
+        }
         task_intfc(const options::variables_map& options_map) : rlimits_(options_map)
         {
             if(options_map.contains(config_names::EXEC_PATH))
@@ -229,6 +210,7 @@ namespace config
         }
 
     private:
+        std::string name_;
         fs::path exec_;
         std::vector<std::string> args_;
         r_limits rlimits_;
@@ -263,10 +245,31 @@ namespace config
         }
     };
 
+    class root_config
+    {
+    public:
+        root_config() {}
+        root_config(YAML::Node config)
+        {
+            
+        }
+    };
+
+    class proxy_config
+    {
+    public:
+        proxy_config() {}
+        proxy_config(YAML::Node config)
+        {
+            
+        }
+    private:
+        std::vector<std::unique_ptr<task_intfc>> tasks_;
+    };
+
     class root_interface
     {
     public:
-        root_interface(const fs::path& config_xml) {}
         root_interface(int argc, char** argv) 
         {
             parse_options(argc, argv);
@@ -288,10 +291,11 @@ namespace config
         }
     private:
         pt::ptree config_tree_;
+        root_config root_config_;
+        proxy_config proxy_config_;
         std::vector<std::unique_ptr<task_intfc>> tasks_;
-        namespace_config namespace_config_;
         
-        int parse_options(int argc, char** argv)
+        void parse_options(int argc, char** argv)
         {
             options::options_description general("General options");
             general.add_options()
@@ -337,7 +341,7 @@ namespace config
             if (options_map.contains("help")) 
             {
                 std::cout << all;
-                return 0;
+                return;
             }
             if (options_map.contains("help-module")) {
                 const std::string& s = options_map["help-module"].as<std::string>();
@@ -346,20 +350,24 @@ namespace config
                 } else {
                     std::cout << "Unknown module '" 
                         << s << "' in the --help-module option\n";
-                    return 1;
+                    return;
                 }
-                return 0;
+                return;
             }
             
             if (options_map.contains(config_names::CONFIG_XML))
             {
                 configure_from_xml(fs::path(options_map[config_names::CONFIG_XML].as<std::string>()));
-                return 0;
+                return;
+            }
+            else if (options_map.contains(config_names::CONFIG_YAML))
+            {
+                configure_from_yaml(fs::path(options_map[config_names::CONFIG_YAML].as<std::string>()));
             }
             else
             {
                 tasks_.push_back(std::make_unique<task_intfc>(options_map));
-                return 0;
+                return;
             }
         }
 
@@ -370,6 +378,13 @@ namespace config
             {
                 tasks_.push_back(std::make_unique<task_intfc>(task_conf.second));
             }
+        }
+        
+        void configure_from_yaml(const fs::path& f)
+        {
+            YAML::Node config = YAML::LoadFile(f);
+            root_config_ = root_config(config);
+            proxy_config_ = proxy_config(config);          
         }
     };
 }

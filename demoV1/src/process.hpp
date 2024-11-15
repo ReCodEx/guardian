@@ -45,7 +45,7 @@ namespace process_utils
         return args;
     }
 
-    inline clone_args create_clone_args(const config::namespace_config& config, void* stack, uint64_t cgrp_fd)
+/*     inline clone_args create_clone_args(const config::namespace_config& config, void* stack, uint64_t cgrp_fd)
     {
         clone_args args{0};
         args.exit_signal = SIGCHLD;
@@ -54,7 +54,7 @@ namespace process_utils
         args.cgroup = cgrp_fd;
         return args;
     }
-
+ */
     auto convert_to_argv(std::vector<std::string>& args)
     {
         std::vector<char*> cstrings{};

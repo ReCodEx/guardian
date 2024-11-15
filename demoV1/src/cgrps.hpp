@@ -102,7 +102,7 @@ namespace cgroup
     /**
      * @brief Offers an interface for one resource controller for a specific cgroup.
      */
-    class cntrlr_operator
+    class controller
     {
     protected:
         const fs::path* cgrp_path_;
@@ -110,9 +110,9 @@ namespace cgroup
         virtual const std::string& cntrlr_type() = 0;
 
     public:
-        cntrlr_operator(const fs::path& path) : cgrp_path_(&path) {}
+        controller(const fs::path& path) : cgrp_path_(&path) {}
 
-        bool enable_cntrlr()
+        bool enable()
         {
             //    "echo +type >> /sys/fs/cgroup/cgroup.subtree_control"
 
@@ -124,11 +124,11 @@ namespace cgroup
     private:
     };
 
-    class cpu_cntrlr : public cntrlr_operator
+    class cpu_cntrlr : public controller
     {
         inline static const std::string type = "cpu";
     public:
-        using cntrlr_operator::cntrlr_operator;
+        using controller::controller;
 
         bool set_cpu_max(unsigned int percentage)
         {
@@ -147,11 +147,11 @@ namespace cgroup
         }
     };
 
-    class memory_cntrlr : public cntrlr_operator
+    class memory_cntrlr : public controller
     {   
         inline static const std::string type = "memory";
     public:
-        using cntrlr_operator::cntrlr_operator;
+        using controller::controller;
 
         /*
         @note Rounds the limit down to the nearest power of two.
@@ -276,8 +276,8 @@ namespace cgroup
 
         void enable_all_cntrlrs()
         {
-            cpu_.enable_cntrlr();
-            mem_.enable_cntrlr();
+            cpu_.enable();
+            mem_.enable();
         }
 
 
@@ -290,5 +290,10 @@ namespace cgroup
     };
 
 }
+
+class root_cgroup_manager
+{
+    
+};
 
 #endif
