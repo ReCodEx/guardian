@@ -30,7 +30,7 @@ namespace process_utils
 {
     #define ptr_to_u64(ptr) ((__u64)((uintptr_t)(ptr)))
 
-    inline clone_args create_clone_args(const config::task_intfc& task_conf, void* stack, uint64_t cgrp_fd)
+    inline clone_args create_clone_args(const config::task_interface& task_conf, void* stack, uint64_t cgrp_fd)
     {
         clone_args args{0};
         args.exit_signal = SIGCHLD;
@@ -76,7 +76,7 @@ namespace process_utils
         execve(exec.c_str(), cargs.data(), environ);
     }
 
-    inline pid_t clone3_task(const config::task_intfc& task_conf, void* stack, uint64_t cgrp_fd)
+    inline pid_t clone3_task(const config::task_interface& task_conf, void* stack, uint64_t cgrp_fd)
     {
         //pid_t outside_pid = fork();
         //pid_t outside_pid = clone(test, (void*)(args.stack + args.stack_size), SIGCHLD, 0);

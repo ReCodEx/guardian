@@ -19,7 +19,7 @@ namespace tasks
     class task_t
     {
     public:
-        task_t(config::task_intfc& conf) : task_intfc_(&conf), task_cgrp_(conf.cg_rel_path())
+        task_t(config::task_interface& conf) : task_intfc_(&conf), task_cgrp_(conf.cg_rel_path())
         {}
 
         ~task_t()
@@ -173,7 +173,7 @@ namespace tasks
         }
 
         void* stack_ = nullptr;
-        config::task_intfc* const task_intfc_;
+        config::task_interface* const task_intfc_;
         cgroup::cgroupv2_t task_cgrp_;
     };
 }

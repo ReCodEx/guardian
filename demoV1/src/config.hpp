@@ -30,24 +30,28 @@ namespace config
     namespace options = boost::program_options;
     namespace pt = boost::property_tree;
 
-    struct task_intfc;
+    struct task_interface;
 
-    constexpr size_t DEFAULT_WALL_TIME = 60;
+    constexpr size_t DEFAULT_WALL_TIME = 20;
 
     constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWCGROUP | CLONE_NEWUTS;  //user namespaces might not always be supported
 
     namespace config_names
     {
-        constexpr std::string AS_SIZE = "as-size";
         constexpr std::string RLIMS = "rlims";
+        constexpr std::string TASKS = "tasks";
+
+        constexpr std::string TASK_NAME = "task-id";
+        constexpr std::string AS_SIZE = "as-size";
         constexpr std::string CPU_TIME = "cpu-time";
         constexpr std::string WALL_TIME = "wall-time";
         constexpr std::string MEMORY = "mem";
 
         constexpr std::string EXEC_PATH = "path";
+        constexpr std::string EXEC_ARGS = "args";
         constexpr std::string TASK_CG = "task-cg";
         constexpr std::string STATS_XML = "stats-xml";
-        constexpr std::string EXEC_ARGS = "args";
+        constexpr std::string STATS_YAML = "stats-yaml";
         constexpr std::string CONFIG_XML = "xml";
         constexpr std::string CONFIG_YAML = "yaml";
     }
@@ -64,6 +68,20 @@ namespace config
         static std::string RUSAGE_TOTAL_MEM_BYTES = "rusage_total_mem_bytes";
     }
 
+    namespace yaml_utils
+    {
+        template<typename T>
+        inline std::vector<T> get_vector(const YAML::Node& seq)
+        {
+            std::vector<T> v;
+            for(auto i = 0; i < seq.size(); i++)
+            {
+                v.push_back(seq[i].as<T>());
+            }
+            return std::move(v);
+        }
+    }
+
     class r_limits
     {
     public:
@@ -76,6 +94,13 @@ namespace config
                                         memory_bytes_(type_utils::to_std_optional(limits_tree.get_optional<size_t>(config_names::MEMORY))),
                                         wall_time_s_(limits_tree.get(config_names::WALL_TIME, DEFAULT_WALL_TIME))
         {}
+        
+        r_limits(const YAML::Node& limits_node)
+        {
+            if(limits_node[config_names::CPU_TIME]) cpu_time_s_ = limits_node[config_names::CPU_TIME].as<size_t>();
+            if(limits_node[config_names::MEMORY]) memory_bytes_ = limits_node[config_names::MEMORY].as<size_t>();
+            if(limits_node[config_names::WALL_TIME]) wall_time_s_ = limits_node[config_names::WALL_TIME].as<size_t>();
+        }
 
         r_limits(const options::variables_map& options_map)
         {
@@ -135,30 +160,41 @@ namespace config
 
     };
 
-    class task_intfc
+    class task_interface
     {
     public:
-        task_intfc(const fs::path& exec, const std::vector<std::string>& args, const r_limits& rlims, const fs::path& cg_rel_path) : 
+        task_interface(const fs::path& exec, const std::vector<std::string>& args, const r_limits& rlims, const fs::path& cg_rel_path) : 
         exec_(exec), args_(args), rlimits_(rlims), cg_rel_path_(cg_rel_path) 
         {}
 
-        task_intfc(fs::path&& exec, std::vector<std::string>&& args, r_limits&& rlims, fs::path&& cg_rel_path): 
+        task_interface(fs::path&& exec, std::vector<std::string>&& args, r_limits&& rlims, fs::path&& cg_rel_path): 
         exec_(std::move(exec)), args_(std::move(args)), rlimits_(std::move(rlims)), cg_rel_path_(std::move(cg_rel_path))
         {}
 
-        task_intfc(const pt::ptree& task_tree) :   exec_(fs::path(task_tree.get<std::string>(config_names::EXEC_PATH))), 
+        task_interface(const pt::ptree& task_tree) :   exec_(fs::path(task_tree.get<std::string>(config_names::EXEC_PATH))), 
                                             args_(std::move(string_utils::split(task_tree.get(config_names::EXEC_ARGS, "")))),
                                             rlimits_(task_tree.get_child(config_names::RLIMS)),
                                             cg_rel_path_(fs::path(task_tree.get<std::string>(config_names::TASK_CG))),
                                             stats_path_(type_utils::to_std_optional(task_tree.get_optional<std::string>(config_names::STATS_XML)))
         {}
 
-        task_intfc(const YAML::Node& node)
+        task_interface(const YAML::Node& task_node)
         {
-            if(node[config_names::EXEC_PATH]) exec_ = fs::path(node[config_names::EXEC_PATH].as<std::string>());
+            if(task_node[config_names::EXEC_PATH]) exec_ = fs::path(task_node[config_names::EXEC_PATH].as<std::string>());
             else terminate("Missing path to executable for task \"{}\"", name_);
+            
+            if(task_node[config_names::TASK_NAME]) name_ = task_node[config_names::TASK_NAME].as<std::string>();
+            
+            if(task_node[config_names::EXEC_ARGS]) args_ = yaml_utils::get_vector<std::string>(task_node[config_names::EXEC_ARGS]);
+
+            if(task_node[config_names::STATS_YAML]) stats_path_ = task_node[config_names::STATS_YAML].as<std::string>();
+            
+            rlimits_ = r_limits(task_node[config_names::RLIMS]);
+
+            cg_rel_path_ = name_; 
         }
-        task_intfc(const options::variables_map& options_map) : rlimits_(options_map)
+
+        task_interface(const options::variables_map& options_map) : rlimits_(options_map)
         {
             if(options_map.contains(config_names::EXEC_PATH))
             {
@@ -255,16 +291,25 @@ namespace config
         }
     };
 
-    class proxy_config
+    class proxy_interface
     {
     public:
-        proxy_config() {}
-        proxy_config(YAML::Node config)
+        proxy_interface() {}
+        proxy_interface(const YAML::Node& proxy_node)
         {
-            
+            parse_tasks(proxy_node);
         }
     private:
-        std::vector<std::unique_ptr<task_intfc>> tasks_;
+        std::vector<std::unique_ptr<task_interface>> tasks_;
+        
+        void parse_tasks(const YAML::Node& proxy_node)
+        {
+            auto tasks_node = proxy_node[config_names::TASKS];
+            for(auto i = 0; i < tasks_node.size(); i++)
+            {
+                tasks_.push_back(std::make_unique<task_interface>(tasks_node[i]));
+            }
+        }
     };
 
     class root_interface
@@ -292,8 +337,8 @@ namespace config
     private:
         pt::ptree config_tree_;
         root_config root_config_;
-        proxy_config proxy_config_;
-        std::vector<std::unique_ptr<task_intfc>> tasks_;
+        proxy_interface proxy_config_;
+        std::vector<std::unique_ptr<task_interface>> tasks_;
         
         void parse_options(int argc, char** argv)
         {
@@ -366,7 +411,7 @@ namespace config
             }
             else
             {
-                tasks_.push_back(std::make_unique<task_intfc>(options_map));
+                tasks_.push_back(std::make_unique<task_interface>(options_map));
                 return;
             }
         }
@@ -376,7 +421,7 @@ namespace config
             pt::read_xml(f.string(), config_tree_);
             BOOST_FOREACH(pt::ptree::value_type &task_conf, config_tree_.get_child("tasks")) 
             {
-                tasks_.push_back(std::make_unique<task_intfc>(task_conf.second));
+                tasks_.push_back(std::make_unique<task_interface>(task_conf.second));
             }
         }
         
@@ -384,7 +429,7 @@ namespace config
         {
             YAML::Node config = YAML::LoadFile(f);
             root_config_ = root_config(config);
-            proxy_config_ = proxy_config(config);          
+            proxy_config_ = proxy_interface(config);          
         }
     };
 }
