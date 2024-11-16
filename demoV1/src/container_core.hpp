@@ -14,11 +14,11 @@ namespace container_core
     namespace cgrp = cgroup;
     namespace fs = std::filesystem;
 
-    class proxy_container_core
+    class proxy_core
     {
     public:
 
-        proxy_container_core(config::proxy_config& config) : proxy_config_(&config)
+        proxy_core(config::proxy_config& config) : proxy_config_(&config), task_runner_(config.get_tasks_config())
         {
             logs::info("Hello world from the proxy!");
             init_proxy_logger();
@@ -55,17 +55,6 @@ namespace container_core
         {
         }
         
-        auto run_tasks()
-        {
-            for(auto&& task_intfc : proxy_config_->tasks())
-            {
-                tasks::task_supervisor task_(*task_intfc);
-                auto stats = task_.run_task();
-                logs::debug("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.cg_total_time_usec, stats.cg_total_mem_bytes);
-            }
-            return config::root_stats();
-        }
-        
         void generate_proxy_report(const config::task_report& task_report)
         {
 
@@ -81,11 +70,12 @@ namespace container_core
             
         }
     };
-    class root_container_core
+
+    class root_core
     {
     public:
 
-        root_container_core(int argc, char** argv) : root_intfc_(argc, argv)
+        root_core(int argc, char** argv) : root_intfc_(argc, argv)
         {
             logs::init_default_logger();
             logs::info("Hello world from container!");
@@ -102,17 +92,12 @@ namespace container_core
             return config::root_stats();
         }
 
-        void run_tasks_with_proxy()
+        void run()
         {
             setup_for_proxy();
             pid_t proxy_pid = spawn_and_run_proxy();
             wait_for_proxy(proxy_pid);
             generate_results();
-        }
-
-        void generate_results()
-        {
-            root_intfc_.generate_results();
         }
 
     private:
@@ -149,11 +134,13 @@ namespace container_core
                 
             else if (!outside_pid)
             {
-                proxy_container_core proxy(proxy_conf);
+                //we are in the proxy process
+
+                proxy_core proxy(proxy_conf);
                 proxy.run();
 
                 // We will never get here
-                terminate("Execve failed. Errno: {}", errno);
+                terminate("Something very weird happened");
             }
             return outside_pid;
         }
@@ -169,7 +156,11 @@ namespace container_core
             }
             else terminate("waitpid() for the proxy process failed. Stat: {}, Errno: {}", stat, errno);
         }
-         
+        
+        void generate_results()
+        {
+            root_intfc_.generate_results();
+        }
     };
     
  

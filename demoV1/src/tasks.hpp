@@ -29,7 +29,7 @@ namespace tasks
         {
             pid_t pid = launch_task();
             auto stats = wait_for_task(pid);
-            task_intfc_->finalize_task(stats);
+            //task_intfc_->finalize_task(stats);
             return stats;
         }
 
@@ -88,7 +88,7 @@ namespace tasks
                 }
                 else break;
             }
-            logs::debug("Child exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
+            logs::debug("Task process exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
             return generate_task_stats(stat);
         }
 
@@ -109,7 +109,7 @@ namespace tasks
                 
             else if (!outside_pid)
             {
-                set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use for example cgroup freezer.
+                set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use cgroup freezer.
 
                 cpp_execve(task_intfc_->exec_path(), task_intfc_->exec_args());
 
@@ -172,13 +172,15 @@ namespace tasks
     class task_manager
     {
     public:
+        task_manager(config::tasks_config& tasks) : tasks_config(&tasks)
+        {}
         config::task_report run_all_tasks()
         {
             config::task_report report;
-            
-            for(auto&& task_config : tasks_)
+            std::cout << tasks_config->get_tasks().size() << std::endl; 
+            for(auto&& task_config : tasks_config->get_tasks())
             {
-                tasks::task_supervisor task_(task_config);
+                tasks::task_supervisor task_(*task_config);
                 auto stats = task_.run_task();
                 report.insert(stats);
                 logs::debug("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.cg_total_time_usec, stats.cg_total_mem_bytes);
@@ -186,7 +188,7 @@ namespace tasks
             return report;
         }
     private:
-        std::vector<config::task_interface> tasks_;
+        config::tasks_config* tasks_config;
 
         config::task_stats run_next_task()
         {

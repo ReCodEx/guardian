@@ -34,7 +34,7 @@ namespace config
 
     constexpr size_t DEFAULT_WALL_TIME = 20;
 
-    constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWCGROUP | CLONE_NEWUTS;  //user namespaces might not always be supported
+    constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID; // | CLONE_NEWCGROUP | CLONE_NEWUTS;  //user namespaces might not always be supported
 
     namespace config_names
     {
@@ -306,24 +306,25 @@ namespace config
             
         }
     };
-
-    class proxy_config
+    
+    class tasks_config
     {
     public:
-        proxy_config() {}
-        proxy_config(const YAML::Node& proxy_node)
+        tasks_config() {}
+        tasks_config(const YAML::Node& tasks_node)
         {
-            parse_tasks(proxy_node);
+            for(auto i = 0; i < tasks_node.size(); i++)
+            {
+                tasks_.push_back(std::make_unique<task_interface>(tasks_node[i]));
+            }
         }
-        
-        auto& tasks()
+        auto& get_tasks()
         {
             return tasks_;
         }
+    private:    
+        std::vector<std::unique_ptr<task_interface>> tasks_;    
 
-    private:
-        std::vector<std::unique_ptr<task_interface>> tasks_;
-        
         void parse_tasks(const YAML::Node& proxy_node)
         {
             auto tasks_node = proxy_node[config_names::TASKS];
@@ -332,6 +333,23 @@ namespace config
                 tasks_.push_back(std::make_unique<task_interface>(tasks_node[i]));
             }
         }
+    };
+
+    class proxy_config
+    {
+    public:
+        proxy_config() {}
+        proxy_config(const YAML::Node& proxy_node) : tasks_(proxy_node[config_names::TASKS])
+        {
+        }
+        
+        auto& get_tasks_config()
+        {
+            return tasks_;
+        }
+
+    private:
+        tasks_config tasks_;
     };
 
     class root_interface
