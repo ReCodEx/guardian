@@ -16,13 +16,13 @@ namespace tasks
     using namespace process_utils;
     namespace fs = std::filesystem;
 
-    class task_t
+    class task_supervisor
     {
     public:
-        task_t(config::task_interface& conf) : task_intfc_(&conf), task_cgrp_(conf.cg_rel_path())
+        task_supervisor(config::task_interface& conf) : task_intfc_(&conf), task_cgrp_(conf.cg_rel_path())
         {}
 
-        ~task_t()
+        ~task_supervisor()
         {}
 
         config::task_stats run_task()
@@ -128,20 +128,12 @@ namespace tasks
         void set_resource_limits()
         {
             auto& limits = task_intfc_->rlimits();
-            
             //std::cout << std::format("Setting memory limit to {} bytes and cpu time limit to {} seconds.", limits.memory_bytes, limits.cpu_time_s) << std::endl;
-            if(limits.memory())
-            {
-                set_mem_limit(limits.memory().value());
-            }
-            if(limits.cpu_time())
-            {
-                set_cpu_limit(limits.cpu_time().value());
-            }
-            if(limits.as_size())
-            {
-                set_as_size_limit(limits.as_size().value());
-            }
+            if(limits.memory()) set_mem_limit(limits.memory().value());
+
+            if(limits.cpu_time()) set_cpu_limit(limits.cpu_time().value());
+
+            if(limits.as_size()) set_as_size_limit(limits.as_size().value());
         }
 
         void set_mem_limit(unsigned int bytes)
@@ -175,6 +167,32 @@ namespace tasks
         void* stack_ = nullptr;
         config::task_interface* const task_intfc_;
         cgroup::cgroupv2_t task_cgrp_;
+    };
+    
+    class task_manager
+    {
+    public:
+        config::task_report run_all_tasks()
+        {
+            config::task_report report;
+            
+            for(auto&& task_config : tasks_)
+            {
+                tasks::task_supervisor task_(task_config);
+                auto stats = task_.run_task();
+                report.insert(stats);
+                logs::debug("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.cg_total_time_usec, stats.cg_total_mem_bytes);
+            }
+            return report;
+        }
+    private:
+        std::vector<config::task_interface> tasks_;
+
+        config::task_stats run_next_task()
+        {
+            
+            return config::task_stats();
+        }
     };
 }
 

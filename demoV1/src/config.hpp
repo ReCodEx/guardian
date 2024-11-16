@@ -143,6 +143,11 @@ namespace config
     {
         
     };
+    
+    struct proxy_stats
+    {
+
+    };
 
     struct task_stats
     {
@@ -158,6 +163,17 @@ namespace config
         long rusage_total_mem_bytes;
         long rusage_total_time_usec;
 
+    };
+    
+    class task_report
+    {
+    public:
+        void insert(task_stats task)
+        {
+            tasks_.push_back(task);
+        }
+    private:
+        std::vector<task_stats> tasks_;
     };
 
     class task_interface
@@ -189,7 +205,7 @@ namespace config
 
             if(task_node[config_names::STATS_YAML]) stats_path_ = task_node[config_names::STATS_YAML].as<std::string>();
             
-            rlimits_ = r_limits(task_node[config_names::RLIMS]);
+            if(task_node[config_names::RLIMS]) rlimits_ = r_limits(task_node[config_names::RLIMS]);
 
             cg_rel_path_ = name_; 
         }
@@ -291,14 +307,20 @@ namespace config
         }
     };
 
-    class proxy_interface
+    class proxy_config
     {
     public:
-        proxy_interface() {}
-        proxy_interface(const YAML::Node& proxy_node)
+        proxy_config() {}
+        proxy_config(const YAML::Node& proxy_node)
         {
             parse_tasks(proxy_node);
         }
+        
+        auto& tasks()
+        {
+            return tasks_;
+        }
+
     private:
         std::vector<std::unique_ptr<task_interface>> tasks_;
         
@@ -330,6 +352,11 @@ namespace config
             return tasks_;
         }
         
+        auto& get_proxy_config()
+        {
+            return proxy_config_;
+        }
+        
         void generate_results()
         {
 
@@ -337,7 +364,7 @@ namespace config
     private:
         pt::ptree config_tree_;
         root_config root_config_;
-        proxy_interface proxy_config_;
+        proxy_config proxy_config_;
         std::vector<std::unique_ptr<task_interface>> tasks_;
         
         void parse_options(int argc, char** argv)
@@ -349,6 +376,7 @@ namespace config
                     "produce a help for a given module")
                 ("version", "output the version number")
                 (config_names::CONFIG_XML.c_str(), options::value<std::string>(), "read the configuration from a config file")
+                (config_names::CONFIG_YAML.c_str(), options::value<std::string>(), "read the configuration from a yaml config file")
                 ;
 
             options::options_description exec("Options to specify the executable and arguments");
@@ -429,7 +457,7 @@ namespace config
         {
             YAML::Node config = YAML::LoadFile(f);
             root_config_ = root_config(config);
-            proxy_config_ = proxy_interface(config);          
+            proxy_config_ = proxy_config(config);          
         }
     };
 }
