@@ -30,7 +30,7 @@ namespace config
     namespace options = boost::program_options;
     namespace pt = boost::property_tree;
 
-    struct task_interface;
+    struct task_config;
 
     constexpr size_t DEFAULT_WALL_TIME = 20;
 
@@ -176,25 +176,25 @@ namespace config
         std::vector<task_stats> tasks_;
     };
 
-    class task_interface
+    class task_config
     {
     public:
-        task_interface(const fs::path& exec, const std::vector<std::string>& args, const r_limits& rlims, const fs::path& cg_rel_path) : 
+        task_config(const fs::path& exec, const std::vector<std::string>& args, const r_limits& rlims, const fs::path& cg_rel_path) : 
         exec_(exec), args_(args), rlimits_(rlims), cg_rel_path_(cg_rel_path) 
         {}
 
-        task_interface(fs::path&& exec, std::vector<std::string>&& args, r_limits&& rlims, fs::path&& cg_rel_path): 
+        task_config(fs::path&& exec, std::vector<std::string>&& args, r_limits&& rlims, fs::path&& cg_rel_path): 
         exec_(std::move(exec)), args_(std::move(args)), rlimits_(std::move(rlims)), cg_rel_path_(std::move(cg_rel_path))
         {}
 
-        task_interface(const pt::ptree& task_tree) :   exec_(fs::path(task_tree.get<std::string>(config_names::EXEC_PATH))), 
+        task_config(const pt::ptree& task_tree) :   exec_(fs::path(task_tree.get<std::string>(config_names::EXEC_PATH))), 
                                             args_(std::move(string_utils::split(task_tree.get(config_names::EXEC_ARGS, "")))),
                                             rlimits_(task_tree.get_child(config_names::RLIMS)),
                                             cg_rel_path_(fs::path(task_tree.get<std::string>(config_names::TASK_CG))),
                                             stats_path_(type_utils::to_std_optional(task_tree.get_optional<std::string>(config_names::STATS_XML)))
         {}
 
-        task_interface(const YAML::Node& task_node)
+        task_config(const YAML::Node& task_node)
         {
             if(task_node[config_names::EXEC_PATH]) exec_ = fs::path(task_node[config_names::EXEC_PATH].as<std::string>());
             else terminate("Missing path to executable for task \"{}\"", name_);
@@ -210,7 +210,7 @@ namespace config
             cg_rel_path_ = name_; 
         }
 
-        task_interface(const options::variables_map& options_map) : rlimits_(options_map)
+        task_config(const options::variables_map& options_map) : rlimits_(options_map)
         {
             if(options_map.contains(config_names::EXEC_PATH))
             {
@@ -236,7 +236,8 @@ namespace config
                 cg_rel_path_ = fs::path(options_map[config_names::TASK_CG].as<std::string>());
             }
         }
-
+        
+        const auto& name() const        { return name_; }
         const auto& exec_path() const   { return exec_; }
         auto& exec_args()               { return args_; }
         const auto& rlimits() const       { return rlimits_; }
@@ -315,7 +316,7 @@ namespace config
         {
             for(auto i = 0; i < tasks_node.size(); i++)
             {
-                tasks_.push_back(std::make_unique<task_interface>(tasks_node[i]));
+                tasks_.push_back(std::make_unique<task_config>(tasks_node[i]));
             }
         }
         auto& get_tasks()
@@ -323,14 +324,14 @@ namespace config
             return tasks_;
         }
     private:    
-        std::vector<std::unique_ptr<task_interface>> tasks_;    
+        std::vector<std::unique_ptr<task_config>> tasks_;    
 
         void parse_tasks(const YAML::Node& proxy_node)
         {
             auto tasks_node = proxy_node[config_names::TASKS];
             for(auto i = 0; i < tasks_node.size(); i++)
             {
-                tasks_.push_back(std::make_unique<task_interface>(tasks_node[i]));
+                tasks_.push_back(std::make_unique<task_config>(tasks_node[i]));
             }
         }
     };
@@ -383,7 +384,7 @@ namespace config
         pt::ptree config_tree_;
         root_config root_config_;
         proxy_config proxy_config_;
-        std::vector<std::unique_ptr<task_interface>> tasks_;
+        std::vector<std::unique_ptr<task_config>> tasks_;
         
         void parse_options(int argc, char** argv)
         {
@@ -457,7 +458,7 @@ namespace config
             }
             else
             {
-                tasks_.push_back(std::make_unique<task_interface>(options_map));
+                tasks_.push_back(std::make_unique<task_config>(options_map));
                 return;
             }
         }
@@ -467,7 +468,7 @@ namespace config
             pt::read_xml(f.string(), config_tree_);
             BOOST_FOREACH(pt::ptree::value_type &task_conf, config_tree_.get_child("tasks")) 
             {
-                tasks_.push_back(std::make_unique<task_interface>(task_conf.second));
+                tasks_.push_back(std::make_unique<task_config>(task_conf.second));
             }
         }
         
