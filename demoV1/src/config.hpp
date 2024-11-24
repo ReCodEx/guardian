@@ -34,7 +34,7 @@ namespace config
 
     constexpr size_t DEFAULT_WALL_TIME = 20;
 
-    constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID; // | CLONE_NEWCGROUP | CLONE_NEWUTS;  //user namespaces might not always be supported
+    constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWCGROUP | CLONE_NEWUTS;  //user namespaces might not always be supported
 
     namespace config_names
     {

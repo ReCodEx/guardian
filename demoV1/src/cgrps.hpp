@@ -7,10 +7,12 @@
 #include <fstream>
 #include <filesystem>
 #include <format>
+#include <chrono>
 #include <unistd.h>
 #include <fcntl.h>
 
 #include "utils.hpp"
+#include "terminate.hpp"
 
 namespace cgroup 
 {
@@ -18,7 +20,7 @@ namespace cgroup
 
     inline auto const& ROOT_CG_PATH()
     {
-        static fs::path path("/sys/fs/cgroup/rcdx");
+        static fs::path path("/sys/fs/cgroup");
         return path;
     }
 
@@ -94,6 +96,7 @@ namespace cgroup
 
     inline size_t memory_usage_bytes_abs(const fs::path& cg_path)
     {
+        std::cout << cg_path << std::endl;
         std::ifstream memory_peak(cg_path / MEMORY_PEAK());
         return std::stoi(file_utils::read_row_col(memory_peak,0,0));
     }
@@ -221,6 +224,13 @@ namespace cgroup
                 fd_.reset();
             }
         }
+
+        void enable_all_cntrlrs()
+        {
+            cpu_.enable();
+            mem_.enable();
+        }
+
         
         bool add_me()
         {
@@ -274,10 +284,81 @@ namespace cgroup
             }
         }
 
+
+        const fs::path cgrp_path_;
+        
+
+        cpu_cntrlr cpu_;
+        memory_cntrlr mem_;
+        std::optional<int> fd_;
+    };
+    class root_cgroupv2_t
+    {
+    public:
+        root_cgroupv2_t() :  cgrp_path_(ROOT_CG_PATH()),
+                        cpu_(ROOT_CG_PATH()),
+                        mem_(ROOT_CG_PATH())
+        {
+            //init_path();
+            enable_all_cntrlrs();
+        }
         void enable_all_cntrlrs()
         {
             cpu_.enable();
             mem_.enable();
+        }
+
+        
+        bool add_me()
+        {
+            auto mypid = getpid();
+            auto cgroup_procs(cgrp_path_ / CGROUP_PROCS());
+            return file_utils::write_formatted(cgroup_procs, "{}", mypid);
+        }
+
+        size_t cpu_usage_usec()
+        {
+            return cpu_usage_usec_abs(cgrp_path_);
+        }
+
+        size_t memory_usage_bytes()
+        {
+            return memory_usage_bytes_abs(cgrp_path_);
+        }
+
+        void set_strict_memory_limit(size_t bytes)
+        {
+            mem_.set_memory_max(bytes);
+            mem_.set_memory_min_to_max();
+        }
+
+        void list_procs()
+        {
+            auto cgroup_procs(cgrp_path_ / CGROUP_PROCS());
+            file_utils::print_lines(cgroup_procs);
+        }
+    private:
+        void init_path()
+        {
+            if(!fs::is_directory(cgrp_path_))
+            {
+                if(!fs::create_directory(cgrp_path_))
+                {
+                    throw std::runtime_error("Creating the cgroup failed");
+                }
+            }
+        }
+
+        void reset_path()
+        {
+            if(fs::is_directory(cgrp_path_))
+            {
+                fs::remove(cgrp_path_);
+            }
+            if(!fs::create_directory(cgrp_path_))
+            {
+                throw std::runtime_error("Creating the cgroup failed");
+            }
         }
 
 
@@ -289,11 +370,44 @@ namespace cgroup
         std::optional<int> fd_;
     };
 
+    class proxy_cgroup_manager
+    {
+    public:
+        proxy_cgroup_manager() : root_cgrp_()
+        {}
+    private:
+        root_cgroupv2_t root_cgrp_;
+    };
+
+    class root_cgroup_manager
+    {
+    public:
+        root_cgroup_manager() : proxy_cgrp_("rcdx_cntnr_instance")
+        {
+            setup_proxy_cgroup();
+        }
+        
+        ~root_cgroup_manager()
+        {
+            cleanup();
+        }
+
+        int open_proxy_fd()
+        {
+            return proxy_cgrp_.open_fd();
+        }
+    private:
+        cgroup::cgroupv2_t proxy_cgrp_;
+
+        void setup_proxy_cgroup()
+        {
+            //proxy_cgrp_.enable_all_cntrlrs();
+        }
+        
+        void cleanup()
+        {
+            proxy_cgrp_.close_fd();
+        }
+    };
 }
-
-class root_cgroup_manager
-{
-    
-};
-
 #endif

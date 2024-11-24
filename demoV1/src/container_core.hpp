@@ -4,14 +4,15 @@
 #include "config.hpp"
 #include "process.hpp"
 #include "tasks.hpp"
+#include "environment.hpp"
 
+#include <chrono>
 #include <filesystem>
 
 
 namespace container_core
 {
     using namespace tasks;
-    namespace cgrp = cgroup;
     namespace fs = std::filesystem;
 
     class proxy_core
@@ -35,9 +36,10 @@ namespace container_core
 
     private: 
         config::proxy_config* proxy_config_;
-        task_manager task_runner_;
-        cgroup::cgroupv2_t root_cgrp_;
-        
+        tasks::task_manager task_runner_;
+        env::proxy_mount_manager mount_mngr_;
+        cgroup::proxy_cgroup_manager cg_mngr_;
+
         void init_proxy_logger()
         {
 
@@ -45,9 +47,8 @@ namespace container_core
 
         void proxy_env_setup()
         {
-
             init_proxy_logger();
-            namespace_setup();
+            mount_setup();
             chroot_setup();
         }
 
@@ -59,15 +60,15 @@ namespace container_core
         {
 
         }
-
-        void namespace_setup()
-        {
-            
-        }
         
         void chroot_setup()
         {
             
+        }
+        
+        void mount_setup()
+        {
+            mount_mngr_.mount_all();
         }
     };
 
@@ -101,9 +102,8 @@ namespace container_core
         }
 
     private:
-        
         config::root_interface root_intfc_;
-        cgroup::cgroupv2_t root_cgrp_;
+        cgroup::root_cgroup_manager cg_mngr_;
         
         void setup_for_proxy()
         {
@@ -125,7 +125,7 @@ namespace container_core
         {
             auto& proxy_conf = root_intfc_.get_proxy_config();
             logs::debug("Calling clone3 for the proxy process");
-            pid_t outside_pid = clone3_proxy(proxy_conf, nullptr, 10);
+            pid_t outside_pid = clone3_proxy(proxy_conf, nullptr, cg_mngr_.open_proxy_fd());
 
             if (outside_pid < 0)
             {

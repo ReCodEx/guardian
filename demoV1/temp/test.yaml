@@ -1,0 +1,6 @@
+tasks:
+    - task-id: "bsearch"
+      cpu-time: 2
+      path: "/home/simonkurz/mff/rcdx_cntnr/demoV1/tests/test_binaries/bsearch"
+      args: 
+         - "hello"
