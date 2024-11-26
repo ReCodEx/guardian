@@ -29,6 +29,8 @@ namespace container_core
         
         void run()
         {
+            proxy_env_setup();
+            chroot();
             auto task_report = task_runner_.run_all_tasks();
             generate_proxy_report(task_report);
             exit(0);
@@ -36,9 +38,9 @@ namespace container_core
 
     private: 
         config::proxy_config* proxy_config_;
-        tasks::task_manager task_runner_;
         env::proxy_mount_manager mount_mngr_;
         cgroup::proxy_cgroup_manager cg_mngr_;
+        tasks::task_manager task_runner_;
 
         void init_proxy_logger()
         {
@@ -48,7 +50,8 @@ namespace container_core
         void proxy_env_setup()
         {
             init_proxy_logger();
-            mount_setup();
+            mount_mngr_.mount_all();
+            cg_mngr_.run();
             chroot_setup();
         }
 
@@ -95,7 +98,7 @@ namespace container_core
 
         void run()
         {
-            setup_for_proxy();
+            setup();
             pid_t proxy_pid = spawn_and_run_proxy();
             wait_for_proxy(proxy_pid);
             generate_results();
@@ -105,17 +108,12 @@ namespace container_core
         config::root_interface root_intfc_;
         cgroup::root_cgroup_manager cg_mngr_;
         
-        void setup_for_proxy()
+        void setup()
         {
-            cg_setup_for_proxy();
+            cg_mngr_.run();
             env_setup_for_proxy(); 
         }
         
-        void cg_setup_for_proxy()
-        {
-
-        }
-
         void env_setup_for_proxy()
         {
 

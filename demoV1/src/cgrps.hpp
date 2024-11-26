@@ -120,7 +120,6 @@ namespace cgroup
             //    "echo +type >> /sys/fs/cgroup/cgroup.subtree_control"
 
             fs::path subtree_control(*cgrp_path_ / CGROUP_SUBTREE_CONTROL());
-            std::string text("+" + cntrlr_type());
             bool success = file_utils::append_text(subtree_control, "+" + cntrlr_type());
             return success;
         }
@@ -373,18 +372,25 @@ namespace cgroup
     class proxy_cgroup_manager
     {
     public:
-        proxy_cgroup_manager() : root_cgrp_()
-        {}
+        proxy_cgroup_manager() {}
+        
+        void run()
+        {
+            //root_cgrp_ = std::move(std::make_unique<root_cgroupv2_t>());
+            leaf_cgrp_ = std::move(std::make_unique<cgroupv2_t>("proxy_leaf"));
+            leaf_cgrp_->add_me();
+            //root_cgrp_->enable_all_cntrlrs();
+        }
     private:
-        root_cgroupv2_t root_cgrp_;
+        std::unique_ptr<root_cgroupv2_t> root_cgrp_;
+        std::unique_ptr<cgroupv2_t> leaf_cgrp_;
     };
 
     class root_cgroup_manager
     {
     public:
-        root_cgroup_manager() : proxy_cgrp_("rcdx_cntnr_instance")
+        root_cgroup_manager()
         {
-            setup_proxy_cgroup();
         }
         
         ~root_cgroup_manager()
@@ -392,12 +398,25 @@ namespace cgroup
             cleanup();
         }
 
+        void run()
+        {
+            root_cgrp_ = std::move(std::make_unique<cgroupv2_t>("container_instance"));
+            leaf_cgrp_ = std::move(std::make_unique<cgroupv2_t>("container_instance/leaf"));
+            proxy_cgrp_ = std::move(std::make_unique<cgroupv2_t>("container_instance/proxy"));
+            leaf_cgrp_->add_me();
+            root_cgrp_->enable_all_cntrlrs();
+            //proxy_cgrp_->enable_all_cntrlrs(); 
+        }
+
         int open_proxy_fd()
         {
-            return proxy_cgrp_.open_fd();
+            return proxy_cgrp_->open_fd();
         }
     private:
-        cgroup::cgroupv2_t proxy_cgrp_;
+        std::unique_ptr<cgroup::cgroupv2_t> root_cgrp_;
+        std::unique_ptr<cgroup::cgroupv2_t> proxy_cgrp_;
+        std::unique_ptr<cgroup::cgroupv2_t> leaf_cgrp_;
+        std::unique_ptr<cgroup::cgroupv2_t> proxy_leaf_cgrp_;
 
         void setup_proxy_cgroup()
         {
@@ -406,7 +425,7 @@ namespace cgroup
         
         void cleanup()
         {
-            proxy_cgrp_.close_fd();
+            proxy_cgrp_->close_fd();
         }
     };
 }
