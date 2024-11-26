@@ -28,7 +28,6 @@ namespace container_core
         void run()
         {
             proxy_env_setup();
-            //process_utils:chroot_wr(fs::path("/alpine"));
             auto task_report = task_runner_.run_all_tasks();
             generate_proxy_report(task_report);
             exit(0);

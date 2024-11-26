@@ -1,0 +1,6 @@
+tasks:
+    - task-id: "Hello"
+      cpu-time: 2
+      path: "test.sh"
+      args: 
+         - "hello"
