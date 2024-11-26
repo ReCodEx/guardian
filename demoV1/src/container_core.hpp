@@ -23,14 +23,12 @@ namespace container_core
         {
             logs::info("Hello world from the proxy!");
             init_proxy_logger();
-            proxy_env_setup();
-            chroot();
         }
         
         void run()
         {
             proxy_env_setup();
-            chroot();
+            //process_utils:chroot_wr(fs::path("/alpine"));
             auto task_report = task_runner_.run_all_tasks();
             generate_proxy_report(task_report);
             exit(0);
@@ -55,10 +53,6 @@ namespace container_core
             chroot_setup();
         }
 
-        void chroot()
-        {
-        }
-        
         void generate_proxy_report(const config::task_report& task_report)
         {
 

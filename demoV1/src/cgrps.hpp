@@ -188,20 +188,11 @@ namespace cgroup
     class cgroupv2_t
     {
     public:
-        cgroupv2_t() :  cgrp_path_(ROOT_CG_PATH()),
-                        cpu_(ROOT_CG_PATH()),
-                        mem_(ROOT_CG_PATH())
-        {
-            init_path();
-            enable_all_cntrlrs();
-        }
-
         cgroupv2_t(const fs::path& rel_cgrp_path) : cgrp_path_(ROOT_CG_PATH() / rel_cgrp_path),
                                                     cpu_(cgrp_path_),
                                                     mem_(cgrp_path_)
         {
             reset_path();
-            //enable_all_cntrlrs();
         }
 
         ~cgroupv2_t()
@@ -273,8 +264,11 @@ namespace cgroup
 
         void reset_path()
         {
+/*             for (const auto & entry : fs::directory_iterator(fs::path("/sys/fs/cgroup")))
+                std::cout << entry.path() << std::endl; */
             if(fs::is_directory(cgrp_path_))
             {
+                std::cout << "removing " << cgrp_path_ << std::endl;
                 fs::remove(cgrp_path_);
             }
             if(!fs::create_directory(cgrp_path_))
@@ -297,16 +291,13 @@ namespace cgroup
         root_cgroupv2_t() :  cgrp_path_(ROOT_CG_PATH()),
                         cpu_(ROOT_CG_PATH()),
                         mem_(ROOT_CG_PATH())
-        {
-            //init_path();
-            enable_all_cntrlrs();
-        }
+        {}
+
         void enable_all_cntrlrs()
         {
             cpu_.enable();
             mem_.enable();
         }
-
         
         bool add_me()
         {
@@ -372,14 +363,12 @@ namespace cgroup
     class proxy_cgroup_manager
     {
     public:
-        proxy_cgroup_manager() {}
-        
         void run()
         {
-            //root_cgrp_ = std::move(std::make_unique<root_cgroupv2_t>());
-            leaf_cgrp_ = std::move(std::make_unique<cgroupv2_t>("proxy_leaf"));
+            leaf_cgrp_ = std::make_unique<cgroupv2_t>("proxy_leaf");
             leaf_cgrp_->add_me();
-            //root_cgrp_->enable_all_cntrlrs();
+            root_cgrp_ = std::make_unique<root_cgroupv2_t>();
+            root_cgrp_->enable_all_cntrlrs();
         }
     private:
         std::unique_ptr<root_cgroupv2_t> root_cgrp_;
@@ -416,7 +405,6 @@ namespace cgroup
         std::unique_ptr<cgroup::cgroupv2_t> root_cgrp_;
         std::unique_ptr<cgroup::cgroupv2_t> proxy_cgrp_;
         std::unique_ptr<cgroup::cgroupv2_t> leaf_cgrp_;
-        std::unique_ptr<cgroup::cgroupv2_t> proxy_leaf_cgrp_;
 
         void setup_proxy_cgroup()
         {

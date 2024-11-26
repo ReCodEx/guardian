@@ -28,7 +28,20 @@
 
 namespace process_utils
 {
+    namespace fs = std::filesystem;
     #define ptr_to_u64(ptr) ((__u64)((uintptr_t)(ptr)))
+
+    inline void chroot_wr(const fs::path& path)
+    {
+        if(chroot(path.c_str()))
+            terminate("Chroot failed, errno: {}", errno);
+    }
+
+    inline void chroot_wr(fs::path&& path)
+    {
+        if(chroot(path.c_str()))
+            terminate("Chroot failed, errno: {}", errno);
+    }
 
     inline clone_args task_clone_args(const config::task_config& task_conf, void* stack, uint64_t cgrp_fd)
     {

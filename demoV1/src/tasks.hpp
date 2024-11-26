@@ -27,8 +27,6 @@ namespace tasks
 
         config::task_stats run_task()
         {
-            for (const auto & entry : fs::directory_iterator("/sys/fs/cgroup/bsearch"))
-                std::cout << entry.path() << std::endl;
             pid_t pid = launch_task();
             auto stats = wait_for_task(pid);
             //task_intfc_->finalize_task(stats);
