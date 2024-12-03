@@ -48,6 +48,8 @@ namespace container_core
         {
             init_proxy_logger();
             mount_mngr_.mount_all();
+            process_utils::pivot_root("/alpine", "/alpine/old_root");
+            //chroot("/alpine");
             cg_mngr_.run();
             chroot_setup();
         }

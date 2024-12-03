@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/resource.h>
+#include <sys/mount.h>
 
 #include <linux/sched.h>    /* Definition of struct clone_args */
 #include <sched.h>          /* Definition of CLONE_* constants */
@@ -30,6 +31,15 @@ namespace process_utils
 {
     namespace fs = std::filesystem;
     #define ptr_to_u64(ptr) ((__u64)((uintptr_t)(ptr)))
+
+    inline void pivot_root(const fs::path& new_root, const fs::path& put_old)
+    {
+        if(syscall(SYS_pivot_root, new_root.c_str(), put_old.c_str()))
+            terminate("pivot_root failed, errno: {}", errno);
+        chdir("/");
+/*         if(umount("/old_root"))
+            terminate("umount on old root failed, errno: {}", errno); */
+    }
 
     inline void chroot_wr(const fs::path& path)
     {

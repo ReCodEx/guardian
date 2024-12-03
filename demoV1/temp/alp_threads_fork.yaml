@@ -1,0 +1,7 @@
+tasks:
+    - task-id: "threads_fork"
+      path: "/tests/test_binaries/threads_fork"
+      args: 
+         - "hello"
+      rlims:
+          cpu-time: 1

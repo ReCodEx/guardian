@@ -1,0 +1,12 @@
+tasks:
+    - task-id: "memory_test"
+      path: "/tests/build/memory_test_fuzzy"
+      args:
+          - 10000000
+      rlims:
+          cpu-time: 1
+
+    - task-id: "bsearch"
+      path: "/tests/test_binaries/bsearch"
+      rlims:
+          cpu-time: 1
