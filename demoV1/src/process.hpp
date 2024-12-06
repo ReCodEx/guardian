@@ -37,8 +37,8 @@ namespace process_utils
         if(syscall(SYS_pivot_root, new_root.c_str(), put_old.c_str()))
             terminate("pivot_root failed, errno: {}", errno);
         chdir("/");
-/*         if(umount("/old_root"))
-            terminate("umount on old root failed, errno: {}", errno); */
+        if(umount("/old_root"))
+            terminate("umount on old root failed, errno: {}", errno);
     }
 
     inline void chroot_wr(const fs::path& path)

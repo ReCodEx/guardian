@@ -401,6 +401,11 @@ namespace cgroup
         {
             return proxy_cgrp_->open_fd();
         }
+
+        void close_proxy_fd()
+        {
+            proxy_cgrp_->close_fd();
+        }
     private:
         std::unique_ptr<cgroup::cgroupv2_t> root_cgrp_;
         std::unique_ptr<cgroup::cgroupv2_t> proxy_cgrp_;

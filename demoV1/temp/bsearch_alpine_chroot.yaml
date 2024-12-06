@@ -1,6 +1,7 @@
+chroot-dir: "/alpine"
 tasks:
     - task-id: "bsearch"
-      cpu-time: 2
       path: "/tests/test_binaries/bsearch"
       rlims:
-          cpu-time: 1
+          #cpu-time: 1
+          mem: 2500000

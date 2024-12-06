@@ -36,36 +36,47 @@ namespace config
 
     constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWCGROUP | CLONE_NEWUTS;  //user namespaces might not always be supported
 
-    namespace config_names
+    namespace config_options
     {
-        constexpr std::string RLIMS = "rlims";
-        constexpr std::string TASKS = "tasks";
+        constexpr auto TASKS = "tasks";
+        namespace task 
+        {
 
-        constexpr std::string TASK_NAME = "task-id";
-        constexpr std::string AS_SIZE = "as-size";
-        constexpr std::string CPU_TIME = "cpu-time";
-        constexpr std::string WALL_TIME = "wall-time";
-        constexpr std::string MEMORY = "mem";
+            constexpr auto TASK_NAME = "task-id";
+            constexpr auto EXEC_PATH = "path";
+            constexpr auto EXEC_ARGS = "args";
+            
+            constexpr auto RLIMS = "rlims";
 
-        constexpr std::string EXEC_PATH = "path";
-        constexpr std::string EXEC_ARGS = "args";
-        constexpr std::string TASK_CG = "task-cg";
-        constexpr std::string STATS_XML = "stats-xml";
-        constexpr std::string STATS_YAML = "stats-yaml";
-        constexpr std::string CONFIG_XML = "xml";
-        constexpr std::string CONFIG_YAML = "yaml";
+            constexpr auto AS_SIZE = "as-size";
+            constexpr auto CPU_TIME = "cpu-time";
+            constexpr auto WALL_TIME = "wall-time";
+            constexpr auto MEMORY = "mem";
+        }
+
+        constexpr auto ENVIRONMENT = "environment";
+        namespace env
+        {
+            constexpr auto CHROOT_DIR = "chroot-dir";
+        }
+
+        constexpr auto TASK_CG = "task-cg";
+        constexpr auto STATS_XML = "stats-xml";
+        constexpr auto STATS_YAML = "stats-yaml";
+        constexpr auto CONFIG_XML = "xml";
+        constexpr auto CONFIG_YAML = "yaml";
     }
 
     namespace stats_names
     {
-        constexpr std::string STATUS = "status";
-        constexpr std::string OK = "ok";
-        constexpr std::string KILLED = "killed";
-        static std::string NON_ZERO_EXIT_CODE = "non zero exit code";
-        static std::string CG_TOTAL_TIME_USEC = "cg_total_time_usec";
-        static std::string CG_TOTAL_MEM_BYTES = "cg_total_mem_bytes";
-        static std::string RUSAGE_TOTAL_TIME_USEC = "rusage_total_time_usec";
-        static std::string RUSAGE_TOTAL_MEM_BYTES = "rusage_total_mem_bytes";
+        constexpr auto STATUS = "status";
+        constexpr auto OK = "ok";
+        constexpr auto KILLED = "killed";
+        constexpr auto NON_ZERO_EXIT_CODE = "non zero exit code";
+        constexpr auto CG_TOTAL_TIME_USEC = "cg_total_time_usec";
+        constexpr auto CG_TOTAL_MEM_BYTES = "cg_total_mem_bytes";
+        constexpr auto RUSAGE_TOTAL_TIME_USEC = "rusage_total_time_usec";
+        constexpr auto RUSAGE_TOTAL_MEM_BYTES = "rusage_total_mem_bytes";
     }
 
     namespace yaml_utils
@@ -90,35 +101,35 @@ namespace config
         {}
 
         r_limits(const pt::ptree& limits_tree) : 
-                                        cpu_time_s_(type_utils::to_std_optional(limits_tree.get_optional<size_t>(config_names::CPU_TIME))),
-                                        memory_bytes_(type_utils::to_std_optional(limits_tree.get_optional<size_t>(config_names::MEMORY))),
-                                        wall_time_s_(limits_tree.get(config_names::WALL_TIME, DEFAULT_WALL_TIME))
+                                        cpu_time_s_(type_utils::to_std_optional(limits_tree.get_optional<size_t>(config_options::task::CPU_TIME))),
+                                        memory_bytes_(type_utils::to_std_optional(limits_tree.get_optional<size_t>(config_options::task::MEMORY))),
+                                        wall_time_s_(limits_tree.get(config_options::task::WALL_TIME, DEFAULT_WALL_TIME))
         {}
         
         r_limits(const YAML::Node& limits_node)
         {
-            if(limits_node[config_names::CPU_TIME]) cpu_time_s_ = limits_node[config_names::CPU_TIME].as<size_t>();
-            if(limits_node[config_names::MEMORY]) memory_bytes_ = limits_node[config_names::MEMORY].as<size_t>();
-            if(limits_node[config_names::WALL_TIME]) wall_time_s_ = limits_node[config_names::WALL_TIME].as<size_t>();
+            if(limits_node[config_options::task::CPU_TIME]) cpu_time_s_ = limits_node[config_options::task::CPU_TIME].as<size_t>();
+            if(limits_node[config_options::task::MEMORY]) memory_bytes_ = limits_node[config_options::task::MEMORY].as<size_t>();
+            if(limits_node[config_options::task::WALL_TIME]) wall_time_s_ = limits_node[config_options::task::WALL_TIME].as<size_t>();
         }
 
         r_limits(const options::variables_map& options_map)
         {
-            if (options_map.contains(config_names::MEMORY)) 
+            if (options_map.contains(config_options::task::MEMORY)) 
             {
-                memory_bytes_ = options_map[config_names::MEMORY].as<size_t>();
+                memory_bytes_ = options_map[config_options::task::MEMORY].as<size_t>();
             }
-            if (options_map.contains(config_names::CPU_TIME)) 
+            if (options_map.contains(config_options::task::CPU_TIME)) 
             {
-                cpu_time_s_ = options_map[config_names::CPU_TIME].as<size_t>();
+                cpu_time_s_ = options_map[config_options::task::CPU_TIME].as<size_t>();
             }
-            if (options_map.contains(config_names::WALL_TIME)) 
+            if (options_map.contains(config_options::task::WALL_TIME)) 
             {
-                wall_time_s_ = options_map[config_names::WALL_TIME].as<size_t>();
+                wall_time_s_ = options_map[config_options::task::WALL_TIME].as<size_t>();
             }
-            if (options_map.contains(config_names::AS_SIZE)) 
+            if (options_map.contains(config_options::task::AS_SIZE)) 
             {
-                as_size_bytes_ = options_map[config_names::AS_SIZE].as<size_t>();
+                as_size_bytes_ = options_map[config_options::task::AS_SIZE].as<size_t>();
             }
         }
 
@@ -187,53 +198,53 @@ namespace config
         exec_(std::move(exec)), args_(std::move(args)), rlimits_(std::move(rlims)), cg_rel_path_(std::move(cg_rel_path))
         {}
 
-        task_config(const pt::ptree& task_tree) :   exec_(fs::path(task_tree.get<std::string>(config_names::EXEC_PATH))), 
-                                            args_(std::move(string_utils::split(task_tree.get(config_names::EXEC_ARGS, "")))),
-                                            rlimits_(task_tree.get_child(config_names::RLIMS)),
-                                            cg_rel_path_(fs::path(task_tree.get<std::string>(config_names::TASK_CG))),
-                                            stats_path_(type_utils::to_std_optional(task_tree.get_optional<std::string>(config_names::STATS_XML)))
+        task_config(const pt::ptree& task_tree) :   exec_(fs::path(task_tree.get<std::string>(config_options::task::EXEC_PATH))), 
+                                            args_(std::move(string_utils::split(task_tree.get(config_options::task::EXEC_ARGS, "")))),
+                                            rlimits_(task_tree.get_child(config_options::task::RLIMS)),
+                                            cg_rel_path_(fs::path(task_tree.get<std::string>(config_options::TASK_CG))),
+                                            stats_path_(type_utils::to_std_optional(task_tree.get_optional<std::string>(config_options::STATS_XML)))
         {}
 
         task_config(const YAML::Node& task_node)
         {
-            if(task_node[config_names::EXEC_PATH]) exec_ = fs::path(task_node[config_names::EXEC_PATH].as<std::string>());
+            if(task_node[config_options::task::EXEC_PATH]) exec_ = fs::path(task_node[config_options::task::EXEC_PATH].as<std::string>());
             else terminate("Missing path to executable for task \"{}\"", name_);
             
-            if(task_node[config_names::TASK_NAME]) name_ = task_node[config_names::TASK_NAME].as<std::string>();
+            if(task_node[config_options::task::TASK_NAME]) name_ = task_node[config_options::task::TASK_NAME].as<std::string>();
             
-            if(task_node[config_names::EXEC_ARGS]) args_ = yaml_utils::get_vector<std::string>(task_node[config_names::EXEC_ARGS]);
+            if(task_node[config_options::task::EXEC_ARGS]) args_ = yaml_utils::get_vector<std::string>(task_node[config_options::task::EXEC_ARGS]);
 
-            if(task_node[config_names::STATS_YAML]) stats_path_ = task_node[config_names::STATS_YAML].as<std::string>();
+            if(task_node[config_options::STATS_YAML]) stats_path_ = task_node[config_options::STATS_YAML].as<std::string>();
             
-            if(task_node[config_names::RLIMS]) rlimits_ = r_limits(task_node[config_names::RLIMS]);
+            if(task_node[config_options::task::RLIMS]) rlimits_ = r_limits(task_node[config_options::task::RLIMS]);
 
             cg_rel_path_ = name_; 
         }
 
         task_config(const options::variables_map& options_map) : rlimits_(options_map)
         {
-            if(options_map.contains(config_names::EXEC_PATH))
+            if(options_map.contains(config_options::task::EXEC_PATH))
             {
-                exec_ = fs::path(options_map[config_names::EXEC_PATH].as<std::string>());
+                exec_ = fs::path(options_map[config_options::task::EXEC_PATH].as<std::string>());
             }
             else
             {
                 terminate("No path to executable provided");
             }
 
-            if(options_map.contains(config_names::EXEC_ARGS))
+            if(options_map.contains(config_options::task::EXEC_ARGS))
             {
-                args_ = options_map[config_names::EXEC_ARGS].as<std::vector<std::string>>();
+                args_ = options_map[config_options::task::EXEC_ARGS].as<std::vector<std::string>>();
             }
 
-            if(options_map.contains(config_names::STATS_XML))
+            if(options_map.contains(config_options::STATS_XML))
             {
-                stats_path_ = fs::path(options_map[config_names::STATS_XML].as<std::string>());
+                stats_path_ = fs::path(options_map[config_options::STATS_XML].as<std::string>());
             }
 
-            if(options_map.contains(config_names::TASK_CG))
+            if(options_map.contains(config_options::TASK_CG))
             {
-                cg_rel_path_ = fs::path(options_map[config_names::TASK_CG].as<std::string>());
+                cg_rel_path_ = fs::path(options_map[config_options::TASK_CG].as<std::string>());
             }
         }
         
@@ -306,6 +317,7 @@ namespace config
         {
             
         }
+
     };
     
     class tasks_config
@@ -328,7 +340,7 @@ namespace config
 
         void parse_tasks(const YAML::Node& proxy_node)
         {
-            auto tasks_node = proxy_node[config_names::TASKS];
+            auto tasks_node = proxy_node[config_options::TASKS];
             for(auto i = 0; i < tasks_node.size(); i++)
             {
                 tasks_.push_back(std::make_unique<task_config>(tasks_node[i]));
@@ -340,8 +352,9 @@ namespace config
     {
     public:
         proxy_config() {}
-        proxy_config(const YAML::Node& proxy_node) : tasks_(proxy_node[config_names::TASKS])
+        proxy_config(const YAML::Node& proxy_node) : tasks_(proxy_node[config_options::TASKS])
         {
+            if(proxy_node[config_options::env::CHROOT_DIR]) chroot_dir_ = fs::path(proxy_node[config_options::env::CHROOT_DIR].as<std::string>());
         }
         
         auto& get_tasks_config()
@@ -349,7 +362,12 @@ namespace config
             return tasks_;
         }
 
+        const auto& get_chroot_dir()
+        {
+            return chroot_dir_;
+        }
     private:
+        std::optional<fs::path> chroot_dir_;
         tasks_config tasks_;
     };
 
@@ -394,32 +412,32 @@ namespace config
                 ("help-module", options::value<std::string>(),
                     "produce a help for a given module")
                 ("version", "output the version number")
-                (config_names::CONFIG_XML.c_str(), options::value<std::string>(), "read the configuration from a config file")
-                (config_names::CONFIG_YAML.c_str(), options::value<std::string>(), "read the configuration from a yaml config file")
+                (config_options::CONFIG_XML, options::value<std::string>(), "read the configuration from a config file")
+                (config_options::CONFIG_YAML, options::value<std::string>(), "read the configuration from a yaml config file")
                 ;
 
             options::options_description exec("Options to specify the executable and arguments");
             exec.add_options()
-                (config_names::EXEC_PATH.c_str(), options::value<std::string>(), "path to the program")
-                (config_names::EXEC_ARGS.c_str(), options::value<std::vector<std::string>>(), "list of arguments for the program")
+                (config_options::task::EXEC_PATH, options::value<std::string>(), "path to the program")
+                (config_options::task::EXEC_ARGS, options::value<std::vector<std::string>>(), "list of arguments for the program")
                 ;
 
             options::options_description rsrcs("Options for resource limitation");
             rsrcs.add_options()
-                (config_names::MEMORY.c_str(), options::value<size_t>(), "maximum amount of used virtual memory")
-                (config_names::AS_SIZE.c_str(), options::value<size_t>(), "address space size limit")
-                (config_names::CPU_TIME.c_str(), options::value<size_t>(), "cpu time limit")
-                (config_names::WALL_TIME.c_str(), options::value<size_t>(), "wall time limit")
+                (config_options::task::MEMORY, options::value<size_t>(), "maximum amount of used virtual memory")
+                (config_options::task::AS_SIZE, options::value<size_t>(), "address space size limit")
+                (config_options::task::CPU_TIME, options::value<size_t>(), "cpu time limit")
+                (config_options::task::WALL_TIME, options::value<size_t>(), "wall time limit")
                 ;
 
             options::options_description results("Options for generating files with task results");
             results.add_options()
-                (config_names::STATS_XML.c_str(), options::value<std::string>(), "path to an xml file with task results")
+                (config_options::STATS_XML, options::value<std::string>(), "path to an xml file with task results")
                 ;
 
             options::options_description cgroups("Options for cgroup configuration");
             cgroups.add_options()
-                (config_names::TASK_CG.c_str(), options::value<std::string>(), "relative path to cgroup from the default that will be created for the task")
+                (config_options::TASK_CG, options::value<std::string>(), "relative path to cgroup from the default that will be created for the task")
                 ;
                 
             // Declare an options description instance which will include
@@ -447,14 +465,14 @@ namespace config
                 return;
             }
             
-            if (options_map.contains(config_names::CONFIG_XML))
+            if (options_map.contains(config_options::CONFIG_XML))
             {
-                configure_from_xml(fs::path(options_map[config_names::CONFIG_XML].as<std::string>()));
+                configure_from_xml(fs::path(options_map[config_options::CONFIG_XML].as<std::string>()));
                 return;
             }
-            else if (options_map.contains(config_names::CONFIG_YAML))
+            else if (options_map.contains(config_options::CONFIG_YAML))
             {
-                configure_from_yaml(fs::path(options_map[config_names::CONFIG_YAML].as<std::string>()));
+                configure_from_yaml(fs::path(options_map[config_options::CONFIG_YAML].as<std::string>()));
             }
             else
             {
