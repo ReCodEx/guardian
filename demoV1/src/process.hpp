@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/resource.h>
+#include <sys/mount.h>
 
 #include <linux/sched.h>    /* Definition of struct clone_args */
 #include <sched.h>          /* Definition of CLONE_* constants */
@@ -28,13 +29,22 @@
 
 namespace process_utils
 {
-    #define ptr_to_u64(ptr) ((__u64)((uintptr_t)(ptr)))
+    namespace fs = std::filesystem;
 
-    inline clone_args create_clone_args(const config::task_intfc& task_conf, void* stack, uint64_t cgrp_fd)
+    inline void pivot_root(const fs::path& new_root, const fs::path& put_old)
+    {
+        if(syscall(SYS_pivot_root, new_root.c_str(), put_old.c_str()))
+            terminate("pivot_root failed, errno: {}", errno);
+        chdir("/");
+        if(umount2("/old_root", MNT_DETACH))
+            logs::error("umount on old root failed, errno: {}", errno);
+    }
+
+    inline clone_args task_clone_args(const config::task_config& task_conf, void* stack, uint64_t cgrp_fd)
     {
         clone_args args{0};
         args.exit_signal = SIGCHLD;
-        args.flags = CLONE_INTO_CGROUP | config::DEFAULT_CLONE_FLAGS;
+        args.flags = CLONE_INTO_CGROUP;
 
         //we will skip trying to allocate a stack for now.
 
@@ -44,15 +54,20 @@ namespace process_utils
         args.cgroup = cgrp_fd;
         return args;
     }
-
-    inline clone_args create_clone_args(const config::namespace_config& config, void* stack, uint64_t cgrp_fd)
+    
+    inline clone_args proxy_clone_args(const config::proxy_config& proxy_conf, void* stack, uint64_t cgrp_fd)
     {
         clone_args args{0};
         args.exit_signal = SIGCHLD;
-        args.flags = CLONE_INTO_CGROUP | config.get_clone_flags();
+        args.flags = config::DEFAULT_CLONE_FLAGS | CLONE_INTO_CGROUP; 
+
+        //we will skip trying to allocate a stack for now.
+
+        //args.stack = ptr_to_u64(stack);
+        //args.stack_size = task_conf.stack_size;
 
         args.cgroup = cgrp_fd;
-        return args;
+        return args; 
     }
 
     auto convert_to_argv(std::vector<std::string>& args)
@@ -76,11 +91,15 @@ namespace process_utils
         execve(exec.c_str(), cargs.data(), environ);
     }
 
-    inline pid_t clone3_task(const config::task_intfc& task_conf, void* stack, uint64_t cgrp_fd)
+    inline pid_t clone3_task(const config::task_config& task_conf, void* stack, uint64_t cgrp_fd)
     {
-        //pid_t outside_pid = fork();
-        //pid_t outside_pid = clone(test, (void*)(args.stack + args.stack_size), SIGCHLD, 0);
-        auto args = create_clone_args(task_conf, stack, cgrp_fd);
+        auto args = task_clone_args(task_conf, stack, cgrp_fd);
+        return syscall(SYS_clone3, &args, sizeof(clone_args));
+    }
+    
+    inline pid_t clone3_proxy(const config::proxy_config& config, void* stack, uint64_t cgrp_fd)
+    {
+        auto args = proxy_clone_args(config, stack, cgrp_fd);
         return syscall(SYS_clone3, &args, sizeof(clone_args));
     }
 

@@ -1,0 +1,4 @@
+chroot-dir: "/alpine"
+tasks:
+    - task-id: "helloworld"
+      path: "/tests/build/helloworld"

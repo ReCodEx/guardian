@@ -16,20 +16,20 @@ namespace tasks
     using namespace process_utils;
     namespace fs = std::filesystem;
 
-    class task_t
+    class task_supervisor
     {
     public:
-        task_t(config::task_intfc& conf) : task_intfc_(&conf), task_cgrp_(conf.cg_rel_path())
+        task_supervisor(config::task_config& conf) : task_config_(&conf), task_cgrp_(conf.cg_rel_path())
         {}
 
-        ~task_t()
+        ~task_supervisor()
         {}
 
         config::task_stats run_task()
         {
             pid_t pid = launch_task();
             auto stats = wait_for_task(pid);
-            task_intfc_->finalize_task(stats);
+            //task_intfc_->finalize_task(stats);
             return stats;
         }
 
@@ -59,7 +59,7 @@ namespace tasks
             int stat{};
             pid_t p;
             auto stime = std::chrono::system_clock::now();
-            auto wall_limit = std::chrono::seconds(task_intfc_->rlimits().wall_time());
+            auto wall_limit = std::chrono::seconds(task_config_->rlimits().wall_time());
 
             while(true)
             {
@@ -67,7 +67,7 @@ namespace tasks
 
                 if (p < 0)
                 {
-                    terminate("waitpid() failed. Stat: {}, Errno: {}", stat, errno);
+                    terminate("waitpid() for task \"{}\" failed. Stat: {}, Errno: {}", task_config_->name(), stat, errno);
                 }
                 else if (p == 0) 
                 {
@@ -88,7 +88,7 @@ namespace tasks
                 }
                 else break;
             }
-            logs::debug("Child exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
+            logs::debug("Task process exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
             return generate_task_stats(stat);
         }
 
@@ -99,19 +99,22 @@ namespace tasks
 
         pid_t run_task_in_cgroup()
         {
-            logs::debug("Calling clone3 for \"{}\"", task_intfc_->exec_path().string());
-            pid_t outside_pid = clone3_task(*task_intfc_, stack_, task_cgrp_.open_fd());
+            logs::debug("Calling clone3 for \"{}\"", task_config_->exec_path().string());
+            auto fd = task_cgrp_.open_fd();
+/*          std::filesystem::path cg("/sys/fs/cgroup");
+            file_utils::list_directory(cg); */
+            pid_t outside_pid = clone3_task(*task_config_, stack_, fd);
 
             if (outside_pid < 0)
             {
-                terminate("Cannot run process, clone3 failed. Errno: {}", errno);
+                terminate("Cannot run the task process, clone3 failed. Errno: {}", errno);
             }
                 
             else if (!outside_pid)
             {
-                set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use for example cgroup freezer.
-
-                cpp_execve(task_intfc_->exec_path(), task_intfc_->exec_args());
+                set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use cgroup freezer.
+                //process_utils:chroot_wr(fs::path("/alpine"));
+                cpp_execve(task_config_->exec_path(), task_config_->exec_args());
 
                 // We should never get here
                 terminate("Execve failed. Errno: {}", errno);
@@ -121,27 +124,19 @@ namespace tasks
 
         int get_cgrp_fd()
         {
-            fs::path cg_path(cgroup::cg_abs_path(task_intfc_->cg_rel_path()));
+            fs::path cg_path(cgroup::cg_abs_path(task_config_->cg_rel_path()));
             return open(cg_path.c_str(), O_DIRECTORY | O_RDONLY);
         }
 
         void set_resource_limits()
         {
-            auto& limits = task_intfc_->rlimits();
-            
+            auto& limits = task_config_->rlimits();
             //std::cout << std::format("Setting memory limit to {} bytes and cpu time limit to {} seconds.", limits.memory_bytes, limits.cpu_time_s) << std::endl;
-            if(limits.memory())
-            {
-                set_mem_limit(limits.memory().value());
-            }
-            if(limits.cpu_time())
-            {
-                set_cpu_limit(limits.cpu_time().value());
-            }
-            if(limits.as_size())
-            {
-                set_as_size_limit(limits.as_size().value());
-            }
+            if(limits.memory()) set_mem_limit(limits.memory().value());
+
+            if(limits.cpu_time()) set_cpu_limit(limits.cpu_time().value());
+
+            if(limits.as_size()) set_as_size_limit(limits.as_size().value());
         }
 
         void set_mem_limit(unsigned int bytes)
@@ -173,8 +168,36 @@ namespace tasks
         }
 
         void* stack_ = nullptr;
-        config::task_intfc* const task_intfc_;
+        config::task_config* const task_config_;
         cgroup::cgroupv2_t task_cgrp_;
+    };
+    
+    class task_manager
+    {
+    public:
+        task_manager(config::tasks_config& tasks) : tasks_config(&tasks)
+        {}
+        config::task_report run_all_tasks()
+        {
+            config::task_report report;
+
+            for(auto&& task_config : tasks_config->get_tasks())
+            {
+                tasks::task_supervisor task_(*task_config);
+                auto stats = task_.run_task();
+                report.insert(stats);
+                logs::debug("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.cg_total_time_usec, stats.cg_total_mem_bytes);
+            }
+            return report;
+        }
+    private:
+        config::tasks_config* tasks_config;
+
+        config::task_stats run_next_task()
+        {
+            
+            return config::task_stats();
+        }
     };
 }
 

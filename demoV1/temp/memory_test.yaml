@@ -1,0 +1,9 @@
+chroot-dir: "/alpine"
+tasks:
+    - task-id: "memory_test"
+      path: "/tests/build/memory_test_fuzzy"
+      args:
+          - 10000000
+      rlims:
+          cpu-time: 1
+          mem: 2000000

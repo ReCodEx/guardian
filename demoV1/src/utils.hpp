@@ -46,6 +46,13 @@ namespace string_utils
 namespace file_utils
 {
     namespace fs = std::filesystem;
+
+    void list_directory(const fs::path& path)
+    {
+        for (const auto & entry : fs::directory_iterator(path))
+            std::cout << entry.path() << std::endl;
+    }
+
     bool append_text(const fs::path& path, const std::string& data)
     {
         std::ofstream file(path, std::ios_base::app);
