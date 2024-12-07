@@ -30,34 +30,21 @@
 namespace process_utils
 {
     namespace fs = std::filesystem;
-    #define ptr_to_u64(ptr) ((__u64)((uintptr_t)(ptr)))
 
     inline void pivot_root(const fs::path& new_root, const fs::path& put_old)
     {
         if(syscall(SYS_pivot_root, new_root.c_str(), put_old.c_str()))
             terminate("pivot_root failed, errno: {}", errno);
         chdir("/");
-        if(umount("/old_root"))
-            terminate("umount on old root failed, errno: {}", errno);
-    }
-
-    inline void chroot_wr(const fs::path& path)
-    {
-        if(chroot(path.c_str()))
-            terminate("Chroot failed, errno: {}", errno);
-    }
-
-    inline void chroot_wr(fs::path&& path)
-    {
-        if(chroot(path.c_str()))
-            terminate("Chroot failed, errno: {}", errno);
+        if(umount2("/old_root", MNT_DETACH))
+            logs::error("umount on old root failed, errno: {}", errno);
     }
 
     inline clone_args task_clone_args(const config::task_config& task_conf, void* stack, uint64_t cgrp_fd)
     {
         clone_args args{0};
         args.exit_signal = SIGCHLD;
-        args.flags = CLONE_INTO_CGROUP; //| config::DEFAULT_CLONE_FLAGS;
+        args.flags = CLONE_INTO_CGROUP;
 
         //we will skip trying to allocate a stack for now.
 

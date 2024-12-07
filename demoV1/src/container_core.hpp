@@ -19,7 +19,7 @@ namespace container_core
     {
     public:
 
-        proxy_core(config::proxy_config& config) : proxy_config_(&config), task_runner_(config.get_tasks_config())
+        proxy_core(config::proxy_config& config) : proxy_config_(&config), mount_mngr_(&config), task_runner_(config.get_tasks_config())
         {
             logs::info("Hello world from the proxy!");
             init_proxy_logger();
@@ -47,7 +47,7 @@ private:
     void proxy_env_setup()
     {
         init_proxy_logger();
-        mount_mngr_.mount_all();
+        mount_mngr_.run();
         pivot_root();
         cg_mngr_.run();
     }
@@ -71,7 +71,7 @@ private:
     } 
     void mount_setup()
     {
-        mount_mngr_.mount_all();
+        mount_mngr_.run();
     }
 };
 
@@ -140,6 +140,7 @@ private:
             // We will never get here
             terminate("Something very weird happened");
         }
+        cg_mngr_.close_proxy_fd();
         return outside_pid;
     }
     

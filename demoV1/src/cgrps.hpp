@@ -96,11 +96,9 @@ namespace cgroup
 
     inline size_t memory_usage_bytes_abs(const fs::path& cg_path)
     {
-        std::cout << cg_path << std::endl;
         std::ifstream memory_peak(cg_path / MEMORY_PEAK());
         return std::stoi(file_utils::read_row_col(memory_peak,0,0));
     }
-
 
     /**
      * @brief Offers an interface for one resource controller for a specific cgroup.
@@ -210,7 +208,8 @@ namespace cgroup
         {
             if(fd_.has_value())
             {
-                close(fd_.value());
+                if(close(fd_.value()))
+                    logs::error("File descriptor for cgroup {} didnt close", cgrp_path_.c_str());
                 fd_.reset();
             }
         }
@@ -264,11 +263,8 @@ namespace cgroup
 
         void reset_path()
         {
-/*             for (const auto & entry : fs::directory_iterator(fs::path("/sys/fs/cgroup")))
-                std::cout << entry.path() << std::endl; */
             if(fs::is_directory(cgrp_path_))
             {
-                std::cout << "removing " << cgrp_path_ << std::endl;
                 fs::remove(cgrp_path_);
             }
             if(!fs::create_directory(cgrp_path_))
