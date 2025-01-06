@@ -368,6 +368,7 @@ namespace config
         {
 
         }
+
     private:
         root_config root_config_;
         proxy_config proxy_config_;
@@ -450,6 +451,7 @@ namespace config
             root_config_ = root_config(config);
             proxy_config_ = proxy_config(config);          
         }
+        
     };
 }
 

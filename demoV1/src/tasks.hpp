@@ -22,9 +22,6 @@ namespace tasks
         task_supervisor(config::task_config& conf) : task_config_(&conf), task_cgrp_(conf.cg_rel_path())
         {}
 
-        ~task_supervisor()
-        {}
-
         config::task_stats run_task()
         {
             pid_t pid = launch_task();
@@ -75,7 +72,7 @@ namespace tasks
                     if(ctime - stime < wall_limit)
                     {
                         logs::debug("task still running after {} s", std::chrono::duration_cast<std::chrono::seconds>(ctime - stime).count());
-                        std::this_thread::sleep_for(wait_time());
+                        std::this_thread::sleep_for(waiting_time());
                     }
                     else
                     {
@@ -101,8 +98,7 @@ namespace tasks
         {
             logs::debug("Calling clone3 for \"{}\"", task_config_->exec_path().string());
             auto fd = task_cgrp_.open_fd();
-/*          std::filesystem::path cg("/sys/fs/cgroup");
-            file_utils::list_directory(cg); */
+
             pid_t outside_pid = clone3_task(*task_config_, stack_, fd);
 
             if (outside_pid < 0)
@@ -113,7 +109,7 @@ namespace tasks
             else if (!outside_pid)
             {
                 set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use cgroup freezer.
-                //process_utils:chroot_wr(fs::path("/alpine"));
+
                 cpp_execve(task_config_->exec_path(), task_config_->exec_args());
 
                 // We should never get here
@@ -131,7 +127,7 @@ namespace tasks
         void set_resource_limits()
         {
             auto& limits = task_config_->rlimits();
-            //std::cout << std::format("Setting memory limit to {} bytes and cpu time limit to {} seconds.", limits.memory_bytes, limits.cpu_time_s) << std::endl;
+
             if(limits.memory()) set_mem_limit(limits.memory().value());
 
             if(limits.cpu_time()) set_cpu_limit(limits.cpu_time().value());
@@ -162,7 +158,7 @@ namespace tasks
             }
         }
 
-        std::chrono::milliseconds wait_time()
+        std::chrono::milliseconds waiting_time()
         {
             return std::chrono::milliseconds(1000);
         }
