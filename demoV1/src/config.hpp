@@ -15,10 +15,6 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/xml_parser.hpp>
-#include <boost/foreach.hpp>
-
 #include "yaml-cpp/yaml.h"
 
 #include <signal.h>
@@ -28,7 +24,6 @@ namespace config
     namespace cgrp = cgroup;
     namespace fs = std::filesystem;
     namespace options = boost::program_options;
-    namespace pt = boost::property_tree;
 
     struct task_config;
 
@@ -61,9 +56,7 @@ namespace config
         }
 
         constexpr auto TASK_CG = "task-cg";
-        constexpr auto STATS_XML = "stats-xml";
         constexpr auto STATS_YAML = "stats-yaml";
-        constexpr auto CONFIG_XML = "xml";
         constexpr auto CONFIG_YAML = "yaml";
     }
 
@@ -73,6 +66,8 @@ namespace config
         constexpr auto OK = "ok";
         constexpr auto KILLED = "killed";
         constexpr auto NON_ZERO_EXIT_CODE = "non zero exit code";
+        constexpr auto SIGNAL = "signal";
+        constexpr auto EXIT_CODE = "exit-code";
         constexpr auto CG_TOTAL_TIME_USEC = "cg_total_time_usec";
         constexpr auto CG_TOTAL_MEM_BYTES = "cg_total_mem_bytes";
         constexpr auto RUSAGE_TOTAL_TIME_USEC = "rusage_total_time_usec";
@@ -100,12 +95,6 @@ namespace config
         r_limits(size_t cpu_time, size_t mem) : cpu_time_s_(cpu_time), memory_bytes_(mem) 
         {}
 
-        r_limits(const pt::ptree& limits_tree) : 
-                                        cpu_time_s_(type_utils::to_std_optional(limits_tree.get_optional<size_t>(config_options::task::CPU_TIME))),
-                                        memory_bytes_(type_utils::to_std_optional(limits_tree.get_optional<size_t>(config_options::task::MEMORY))),
-                                        wall_time_s_(limits_tree.get(config_options::task::WALL_TIME, DEFAULT_WALL_TIME))
-        {}
-        
         r_limits(const YAML::Node& limits_node)
         {
             if(limits_node[config_options::task::CPU_TIME]) cpu_time_s_ = limits_node[config_options::task::CPU_TIME].as<size_t>();
@@ -198,13 +187,6 @@ namespace config
         exec_(std::move(exec)), args_(std::move(args)), rlimits_(std::move(rlims)), cg_rel_path_(std::move(cg_rel_path))
         {}
 
-        task_config(const pt::ptree& task_tree) :   exec_(fs::path(task_tree.get<std::string>(config_options::task::EXEC_PATH))), 
-                                            args_(std::move(string_utils::split(task_tree.get(config_options::task::EXEC_ARGS, "")))),
-                                            rlimits_(task_tree.get_child(config_options::task::RLIMS)),
-                                            cg_rel_path_(fs::path(task_tree.get<std::string>(config_options::TASK_CG))),
-                                            stats_path_(type_utils::to_std_optional(task_tree.get_optional<std::string>(config_options::STATS_XML)))
-        {}
-
         task_config(const YAML::Node& task_node)
         {
             if(task_node[config_options::task::EXEC_PATH]) exec_ = fs::path(task_node[config_options::task::EXEC_PATH].as<std::string>());
@@ -237,11 +219,6 @@ namespace config
                 args_ = options_map[config_options::task::EXEC_ARGS].as<std::vector<std::string>>();
             }
 
-            if(options_map.contains(config_options::STATS_XML))
-            {
-                stats_path_ = fs::path(options_map[config_options::STATS_XML].as<std::string>());
-            }
-
             if(options_map.contains(config_options::TASK_CG))
             {
                 cg_rel_path_ = fs::path(options_map[config_options::TASK_CG].as<std::string>());
@@ -260,17 +237,8 @@ namespace config
             task_stats_ = stats;
             if(stats_path_.has_value())
             {
-                create_stats_file(stats_path_.value(), task_stats_.value());
+                create_stats_yaml(stats_path_.value(), task_stats_.value());
             }
-        }
-
-        void generate_stats_file(const fs::path& path)
-        {
-            if(!task_stats_)
-            {
-                terminate("Task hasn't been finalized!");
-            }
-            create_stats_file(path, task_stats_.value());
         }
 
     private:
@@ -283,29 +251,31 @@ namespace config
         std::optional<fs::path>   stats_path_;
         std::optional<task_stats> task_stats_;
 
-        static void create_stats_file(const fs::path& path, const task_stats& stats)
+        static void create_stats_yaml(const fs::path& path, const task_stats& stats)
         {
-            pt::ptree stat_tree;
-            std::ofstream f(path);
+            YAML::Emitter yaml;
+            yaml << YAML::BeginMap;
+            yaml << YAML::Key << stats_names::STATUS; 
             if(stats.exited_normally && stats.exit_code == 0)
             {
-                stat_tree.put(stats_names::STATUS, stats_names::OK);
+                yaml << YAML::Value << stats_names::OK;
             }
             else if (stats.signalled)
             {
-                stat_tree.put(stats_names::STATUS, stats_names::KILLED);
+                yaml << YAML::Value << stats_names::KILLED;
             }
             else if (stats.exit_code)
             {
-                stat_tree.put(stats_names::STATUS, stats_names::NON_ZERO_EXIT_CODE);
+                yaml << YAML::Value << stats_names::NON_ZERO_EXIT_CODE;
             }
 
-            stat_tree.put(stats_names::CG_TOTAL_TIME_USEC, stats.cg_total_time_usec);
-            stat_tree.put(stats_names::CG_TOTAL_MEM_BYTES, stats.cg_total_mem_bytes);
-            stat_tree.put(stats_names::RUSAGE_TOTAL_TIME_USEC, stats.rusage_total_time_usec);
-            stat_tree.put(stats_names::RUSAGE_TOTAL_MEM_BYTES, stats.rusage_total_mem_bytes);
-
-            pt::write_xml(f, stat_tree);
+            yaml << YAML::Key << stats_names::EXIT_CODE << YAML::Value << stats.exit_code; 
+            yaml << YAML::Key << stats_names::SIGNAL << YAML::Value << stats.signal; 
+            yaml << YAML::Key << stats_names::CG_TOTAL_TIME_USEC << YAML::Value << stats.cg_total_time_usec; 
+            yaml << YAML::Key << stats_names::CG_TOTAL_MEM_BYTES << YAML::Value << stats.cg_total_mem_bytes; 
+            
+            std::ofstream f(path);
+            f << yaml.c_str(); 
         }
     };
 
@@ -399,7 +369,6 @@ namespace config
 
         }
     private:
-        pt::ptree config_tree_;
         root_config root_config_;
         proxy_config proxy_config_;
         std::vector<std::unique_ptr<task_config>> tasks_;
@@ -412,7 +381,6 @@ namespace config
                 ("help-module", options::value<std::string>(),
                     "produce a help for a given module")
                 ("version", "output the version number")
-                (config_options::CONFIG_XML, options::value<std::string>(), "read the configuration from a config file")
                 (config_options::CONFIG_YAML, options::value<std::string>(), "read the configuration from a yaml config file")
                 ;
 
@@ -432,7 +400,7 @@ namespace config
 
             options::options_description results("Options for generating files with task results");
             results.add_options()
-                (config_options::STATS_XML, options::value<std::string>(), "path to an xml file with task results")
+                (config_options::STATS_YAML, options::value<std::string>(), "path to yaml file with task results")
                 ;
 
             options::options_description cgroups("Options for cgroup configuration");
@@ -465,12 +433,7 @@ namespace config
                 return;
             }
             
-            if (options_map.contains(config_options::CONFIG_XML))
-            {
-                configure_from_xml(fs::path(options_map[config_options::CONFIG_XML].as<std::string>()));
-                return;
-            }
-            else if (options_map.contains(config_options::CONFIG_YAML))
+            if (options_map.contains(config_options::CONFIG_YAML))
             {
                 configure_from_yaml(fs::path(options_map[config_options::CONFIG_YAML].as<std::string>()));
             }
@@ -481,15 +444,6 @@ namespace config
             }
         }
 
-        void configure_from_xml(const fs::path& f)
-        {
-            pt::read_xml(f.string(), config_tree_);
-            BOOST_FOREACH(pt::ptree::value_type &task_conf, config_tree_.get_child("tasks")) 
-            {
-                tasks_.push_back(std::make_unique<task_config>(task_conf.second));
-            }
-        }
-        
         void configure_from_yaml(const fs::path& f)
         {
             YAML::Node config = YAML::LoadFile(f);

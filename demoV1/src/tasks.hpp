@@ -29,7 +29,7 @@ namespace tasks
         {
             pid_t pid = launch_task();
             auto stats = wait_for_task(pid);
-            //task_intfc_->finalize_task(stats);
+            task_config_->finalize_task(stats);
             return stats;
         }
 
