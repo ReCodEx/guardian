@@ -1,0 +1,338 @@
+---
+submission:
+  job-id: reference_5c65b1f1-0ce4-4214-ad0c-bebed6486233
+  file-collector: https://recodex.mff.cuni.cz/api/v1/worker-files/supplementary-file
+  log: "true"
+  hw-groups:
+  - 01-supmic-regular
+tasks:
+- task-id: Test 01..mkdir.0
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 01
+- task-id: Test 01..dump-results.1
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 01
+    - ${RESULT_DIR}/Test 01
+    - 65536
+  dependencies:
+  - Test 01..mkdir.0
+- task-id: Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.2
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - c9f13ebcfa74d76a61b097865312a61e7277cdb0
+    - ${SOURCE_DIR}/Test 01/ReCodEx_Csharp_Reader.cs
+  dependencies:
+  - Test 01..mkdir.0
+  test-id: Test 01
+- task-id: Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.3
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - abbcfc9ffefa2438e28857082171b2745af7e740
+    - ${SOURCE_DIR}/Test 01/ReCodEx_Csharp_Wrapper.cs
+  dependencies:
+  - Test 01..mkdir.0
+  - Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.2
+  test-id: Test 01
+- task-id: Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.sources.4
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/hello-world.cs
+    - ${SOURCE_DIR}/Test 01/hello-world.cs
+  dependencies:
+  - Test 01..mkdir.0
+  test-id: Test 01
+- task-id: Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.5
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - /opt/dotnet/sdk/latest/Roslyn/bincore/csc.dll
+    - -out:Program.exe
+    - -target:exe
+    - -main:CodEx.Wrapper
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.CSharp.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.VisualBasic.Core.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.VisualBasic.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.Win32.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.Win32.Registry.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/mscorlib.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/netstandard.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.AppContext.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Buffers.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.Concurrent.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.Immutable.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.NonGeneric.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.Specialized.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.Annotations.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.DataAnnotations.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.EventBasedAsync.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.TypeConverter.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Configuration.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Console.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Core.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Data.Common.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Data.DataSetExtensions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Data.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Contracts.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Debug.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.DiagnosticSource.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.FileVersionInfo.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Process.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.StackTrace.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.TextWriterTraceListener.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Tools.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.TraceSource.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Tracing.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Drawing.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Drawing.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Dynamic.Runtime.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Formats.Asn1.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Globalization.Calendars.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Globalization.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Globalization.Extensions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Compression.Brotli.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Compression.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Compression.FileSystem.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Compression.ZipFile.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.AccessControl.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.DriveInfo.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.Watcher.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.IsolatedStorage.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.MemoryMappedFiles.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Pipes.AccessControl.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Pipes.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.UnmanagedMemoryStream.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Linq.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Linq.Expressions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Linq.Parallel.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Linq.Queryable.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Memory.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Http.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Http.Json.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.HttpListener.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Mail.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.NameResolution.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.NetworkInformation.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Ping.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Quic.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Requests.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Security.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.ServicePoint.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Sockets.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebClient.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebHeaderCollection.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebProxy.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebSockets.Client.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebSockets.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Numerics.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Numerics.Vectors.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ObjectModel.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.CoreLib.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.DataContractSerialization.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.Uri.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.Xml.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.Xml.Linq.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.DispatchProxy.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Emit.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Emit.ILGeneration.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Emit.Lightweight.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Extensions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Metadata.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.TypeExtensions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Resources.Reader.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Resources.ResourceManager.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Resources.Writer.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.CompilerServices.Unsafe.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.CompilerServices.VisualC.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Extensions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Handles.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.InteropServices.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.InteropServices.RuntimeInformation.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Intrinsics.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Loader.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Numerics.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.Formatters.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.Json.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.Xml.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.AccessControl.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Claims.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Algorithms.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Cng.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Csp.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Encoding.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.OpenSsl.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.X509Certificates.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Principal.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Principal.Windows.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.SecureString.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ServiceModel.Web.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ServiceProcess.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Encoding.CodePages.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Encoding.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Encoding.Extensions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Encodings.Web.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Json.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.RegularExpressions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Channels.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Overlapped.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Tasks.Dataflow.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Tasks.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Tasks.Extensions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Tasks.Parallel.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Thread.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.ThreadPool.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Timer.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Transactions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Transactions.Local.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ValueTuple.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Web.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Web.HttpUtility.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Windows.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.Linq.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.ReaderWriter.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.Serialization.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XDocument.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XmlDocument.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XmlSerializer.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XPath.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XPath.XDocument.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/WindowsBase.dll
+    - ${EVAL_DIR}/ReCodEx_Csharp_Reader.cs
+    - ${EVAL_DIR}/ReCodEx_Csharp_Wrapper.cs
+    - ${EVAL_DIR}/hello-world.cs
+  dependencies:
+  - Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.2
+  - Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.3
+  - Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.sources.4
+  - Test 01..mkdir.0
+  test-id: Test 01
+  type: initiation
+  sandbox:
+    name: isolate
+    stderr-to-stdout: true
+    output: true
+    carboncopy-stdout: ${RESULT_DIR}/compilation.ru38ty8iur7644y1tolr.out
+    working-directory: Test 01
+- task-id: Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.6
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: exists
+    args:
+    - Compilation process completed correctly but no executable file was yielded.
+      Unable to proceed with testing.
+    - ${SOURCE_DIR}/Test 01/Program.exe
+  dependencies:
+  - Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.2
+  - Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.3
+  - Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.sources.4
+  - Test 01..mkdir.0
+  - Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.5
+  test-id: Test 01
+  type: initiation
+- task-id: Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.7
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 4d877a1f7ee1685ff7f3b5bacb5be28e2a4f6b09
+    - ${SOURCE_DIR}/Test 01/Program.runtimeconfig.json
+  dependencies:
+  - Test 01..mkdir.0
+  test-id: Test 01
+- task-id: Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.run.8
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 01..mkdir.0
+  - Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.7
+  - Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.5
+  - Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.6
+  test-id: Test 01
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/49frdlp4bxx0f6sz7w24.stdout
+    stderr: ${EVAL_DIR}/execution.t6r0hrdyq4h4lmwjohyp.stderr
+    working-directory: Test 01
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 262144
+      bound-directories: []
+- task-id: Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.9
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 648a6a6ffffdaa0badb23b8baf90b6168dd16b3a
+    - ${SOURCE_DIR}/Test 01/expected.out
+  dependencies:
+  - Test 01..mkdir.0
+  test-id: Test 01
+- task-id: Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.10
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/49frdlp4bxx0f6sz7w24.stdout
+  dependencies:
+  - Test 01..mkdir.0
+  - Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.9
+  - Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.run.8
+  test-id: Test 01
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 01
+...

@@ -1,0 +1,132 @@
+[2024-12-18 13:15:24.892] [job_logger] [info] ------------------------------
+[2024-12-18 13:15:24.892] [job_logger] [info]        Job system log
+[2024-12-18 13:15:24.892] [job_logger] [info] ------------------------------
+[2024-12-18 13:15:24.892] [job_logger] [debug] Task queue linear order:
+[2024-12-18 13:15:24.892] [job_logger] [debug]   - Task 'Test 01..mkdir.0' with priority: 42 and auto-increment id: 1
+[2024-12-18 13:15:24.892] [job_logger] [debug]   - Task 'Test 01.1079c3b4-9eff-11e7-869b-005056854569.fetch-runner.2' with priority: 42 and auto-increment id: 3
+[2024-12-18 13:15:24.892] [job_logger] [debug]   - Task 'Test 01.cb536605-fd0e-11e7-b1e1-005056854569.sources.3' with priority: 42 and auto-increment id: 4
+[2024-12-18 13:15:24.892] [job_logger] [debug]   - Task 'Test 01.1079c3b4-9eff-11e7-869b-005056854569.run.4' with priority: 90 and auto-increment id: 5
+[2024-12-18 13:15:24.892] [job_logger] [debug]   - Task 'Test 01.1079c3b4-9eff-11e7-869b-005056854569.expected.5' with priority: 42 and auto-increment id: 6
+[2024-12-18 13:15:24.892] [job_logger] [debug]   - Task 'Test 01.1079c3b4-9eff-11e7-869b-005056854569.judge.6' with priority: 80 and auto-increment id: 7
+[2024-12-18 13:15:24.892] [job_logger] [debug]   - Task 'Test 01..dump-results.1' with priority: 1 and auto-increment id: 2
+[2024-12-18 13:15:24.892] [job_logger] [info] Task "Test 01..mkdir.0" ran successfully
+[2024-12-18 13:15:24.893] [job_logger] [info] Task "Test 01.1079c3b4-9eff-11e7-869b-005056854569.fetch-runner.2" ran successfully
+[2024-12-18 13:15:24.893] [job_logger] [info] Task "Test 01.cb536605-fd0e-11e7-b1e1-005056854569.sources.3" ran successfully
+[2024-12-18 13:15:24.893] [job_logger] [debug] Initializing isolate...
+[2024-12-18 13:15:24.901] [job_logger] [debug] Isolate initialized in /var/local/lib/isolate/1/box
+[2024-12-18 13:15:24.901] [job_logger] [info] Sandbox path /usr/bin/env not found in local filesystem, executable bit not set
+[2024-12-18 13:15:24.901] [job_logger] [debug] Running isolate...
+[2024-12-18 13:15:24.901] [job_logger] [debug] Running the first fork
+[2024-12-18 13:15:24.902] [job_logger] [debug] Returned from the first fork as parent
+[2024-12-18 13:15:24.902] [job_logger] [debug] Running the second fork
+[2024-12-18 13:15:24.902] [job_logger] [debug] Returned from the first fork as child
+[2024-12-18 13:15:24.902] [job_logger] [debug]   isolate
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --cg
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --cg-timing
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --box-id=1
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --cg-mem=75776
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --time=1.000000
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --wall-time=120.000000
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --extra-time=3.000000
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --stdout=/box/ayspsmsmuw1zvj7hr8ob.stdout
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --stderr=/box/execution.adioxl52yhvaov8sbvkd.stderr
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --processes
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --env=LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/opt/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/opt/compiler/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/tbb/latest/lib/intel64/gcc4.8:/usr/local/recodex-gcc/lib64
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --env=PATH=/opt/intel/oneapi/compiler/latest/bin/compiler:/opt/intel/oneapi/compiler/latest/bin:/var/recodex-worker-python-venv/bin:/usr/local/recodex-gcc/bin:/usr/bin:/bin
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --env=HOME=/box
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --env=JAVA_HOME=/usr/lib/jvm/jre-openjdk
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --env=PPC_CONFIG_PATH=/usr/etc
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --env=PYTHONHASHSEED=0
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --env=PYTHONIOENCODING=utf-8
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --env=VIRTUAL_ENV=/var/recodex-worker-python-venv
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --env=GO111MODULE=auto
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --env=GROOVY_HOME=/opt/groovy
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --env=MAVEN_HOME=/opt/maven
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --env=M2_HOME=/opt/maven-repo
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --dir=/tmp:tmp
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --dir=/var/recodex-worker-python-venv
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --dir=/opt/remi
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --dir=/opt/kotlin
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --dir=/opt/groovy
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --dir=/opt/maven
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --dir=/opt/maven-repo
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --dir=/opt/dotnet
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --dir=/opt/Picat
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --dir=/opt/intel
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --dir=/etc/java
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --dir=/etc/OpenCL
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --dir=etc/alternatives=/etc/alternatives:maybe
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --meta=/var/recodex-worker-wd/temp/1/reference_7c0958fd-71df-4d1b-8d47-ab63dc04f311/1/meta.log
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --run
+[2024-12-18 13:15:24.902] [job_logger] [debug]   --
+[2024-12-18 13:15:24.902] [job_logger] [debug]   /usr/bin/env
+[2024-12-18 13:15:24.902] [job_logger] [debug]   python3
+[2024-12-18 13:15:24.902] [job_logger] [debug]   cb83045aeb0c9d6a871c240f79b68507952a8308
+[2024-12-18 13:15:24.902] [job_logger] [debug]   /box/hello-world.py
+[2024-12-18 13:15:24.902] [job_logger] [debug] Returned from the second fork as parent
+[2024-12-18 13:15:24.902] [job_logger] [debug] Returned from the second fork as child (control process)
+[2024-12-18 13:15:24.925] [job_logger] [debug] Isolate box 1 ran successfully.
+[2024-12-18 13:15:24.925] [job_logger] [debug] Cleaning up isolate...
+[2024-12-18 13:15:24.926] [job_logger] [debug] Isolate box 1 cleaned up.
+[2024-12-18 13:15:24.927] [job_logger] [info] Task "Test 01.1079c3b4-9eff-11e7-869b-005056854569.run.4" ran successfully
+[2024-12-18 13:15:24.927] [job_logger] [info] Task "Test 01.1079c3b4-9eff-11e7-869b-005056854569.expected.5" ran successfully
+[2024-12-18 13:15:24.927] [job_logger] [debug] Initializing isolate...
+[2024-12-18 13:15:24.935] [job_logger] [debug] Isolate initialized in /var/local/lib/isolate/1/box
+[2024-12-18 13:15:24.935] [job_logger] [info] Sandbox path /usr/bin/recodex-token-judge not found in local filesystem, executable bit not set
+[2024-12-18 13:15:24.935] [job_logger] [debug] Running isolate...
+[2024-12-18 13:15:24.935] [job_logger] [debug] Running the first fork
+[2024-12-18 13:15:24.935] [job_logger] [debug] Returned from the first fork as parent
+[2024-12-18 13:15:24.935] [job_logger] [debug] Running the second fork
+[2024-12-18 13:15:24.935] [job_logger] [debug] Returned from the first fork as child
+[2024-12-18 13:15:24.935] [job_logger] [debug]   isolate
+[2024-12-18 13:15:24.935] [job_logger] [debug]   --cg
+[2024-12-18 13:15:24.935] [job_logger] [debug]   --cg-timing
+[2024-12-18 13:15:24.935] [job_logger] [debug]   --box-id=1
+[2024-12-18 13:15:24.935] [job_logger] [debug]   --cg-mem=31467520
+[2024-12-18 13:15:24.935] [job_logger] [debug]   --time=90.000000
+[2024-12-18 13:15:24.935] [job_logger] [debug]   --wall-time=120.000000
+[2024-12-18 13:15:24.935] [job_logger] [debug]   --extra-time=3.000000
+[2024-12-18 13:15:24.935] [job_logger] [debug]   --stdout=/box/Test 01.1079c3b4-9eff-11e7-869b-005056854569.judge.6.WFuHLqgGAd.output.stdout
+[2024-12-18 13:15:24.935] [job_logger] [debug]   --stderr=/box/Test 01.1079c3b4-9eff-11e7-869b-005056854569.judge.6.WFuHLqgGAd.output.stderr
+[2024-12-18 13:15:24.935] [job_logger] [debug]   --processes
+[2024-12-18 13:15:24.935] [job_logger] [debug]   --env=LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/opt/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/opt/compiler/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/tbb/latest/lib/intel64/gcc4.8:/usr/local/recodex-gcc/lib64
+[2024-12-18 13:15:24.935] [job_logger] [debug]   --env=PATH=/opt/intel/oneapi/compiler/latest/bin/compiler:/opt/intel/oneapi/compiler/latest/bin:/var/recodex-worker-python-venv/bin:/usr/local/recodex-gcc/bin:/usr/bin:/bin
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --env=HOME=/box
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --env=JAVA_HOME=/usr/lib/jvm/jre-openjdk
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --env=PPC_CONFIG_PATH=/usr/etc
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --env=PYTHONHASHSEED=0
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --env=PYTHONIOENCODING=utf-8
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --env=VIRTUAL_ENV=/var/recodex-worker-python-venv
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --env=GO111MODULE=auto
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --env=GROOVY_HOME=/opt/groovy
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --env=MAVEN_HOME=/opt/maven
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --env=M2_HOME=/opt/maven-repo
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --dir=/tmp:tmp
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --dir=/var/recodex-worker-python-venv
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --dir=/opt/remi
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --dir=/opt/kotlin
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --dir=/opt/groovy
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --dir=/opt/maven
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --dir=/opt/maven-repo
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --dir=/opt/dotnet
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --dir=/opt/Picat
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --dir=/opt/intel
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --dir=/etc/java
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --dir=/etc/OpenCL
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --dir=etc/alternatives=/etc/alternatives:maybe
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --meta=/var/recodex-worker-wd/temp/1/reference_7c0958fd-71df-4d1b-8d47-ab63dc04f311/1/meta.log
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --run
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --
+[2024-12-18 13:15:24.936] [job_logger] [debug]   /usr/bin/recodex-token-judge
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --log-limit
+[2024-12-18 13:15:24.936] [job_logger] [debug]   4k
+[2024-12-18 13:15:24.936] [job_logger] [debug]   --ignore-trailing-whitespace
+[2024-12-18 13:15:24.936] [job_logger] [debug]   /box/expected.out
+[2024-12-18 13:15:24.936] [job_logger] [debug]   /box/ayspsmsmuw1zvj7hr8ob.stdout
+[2024-12-18 13:15:24.936] [job_logger] [debug] Returned from the second fork as parent
+[2024-12-18 13:15:24.936] [job_logger] [debug] Returned from the second fork as child (control process)
+[2024-12-18 13:15:24.939] [job_logger] [debug] Isolate box 1 ran successfully.
+[2024-12-18 13:15:24.939] [job_logger] [debug] Cleaning up isolate...
+[2024-12-18 13:15:24.941] [job_logger] [debug] Isolate box 1 cleaned up.
+[2024-12-18 13:15:24.941] [job_logger] [info] Task "Test 01.1079c3b4-9eff-11e7-869b-005056854569.judge.6" ran successfully
+[2024-12-18 13:15:24.941] [job_logger] [info] Task "Test 01..dump-results.1" ran successfully

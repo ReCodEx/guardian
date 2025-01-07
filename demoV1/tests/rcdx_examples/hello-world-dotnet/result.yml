@@ -1,0 +1,65 @@
+job-id: reference_5c65b1f1-0ce4-4214-ad0c-bebed6486233
+hw-group: 01-supmic-regular
+results:
+  - task-id: Test 01..mkdir.0
+    status: OK
+  - task-id: Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.2
+    status: OK
+  - task-id: Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.3
+    status: OK
+  - task-id: Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.sources.4
+    status: OK
+  - task-id: Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.5
+    status: OK
+    output:
+      stdout: "Microsoft (R) Visual C# Compiler version 4.8.0-7.24362.3 (2975b0a5)\nCopyright (C) Microsoft Corporation. All rights reserved.\n\n"
+    sandbox_results:
+      exitcode: 0
+      time: 0.508000016
+      wall-time: 0.528999984
+      memory: 97020
+      max-rss: 150276
+      status: OK
+      exitsig: 0
+      killed: false
+      message: ""
+      csw-voluntary: 94
+      csw-forced: 384
+  - task-id: Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.6
+    status: OK
+  - task-id: Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.7
+    status: OK
+  - task-id: Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.run.8
+    status: OK
+    sandbox_results:
+      exitcode: 0
+      time: 0.0170000009
+      wall-time: 0.0240000002
+      memory: 4952
+      max-rss: 23192
+      status: OK
+      exitsig: 0
+      killed: false
+      message: ""
+      csw-voluntary: 26
+      csw-forced: 21
+  - task-id: Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.9
+    status: OK
+  - task-id: Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.10
+    status: OK
+    output:
+      stdout: "1\n"
+    sandbox_results:
+      exitcode: 0
+      time: 0.00100000005
+      wall-time: 0.00100000005
+      memory: 860
+      max-rss: 4092
+      status: OK
+      exitsig: 0
+      killed: false
+      message: ""
+      csw-voluntary: 3
+      csw-forced: 4
+  - task-id: Test 01..dump-results.1
+    status: OK

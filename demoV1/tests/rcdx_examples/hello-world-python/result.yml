@@ -1,0 +1,43 @@
+job-id: reference_7c0958fd-71df-4d1b-8d47-ab63dc04f311
+hw-group: 01-supmic-regular
+results:
+  - task-id: Test 01..mkdir.0
+    status: OK
+  - task-id: Test 01.1079c3b4-9eff-11e7-869b-005056854569.fetch-runner.2
+    status: OK
+  - task-id: Test 01.cb536605-fd0e-11e7-b1e1-005056854569.sources.3
+    status: OK
+  - task-id: Test 01.1079c3b4-9eff-11e7-869b-005056854569.run.4
+    status: OK
+    sandbox_results:
+      exitcode: 0
+      time: 0.0189999994
+      wall-time: 0.0199999996
+      memory: 6176
+      max-rss: 12044
+      status: OK
+      exitsig: 0
+      killed: false
+      message: ""
+      csw-voluntary: 3
+      csw-forced: 4
+  - task-id: Test 01.1079c3b4-9eff-11e7-869b-005056854569.expected.5
+    status: OK
+  - task-id: Test 01.1079c3b4-9eff-11e7-869b-005056854569.judge.6
+    status: OK
+    output:
+      stdout: "1\n"
+    sandbox_results:
+      exitcode: 0
+      time: 0.00100000005
+      wall-time: 0.00100000005
+      memory: 608
+      max-rss: 4060
+      status: OK
+      exitsig: 0
+      killed: false
+      message: ""
+      csw-voluntary: 3
+      csw-forced: 4
+  - task-id: Test 01..dump-results.1
+    status: OK

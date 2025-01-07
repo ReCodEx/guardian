@@ -1,0 +1,366 @@
+[2024-12-18 13:03:34.434] [job_logger] [info] ------------------------------
+[2024-12-18 13:03:34.434] [job_logger] [info]        Job system log
+[2024-12-18 13:03:34.434] [job_logger] [info] ------------------------------
+[2024-12-18 13:03:34.434] [job_logger] [debug] Task queue linear order:
+[2024-12-18 13:03:34.434] [job_logger] [debug]   - Task 'Test 01..mkdir.0' with priority: 42 and auto-increment id: 1
+[2024-12-18 13:03:34.434] [job_logger] [debug]   - Task 'Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.2' with priority: 42 and auto-increment id: 3
+[2024-12-18 13:03:34.434] [job_logger] [debug]   - Task 'Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.3' with priority: 42 and auto-increment id: 4
+[2024-12-18 13:03:34.434] [job_logger] [debug]   - Task 'Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.sources.4' with priority: 42 and auto-increment id: 5
+[2024-12-18 13:03:34.434] [job_logger] [debug]   - Task 'Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.5' with priority: 100 and auto-increment id: 6
+[2024-12-18 13:03:34.434] [job_logger] [debug]   - Task 'Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.6' with priority: 100 and auto-increment id: 7
+[2024-12-18 13:03:34.434] [job_logger] [debug]   - Task 'Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.7' with priority: 42 and auto-increment id: 8
+[2024-12-18 13:03:34.434] [job_logger] [debug]   - Task 'Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.run.8' with priority: 90 and auto-increment id: 9
+[2024-12-18 13:03:34.434] [job_logger] [debug]   - Task 'Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.9' with priority: 42 and auto-increment id: 10
+[2024-12-18 13:03:34.434] [job_logger] [debug]   - Task 'Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.10' with priority: 80 and auto-increment id: 11
+[2024-12-18 13:03:34.434] [job_logger] [debug]   - Task 'Test 01..dump-results.1' with priority: 1 and auto-increment id: 2
+[2024-12-18 13:03:34.434] [job_logger] [info] Task "Test 01..mkdir.0" ran successfully
+[2024-12-18 13:03:34.434] [job_logger] [info] Task "Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.2" ran successfully
+[2024-12-18 13:03:34.434] [job_logger] [info] Task "Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.3" ran successfully
+[2024-12-18 13:03:34.434] [job_logger] [info] Task "Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.sources.4" ran successfully
+[2024-12-18 13:03:34.434] [job_logger] [debug] Initializing isolate...
+[2024-12-18 13:03:34.445] [job_logger] [debug] Isolate initialized in /var/local/lib/isolate/1/box
+[2024-12-18 13:03:34.445] [job_logger] [info] Sandbox path /usr/bin/dotnet not found in local filesystem, executable bit not set
+[2024-12-18 13:03:34.445] [job_logger] [debug] Running isolate...
+[2024-12-18 13:03:34.445] [job_logger] [debug] Running the first fork
+[2024-12-18 13:03:34.446] [job_logger] [debug] Returned from the first fork as parent
+[2024-12-18 13:03:34.446] [job_logger] [debug] Running the second fork
+[2024-12-18 13:03:34.446] [job_logger] [debug] Returned from the first fork as child
+[2024-12-18 13:03:34.446] [job_logger] [debug]   isolate
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --cg
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --cg-timing
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --box-id=1
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --cg-mem=31467520
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --time=90.000000
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --wall-time=120.000000
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --extra-time=3.000000
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --stdout=/box/Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.5.MbrKv1RHXg.output.stdout
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --stderr=/box/Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.5.MbrKv1RHXg.output.stderr
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --stderr-to-stdout
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --processes
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --share-net
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --dir=/etc
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --env=LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/opt/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/opt/compiler/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/tbb/latest/lib/intel64/gcc4.8:/usr/local/recodex-gcc/lib64
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --env=PATH=/opt/intel/oneapi/compiler/latest/bin/compiler:/opt/intel/oneapi/compiler/latest/bin:/var/recodex-worker-python-venv/bin:/usr/local/recodex-gcc/bin:/usr/bin:/bin
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --env=HOME=/box
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --env=JAVA_HOME=/usr/lib/jvm/jre-openjdk
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --env=PPC_CONFIG_PATH=/usr/etc
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --env=PYTHONHASHSEED=0
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --env=PYTHONIOENCODING=utf-8
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --env=VIRTUAL_ENV=/var/recodex-worker-python-venv
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --env=GO111MODULE=auto
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --env=GROOVY_HOME=/opt/groovy
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --env=MAVEN_HOME=/opt/maven
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --env=M2_HOME=/opt/maven-repo
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --dir=/tmp:tmp
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --dir=/var/recodex-worker-python-venv
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --dir=/opt/remi
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --dir=/opt/kotlin
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --dir=/opt/groovy
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --dir=/opt/maven
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --dir=/opt/maven-repo
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --dir=/opt/dotnet
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --dir=/opt/Picat
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --dir=/opt/intel
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --dir=/etc/java
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --dir=/etc/OpenCL
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --dir=etc/alternatives=/etc/alternatives:maybe
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --meta=/var/recodex-worker-wd/temp/1/reference_5c65b1f1-0ce4-4214-ad0c-bebed6486233/1/meta.log
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --run
+[2024-12-18 13:03:34.446] [job_logger] [debug]   --
+[2024-12-18 13:03:34.446] [job_logger] [debug]   /usr/bin/dotnet
+[2024-12-18 13:03:34.446] [job_logger] [debug]   /opt/dotnet/sdk/latest/Roslyn/bincore/csc.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -out:Program.exe
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -target:exe
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -main:CodEx.Wrapper
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.CSharp.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.VisualBasic.Core.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.VisualBasic.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.Win32.Primitives.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.Win32.Registry.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/mscorlib.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/netstandard.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.AppContext.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Buffers.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.Concurrent.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.Immutable.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.NonGeneric.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.Specialized.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.Annotations.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.DataAnnotations.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.EventBasedAsync.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.Primitives.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.TypeConverter.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Configuration.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Console.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Core.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Data.Common.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Data.DataSetExtensions.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Data.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Contracts.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Debug.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.DiagnosticSource.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.FileVersionInfo.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Process.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.StackTrace.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.TextWriterTraceListener.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Tools.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.TraceSource.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Tracing.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Drawing.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Drawing.Primitives.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Dynamic.Runtime.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Formats.Asn1.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Globalization.Calendars.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Globalization.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Globalization.Extensions.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Compression.Brotli.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Compression.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Compression.FileSystem.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Compression.ZipFile.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.AccessControl.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.DriveInfo.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.Primitives.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.Watcher.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.IsolatedStorage.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.MemoryMappedFiles.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Pipes.AccessControl.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Pipes.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.UnmanagedMemoryStream.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Linq.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Linq.Expressions.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Linq.Parallel.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Linq.Queryable.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Memory.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Http.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Http.Json.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.HttpListener.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Mail.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.NameResolution.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.NetworkInformation.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Ping.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Primitives.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Quic.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Requests.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Security.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.ServicePoint.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Sockets.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebClient.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebHeaderCollection.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebProxy.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebSockets.Client.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebSockets.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Numerics.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Numerics.Vectors.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ObjectModel.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.CoreLib.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.DataContractSerialization.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.Uri.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.Xml.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.Xml.Linq.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.DispatchProxy.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Emit.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Emit.ILGeneration.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Emit.Lightweight.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Extensions.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Metadata.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Primitives.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.TypeExtensions.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Resources.Reader.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Resources.ResourceManager.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Resources.Writer.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.CompilerServices.Unsafe.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.CompilerServices.VisualC.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Extensions.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Handles.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.InteropServices.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.InteropServices.RuntimeInformation.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Intrinsics.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Loader.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Numerics.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.Formatters.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.Json.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.Primitives.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.Xml.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.AccessControl.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Claims.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Algorithms.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Cng.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Csp.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Encoding.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.OpenSsl.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Primitives.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.X509Certificates.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Principal.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Principal.Windows.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.SecureString.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ServiceModel.Web.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ServiceProcess.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Encoding.CodePages.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Encoding.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Encoding.Extensions.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Encodings.Web.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Json.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.RegularExpressions.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Channels.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Overlapped.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Tasks.Dataflow.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug] Returned from the second fork as parent
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Tasks.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Tasks.Extensions.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Tasks.Parallel.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Thread.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.ThreadPool.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Timer.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Transactions.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Transactions.Local.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ValueTuple.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Web.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Web.HttpUtility.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Windows.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.Linq.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.ReaderWriter.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.Serialization.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XDocument.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XmlDocument.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XmlSerializer.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XPath.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XPath.XDocument.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/WindowsBase.dll
+[2024-12-18 13:03:34.446] [job_logger] [debug]   /box/ReCodEx_Csharp_Reader.cs
+[2024-12-18 13:03:34.446] [job_logger] [debug]   /box/ReCodEx_Csharp_Wrapper.cs
+[2024-12-18 13:03:34.446] [job_logger] [debug]   /box/hello-world.cs
+[2024-12-18 13:03:34.446] [job_logger] [debug] Returned from the second fork as child (control process)
+[2024-12-18 13:03:34.979] [job_logger] [debug] Isolate box 1 ran successfully.
+[2024-12-18 13:03:34.980] [job_logger] [debug] Cleaning up isolate...
+[2024-12-18 13:03:34.981] [job_logger] [debug] Isolate box 1 cleaned up.
+[2024-12-18 13:03:34.981] [job_logger] [info] Task "Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.5" ran successfully
+[2024-12-18 13:03:34.981] [job_logger] [info] Task "Test 01.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.6" ran successfully
+[2024-12-18 13:03:34.981] [job_logger] [info] Task "Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.7" ran successfully
+[2024-12-18 13:03:34.981] [job_logger] [debug] Initializing isolate...
+[2024-12-18 13:03:34.995] [job_logger] [debug] Isolate initialized in /var/local/lib/isolate/1/box
+[2024-12-18 13:03:34.995] [job_logger] [info] Sandbox path /usr/bin/dotnet not found in local filesystem, executable bit not set
+[2024-12-18 13:03:34.995] [job_logger] [debug] Running isolate...
+[2024-12-18 13:03:34.995] [job_logger] [debug] Running the first fork
+[2024-12-18 13:03:34.995] [job_logger] [debug] Returned from the first fork as parent
+[2024-12-18 13:03:34.995] [job_logger] [debug] Running the second fork
+[2024-12-18 13:03:34.996] [job_logger] [debug] Returned from the first fork as child
+[2024-12-18 13:03:34.996] [job_logger] [debug]   isolate
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --cg
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --cg-timing
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --box-id=1
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --cg-mem=272384
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --time=1.000000
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --wall-time=120.000000
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --extra-time=3.000000
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --stdout=/box/49frdlp4bxx0f6sz7w24.stdout
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --stderr=/box/execution.t6r0hrdyq4h4lmwjohyp.stderr
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --processes
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --env=LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/opt/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/opt/compiler/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/tbb/latest/lib/intel64/gcc4.8:/usr/local/recodex-gcc/lib64
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --env=PATH=/opt/intel/oneapi/compiler/latest/bin/compiler:/opt/intel/oneapi/compiler/latest/bin:/var/recodex-worker-python-venv/bin:/usr/local/recodex-gcc/bin:/usr/bin:/bin
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --env=HOME=/box
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --env=JAVA_HOME=/usr/lib/jvm/jre-openjdk
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --env=PPC_CONFIG_PATH=/usr/etc
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --env=PYTHONHASHSEED=0
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --env=PYTHONIOENCODING=utf-8
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --env=VIRTUAL_ENV=/var/recodex-worker-python-venv
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --env=GO111MODULE=auto
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --env=GROOVY_HOME=/opt/groovy
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --env=MAVEN_HOME=/opt/maven
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --env=M2_HOME=/opt/maven-repo
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --dir=/tmp:tmp
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --dir=/var/recodex-worker-python-venv
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --dir=/opt/remi
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --dir=/opt/kotlin
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --dir=/opt/groovy
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --dir=/opt/maven
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --dir=/opt/maven-repo
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --dir=/opt/dotnet
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --dir=/opt/Picat
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --dir=/opt/intel
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --dir=/etc/java
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --dir=/etc/OpenCL
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --dir=etc/alternatives=/etc/alternatives:maybe
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --meta=/var/recodex-worker-wd/temp/1/reference_5c65b1f1-0ce4-4214-ad0c-bebed6486233/1/meta.log
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --run
+[2024-12-18 13:03:34.996] [job_logger] [debug]   --
+[2024-12-18 13:03:34.996] [job_logger] [debug]   /usr/bin/dotnet
+[2024-12-18 13:03:34.996] [job_logger] [debug]   /box/Program.exe
+[2024-12-18 13:03:34.996] [job_logger] [debug] Returned from the second fork as parent
+[2024-12-18 13:03:34.996] [job_logger] [debug] Returned from the second fork as child (control process)
+[2024-12-18 13:03:35.023] [job_logger] [debug] Isolate box 1 ran successfully.
+[2024-12-18 13:03:35.023] [job_logger] [debug] Cleaning up isolate...
+[2024-12-18 13:03:35.025] [job_logger] [debug] Isolate box 1 cleaned up.
+[2024-12-18 13:03:35.025] [job_logger] [info] Task "Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.run.8" ran successfully
+[2024-12-18 13:03:35.025] [job_logger] [info] Task "Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.9" ran successfully
+[2024-12-18 13:03:35.025] [job_logger] [debug] Initializing isolate...
+[2024-12-18 13:03:35.033] [job_logger] [debug] Isolate initialized in /var/local/lib/isolate/1/box
+[2024-12-18 13:03:35.033] [job_logger] [info] Sandbox path /usr/bin/recodex-token-judge not found in local filesystem, executable bit not set
+[2024-12-18 13:03:35.033] [job_logger] [debug] Running isolate...
+[2024-12-18 13:03:35.033] [job_logger] [debug] Running the first fork
+[2024-12-18 13:03:35.033] [job_logger] [debug] Returned from the first fork as parent
+[2024-12-18 13:03:35.033] [job_logger] [debug] Running the second fork
+[2024-12-18 13:03:35.034] [job_logger] [debug] Returned from the first fork as child
+[2024-12-18 13:03:35.034] [job_logger] [debug]   isolate
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --cg
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --cg-timing
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --box-id=1
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --cg-mem=31467520
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --time=90.000000
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --wall-time=120.000000
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --extra-time=3.000000
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --stdout=/box/Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.10.ddMXEZziXi.output.stdout
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --stderr=/box/Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.10.ddMXEZziXi.output.stderr
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --processes
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --env=LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/opt/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/opt/compiler/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/tbb/latest/lib/intel64/gcc4.8:/usr/local/recodex-gcc/lib64
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --env=PATH=/opt/intel/oneapi/compiler/latest/bin/compiler:/opt/intel/oneapi/compiler/latest/bin:/var/recodex-worker-python-venv/bin:/usr/local/recodex-gcc/bin:/usr/bin:/bin
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --env=HOME=/box
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --env=JAVA_HOME=/usr/lib/jvm/jre-openjdk
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --env=PPC_CONFIG_PATH=/usr/etc
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --env=PYTHONHASHSEED=0
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --env=PYTHONIOENCODING=utf-8
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --env=VIRTUAL_ENV=/var/recodex-worker-python-venv
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --env=GO111MODULE=auto
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --env=GROOVY_HOME=/opt/groovy
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --env=MAVEN_HOME=/opt/maven
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --env=M2_HOME=/opt/maven-repo
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --dir=/tmp:tmp
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --dir=/var/recodex-worker-python-venv
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --dir=/opt/remi
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --dir=/opt/kotlin
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --dir=/opt/groovy
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --dir=/opt/maven
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --dir=/opt/maven-repo
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --dir=/opt/dotnet
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --dir=/opt/Picat
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --dir=/opt/intel
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --dir=/etc/java
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --dir=/etc/OpenCL
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --dir=etc/alternatives=/etc/alternatives:maybe
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --meta=/var/recodex-worker-wd/temp/1/reference_5c65b1f1-0ce4-4214-ad0c-bebed6486233/1/meta.log
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --run
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --
+[2024-12-18 13:03:35.034] [job_logger] [debug]   /usr/bin/recodex-token-judge
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --log-limit
+[2024-12-18 13:03:35.034] [job_logger] [debug]   4k
+[2024-12-18 13:03:35.034] [job_logger] [debug]   --ignore-trailing-whitespace
+[2024-12-18 13:03:35.034] [job_logger] [debug]   /box/expected.out
+[2024-12-18 13:03:35.034] [job_logger] [debug]   /box/49frdlp4bxx0f6sz7w24.stdout
+[2024-12-18 13:03:35.034] [job_logger] [debug] Returned from the second fork as parent
+[2024-12-18 13:03:35.034] [job_logger] [debug] Returned from the second fork as child (control process)
+[2024-12-18 13:03:35.037] [job_logger] [debug] Isolate box 1 ran successfully.
+[2024-12-18 13:03:35.038] [job_logger] [debug] Cleaning up isolate...
+[2024-12-18 13:03:35.039] [job_logger] [debug] Isolate box 1 cleaned up.
+[2024-12-18 13:03:35.039] [job_logger] [info] Task "Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.10" ran successfully
+[2024-12-18 13:03:35.040] [job_logger] [info] Task "Test 01..dump-results.1" ran successfully

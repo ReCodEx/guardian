@@ -1,0 +1,108 @@
+---
+submission:
+  job-id: reference_7c0958fd-71df-4d1b-8d47-ab63dc04f311
+  file-collector: https://recodex.mff.cuni.cz/api/v1/worker-files/supplementary-file
+  log: "true"
+  hw-groups:
+  - 01-supmic-regular
+tasks:
+- task-id: Test 01..mkdir.0
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 01
+- task-id: Test 01..dump-results.1
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 01
+    - ${RESULT_DIR}/Test 01
+    - 65536
+  dependencies:
+  - Test 01..mkdir.0
+- task-id: Test 01.1079c3b4-9eff-11e7-869b-005056854569.fetch-runner.2
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - cb83045aeb0c9d6a871c240f79b68507952a8308
+    - ${SOURCE_DIR}/Test 01/cb83045aeb0c9d6a871c240f79b68507952a8308
+  dependencies:
+  - Test 01..mkdir.0
+  test-id: Test 01
+- task-id: Test 01.cb536605-fd0e-11e7-b1e1-005056854569.sources.3
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/hello-world.py
+    - ${SOURCE_DIR}/Test 01/hello-world.py
+  dependencies:
+  - Test 01..mkdir.0
+  test-id: Test 01
+- task-id: Test 01.1079c3b4-9eff-11e7-869b-005056854569.run.4
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/env
+    args:
+    - python3
+    - cb83045aeb0c9d6a871c240f79b68507952a8308
+    - ${EVAL_DIR}/hello-world.py
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 01.1079c3b4-9eff-11e7-869b-005056854569.fetch-runner.2
+  - Test 01..mkdir.0
+  - Test 01.cb536605-fd0e-11e7-b1e1-005056854569.sources.3
+  test-id: Test 01
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/ayspsmsmuw1zvj7hr8ob.stdout
+    stderr: ${EVAL_DIR}/execution.adioxl52yhvaov8sbvkd.stderr
+    working-directory: Test 01
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 65536
+      bound-directories: []
+- task-id: Test 01.1079c3b4-9eff-11e7-869b-005056854569.expected.5
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 648a6a6ffffdaa0badb23b8baf90b6168dd16b3a
+    - ${SOURCE_DIR}/Test 01/expected.out
+  dependencies:
+  - Test 01..mkdir.0
+  test-id: Test 01
+- task-id: Test 01.1079c3b4-9eff-11e7-869b-005056854569.judge.6
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/ayspsmsmuw1zvj7hr8ob.stdout
+  dependencies:
+  - Test 01..mkdir.0
+  - Test 01.1079c3b4-9eff-11e7-869b-005056854569.expected.5
+  - Test 01.1079c3b4-9eff-11e7-869b-005056854569.run.4
+  test-id: Test 01
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 01
+...

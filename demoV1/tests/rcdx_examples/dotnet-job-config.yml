@@ -1,0 +1,2458 @@
+---
+submission:
+  job-id: reference_f96a0bb6-0281-45f6-a5d5-6051cb309678
+  file-collector: https://recodex.mff.cuni.cz/api/v1/worker-files/supplementary-file
+  log: "true"
+  hw-groups:
+  - 01-supmic-regular
+tasks:
+- task-id: initiation_5zakivho57..mkdir.0
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57
+- task-id: initiation_5zakivho57..dump-results.1
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57
+    - ${RESULT_DIR}/initiation_5zakivho57
+    - 65536
+  dependencies:
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 18..mkdir.2
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 18
+- task-id: Test 18..dump-results.3
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 18
+    - ${RESULT_DIR}/Test 18
+    - 65536
+  dependencies:
+  - Test 18..mkdir.2
+- task-id: Test 17..mkdir.4
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 17
+- task-id: Test 17..dump-results.5
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 17
+    - ${RESULT_DIR}/Test 17
+    - 65536
+  dependencies:
+  - Test 17..mkdir.4
+- task-id: Test 16..mkdir.6
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 16
+- task-id: Test 16..dump-results.7
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 16
+    - ${RESULT_DIR}/Test 16
+    - 65536
+  dependencies:
+  - Test 16..mkdir.6
+- task-id: Test 15..mkdir.8
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 15
+- task-id: Test 15..dump-results.9
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 15
+    - ${RESULT_DIR}/Test 15
+    - 65536
+  dependencies:
+  - Test 15..mkdir.8
+- task-id: Test 14..mkdir.10
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 14
+- task-id: Test 14..dump-results.11
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 14
+    - ${RESULT_DIR}/Test 14
+    - 65536
+  dependencies:
+  - Test 14..mkdir.10
+- task-id: Test 13..mkdir.12
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 13
+- task-id: Test 13..dump-results.13
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 13
+    - ${RESULT_DIR}/Test 13
+    - 65536
+  dependencies:
+  - Test 13..mkdir.12
+- task-id: Test 12..mkdir.14
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 12
+- task-id: Test 12..dump-results.15
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 12
+    - ${RESULT_DIR}/Test 12
+    - 65536
+  dependencies:
+  - Test 12..mkdir.14
+- task-id: Test 11..mkdir.16
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 11
+- task-id: Test 11..dump-results.17
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 11
+    - ${RESULT_DIR}/Test 11
+    - 65536
+  dependencies:
+  - Test 11..mkdir.16
+- task-id: Test 10..mkdir.18
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 10
+- task-id: Test 10..dump-results.19
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 10
+    - ${RESULT_DIR}/Test 10
+    - 65536
+  dependencies:
+  - Test 10..mkdir.18
+- task-id: Test 09..mkdir.20
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 09
+- task-id: Test 09..dump-results.21
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 09
+    - ${RESULT_DIR}/Test 09
+    - 65536
+  dependencies:
+  - Test 09..mkdir.20
+- task-id: Test 08..mkdir.22
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 08
+- task-id: Test 08..dump-results.23
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 08
+    - ${RESULT_DIR}/Test 08
+    - 65536
+  dependencies:
+  - Test 08..mkdir.22
+- task-id: Test 07..mkdir.24
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 07
+- task-id: Test 07..dump-results.25
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 07
+    - ${RESULT_DIR}/Test 07
+    - 65536
+  dependencies:
+  - Test 07..mkdir.24
+- task-id: Test 06..mkdir.26
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 06
+- task-id: Test 06..dump-results.27
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 06
+    - ${RESULT_DIR}/Test 06
+    - 65536
+  dependencies:
+  - Test 06..mkdir.26
+- task-id: Test 05..mkdir.28
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 05
+- task-id: Test 05..dump-results.29
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 05
+    - ${RESULT_DIR}/Test 05
+    - 65536
+  dependencies:
+  - Test 05..mkdir.28
+- task-id: Test 04..mkdir.30
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 04
+- task-id: Test 04..dump-results.31
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 04
+    - ${RESULT_DIR}/Test 04
+    - 65536
+  dependencies:
+  - Test 04..mkdir.30
+- task-id: Test 03..mkdir.32
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 03
+- task-id: Test 03..dump-results.33
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 03
+    - ${RESULT_DIR}/Test 03
+    - 65536
+  dependencies:
+  - Test 03..mkdir.32
+- task-id: Test 02..mkdir.34
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 02
+- task-id: Test 02..dump-results.35
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 02
+    - ${RESULT_DIR}/Test 02
+    - 65536
+  dependencies:
+  - Test 02..mkdir.34
+- task-id: Test 01..mkdir.36
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 01
+- task-id: Test 01..dump-results.37
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 01
+    - ${RESULT_DIR}/Test 01
+    - 65536
+  dependencies:
+  - Test 01..mkdir.36
+- task-id: initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.38
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - c9f13ebcfa74d76a61b097865312a61e7277cdb0
+    - ${SOURCE_DIR}/initiation_5zakivho57/ReCodEx_Csharp_Reader.cs
+  dependencies:
+  - initiation_5zakivho57..mkdir.0
+- task-id: initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.39
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - abbcfc9ffefa2438e28857082171b2745af7e740
+    - ${SOURCE_DIR}/initiation_5zakivho57/ReCodEx_Csharp_Wrapper.cs
+  dependencies:
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.38
+- task-id: initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.sources.40
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/source.cs
+    - ${SOURCE_DIR}/initiation_5zakivho57/source.cs
+  dependencies:
+  - initiation_5zakivho57..mkdir.0
+- task-id: initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - /opt/dotnet/sdk/latest/Roslyn/bincore/csc.dll
+    - -out:Program.exe
+    - -target:exe
+    - -main:CodEx.Wrapper
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.CSharp.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.VisualBasic.Core.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.VisualBasic.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.Win32.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/Microsoft.Win32.Registry.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/mscorlib.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/netstandard.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.AppContext.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Buffers.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.Concurrent.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.Immutable.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.NonGeneric.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Collections.Specialized.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.Annotations.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.DataAnnotations.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.EventBasedAsync.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ComponentModel.TypeConverter.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Configuration.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Console.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Core.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Data.Common.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Data.DataSetExtensions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Data.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Contracts.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Debug.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.DiagnosticSource.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.FileVersionInfo.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Process.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.StackTrace.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.TextWriterTraceListener.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Tools.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.TraceSource.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Diagnostics.Tracing.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Drawing.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Drawing.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Dynamic.Runtime.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Formats.Asn1.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Globalization.Calendars.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Globalization.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Globalization.Extensions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Compression.Brotli.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Compression.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Compression.FileSystem.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Compression.ZipFile.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.AccessControl.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.DriveInfo.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.FileSystem.Watcher.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.IsolatedStorage.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.MemoryMappedFiles.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Pipes.AccessControl.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.Pipes.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.IO.UnmanagedMemoryStream.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Linq.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Linq.Expressions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Linq.Parallel.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Linq.Queryable.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Memory.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Http.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Http.Json.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.HttpListener.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Mail.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.NameResolution.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.NetworkInformation.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Ping.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Quic.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Requests.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Security.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.ServicePoint.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.Sockets.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebClient.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebHeaderCollection.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebProxy.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebSockets.Client.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Net.WebSockets.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Numerics.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Numerics.Vectors.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ObjectModel.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.CoreLib.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.DataContractSerialization.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.Uri.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.Xml.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Private.Xml.Linq.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.DispatchProxy.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Emit.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Emit.ILGeneration.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Emit.Lightweight.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Extensions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Metadata.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Reflection.TypeExtensions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Resources.Reader.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Resources.ResourceManager.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Resources.Writer.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.CompilerServices.Unsafe.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.CompilerServices.VisualC.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Extensions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Handles.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.InteropServices.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.InteropServices.RuntimeInformation.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Intrinsics.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Loader.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Numerics.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.Formatters.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.Json.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Runtime.Serialization.Xml.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.AccessControl.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Claims.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Algorithms.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Cng.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Csp.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Encoding.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.OpenSsl.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.Primitives.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Cryptography.X509Certificates.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Principal.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.Principal.Windows.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Security.SecureString.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ServiceModel.Web.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ServiceProcess.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Encoding.CodePages.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Encoding.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Encoding.Extensions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Encodings.Web.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.Json.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Text.RegularExpressions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Channels.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Overlapped.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Tasks.Dataflow.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Tasks.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Tasks.Extensions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Tasks.Parallel.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Thread.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.ThreadPool.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Threading.Timer.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Transactions.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Transactions.Local.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.ValueTuple.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Web.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Web.HttpUtility.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Windows.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.Linq.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.ReaderWriter.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.Serialization.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XDocument.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XmlDocument.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XmlSerializer.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XPath.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/System.Xml.XPath.XDocument.dll
+    - -r:/opt/dotnet/shared/Microsoft.NETCore.App/latest/WindowsBase.dll
+    - ${EVAL_DIR}/ReCodEx_Csharp_Reader.cs
+    - ${EVAL_DIR}/ReCodEx_Csharp_Wrapper.cs
+    - ${EVAL_DIR}/source.cs
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.38
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.39
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.sources.40
+  - initiation_5zakivho57..mkdir.0
+  type: initiation
+  sandbox:
+    name: isolate
+    stderr-to-stdout: true
+    output: true
+    carboncopy-stdout: ${RESULT_DIR}/compilation.aj6ey38m6f5p8uw2akz3.out
+    working-directory: initiation_5zakivho57
+- task-id: initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: exists
+    args:
+    - Compilation process completed correctly but no executable file was yielded.
+      Unable to proceed with testing.
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.38
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.external-sources.39
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.sources.40
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  type: initiation
+- task-id: initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 4d877a1f7ee1685ff7f3b5bacb5be28e2a4f6b09
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+  dependencies:
+  - initiation_5zakivho57..mkdir.0
+- task-id: initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - da39a3ee5e6b4b0d3255bfef95601890afd80709
+    - ${SOURCE_DIR}/initiation_5zakivho57/data.in.huff
+  dependencies:
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 05..copy-files.45
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/data.in.huff
+    - ${SOURCE_DIR}/Test 05
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 05..mkdir.28
+- task-id: Test 05..copy-files.46
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 05
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 05..mkdir.28
+  - Test 05..copy-files.45
+- task-id: Test 05..copy-file.47
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 05
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 05..mkdir.28
+  - Test 05..copy-files.45
+  - Test 05..copy-files.46
+- task-id: Test 05.7551994e-8ba0-11ec-986f-f39926f24a9c.run.48
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - .huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 05..mkdir.28
+  - Test 05..copy-files.45
+  - Test 05..copy-files.46
+  - Test 05..copy-file.47
+  test-id: Test 05
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/nd87eh2t54bs4ofpjo0o.stdout
+    stderr: ${EVAL_DIR}/execution.hwqr0omdquplo7ksdw11.stderr
+    working-directory: Test 05
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 05.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.49
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 596dc5dc38aa4267e9e570a2a606fb1c92592e4b
+    - ${SOURCE_DIR}/Test 05/expected.out
+  dependencies:
+  - Test 05..mkdir.28
+  test-id: Test 05
+- task-id: Test 05.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.50
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/nd87eh2t54bs4ofpjo0o.stdout
+  dependencies:
+  - Test 05..mkdir.28
+  - Test 05.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.49
+  - Test 05.7551994e-8ba0-11ec-986f-f39926f24a9c.run.48
+  test-id: Test 05
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 05
+- task-id: Test 04..copy-files.51
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/data.in.huff
+    - ${SOURCE_DIR}/Test 04
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 04..mkdir.30
+- task-id: Test 04..copy-files.52
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 04
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 04..mkdir.30
+  - Test 04..copy-files.51
+- task-id: Test 04..copy-file.53
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 04
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 04..mkdir.30
+  - Test 04..copy-files.51
+  - Test 04..copy-files.52
+- task-id: Test 04.7551994e-8ba0-11ec-986f-f39926f24a9c.run.54
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in
+    success-exit-codes:
+    - 0
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 04..mkdir.30
+  - Test 04..copy-files.51
+  - Test 04..copy-files.52
+  - Test 04..copy-file.53
+  test-id: Test 04
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/vb37c5t0s3uj27i91ap5.stdout
+    stderr: ${EVAL_DIR}/execution.1y56mmbsd5hnerasqbni.stderr
+    working-directory: Test 04
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 04.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.55
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 596dc5dc38aa4267e9e570a2a606fb1c92592e4b
+    - ${SOURCE_DIR}/Test 04/expected.out
+  dependencies:
+  - Test 04..mkdir.30
+  test-id: Test 04
+- task-id: Test 04.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.56
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/vb37c5t0s3uj27i91ap5.stdout
+  dependencies:
+  - Test 04..mkdir.30
+  - Test 04.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.55
+  - Test 04.7551994e-8ba0-11ec-986f-f39926f24a9c.run.54
+  test-id: Test 04
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 04
+- task-id: Test 03..copy-files.57
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/data.in.huff
+    - ${SOURCE_DIR}/Test 03
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 03..mkdir.32
+- task-id: Test 03..copy-files.58
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 03
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 03..mkdir.32
+  - Test 03..copy-files.57
+- task-id: Test 03..copy-file.59
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 03
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 03..mkdir.32
+  - Test 03..copy-files.57
+  - Test 03..copy-files.58
+- task-id: Test 03.7551994e-8ba0-11ec-986f-f39926f24a9c.run.60
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in.huff
+    - xxx
+    success-exit-codes:
+    - 0
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 03..mkdir.32
+  - Test 03..copy-files.57
+  - Test 03..copy-files.58
+  - Test 03..copy-file.59
+  test-id: Test 03
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/b9a5zq7iesl0nyaz6wr6.stdout
+    stderr: ${EVAL_DIR}/execution.xw5lmu0k7dxmz7e2proa.stderr
+    working-directory: Test 03
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 03.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.61
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 596dc5dc38aa4267e9e570a2a606fb1c92592e4b
+    - ${SOURCE_DIR}/Test 03/expected.out
+  dependencies:
+  - Test 03..mkdir.32
+  test-id: Test 03
+- task-id: Test 03.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.62
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/b9a5zq7iesl0nyaz6wr6.stdout
+  dependencies:
+  - Test 03..mkdir.32
+  - Test 03.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.61
+  - Test 03.7551994e-8ba0-11ec-986f-f39926f24a9c.run.60
+  test-id: Test 03
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 03
+- task-id: Test 02..copy-files.63
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/data.in.huff
+    - ${SOURCE_DIR}/Test 02
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 02..mkdir.34
+- task-id: Test 02..copy-files.64
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 02
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 02..mkdir.34
+  - Test 02..copy-files.63
+- task-id: Test 02..copy-file.65
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 02
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 02..mkdir.34
+  - Test 02..copy-files.63
+  - Test 02..copy-files.64
+- task-id: Test 02.7551994e-8ba0-11ec-986f-f39926f24a9c.run.66
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    success-exit-codes:
+    - 0
+  dependencies:
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - Test 02..mkdir.34
+  - Test 02..copy-files.63
+  - Test 02..copy-files.64
+  - Test 02..copy-file.65
+  test-id: Test 02
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/9m8wx9p24mjithkdutc2.stdout
+    stderr: ${EVAL_DIR}/execution.h2ciksr1kyhcxsmzvf2k.stderr
+    working-directory: Test 02
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 02.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.67
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 596dc5dc38aa4267e9e570a2a606fb1c92592e4b
+    - ${SOURCE_DIR}/Test 02/expected.out
+  dependencies:
+  - Test 02..mkdir.34
+  test-id: Test 02
+- task-id: Test 02.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.68
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/9m8wx9p24mjithkdutc2.stdout
+  dependencies:
+  - Test 02..mkdir.34
+  - Test 02.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.67
+  - Test 02.7551994e-8ba0-11ec-986f-f39926f24a9c.run.66
+  test-id: Test 02
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 02
+- task-id: Test 01..copy-files.69
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/data.in.huff
+    - ${SOURCE_DIR}/Test 01
+  dependencies:
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - Test 01..mkdir.36
+- task-id: Test 01..copy-files.70
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 01
+  dependencies:
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - Test 01..mkdir.36
+  - Test 01..copy-files.69
+- task-id: Test 01..copy-file.71
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 01
+  dependencies:
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - Test 01..mkdir.36
+  - Test 01..copy-files.69
+  - Test 01..copy-files.70
+- task-id: Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.run.72
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - nonexist.in.huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - initiation_5zakivho57..mkdir.0
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.44
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - Test 01..mkdir.36
+  - Test 01..copy-files.69
+  - Test 01..copy-files.70
+  - Test 01..copy-file.71
+  test-id: Test 01
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/ubdo63pwjxdkz399y7o2.stdout
+    stderr: ${EVAL_DIR}/execution.y8jaghj92yid7vhcqxvl.stderr
+    working-directory: Test 01
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.73
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 6df76265918d31c6c2399f73f15da0fae7b13220
+    - ${SOURCE_DIR}/Test 01/expected.out
+  dependencies:
+  - Test 01..mkdir.36
+  test-id: Test 01
+- task-id: Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.74
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/ubdo63pwjxdkz399y7o2.stdout
+  dependencies:
+  - Test 01..mkdir.36
+  - Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.73
+  - Test 01.7551994e-8ba0-11ec-986f-f39926f24a9c.run.72
+  test-id: Test 01
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 01
+- task-id: Test 06.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.75
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 58932155895583066560863f30638664014678d7
+    - ${SOURCE_DIR}/Test 06/data.in.huff
+  dependencies:
+  - Test 06..mkdir.26
+  test-id: Test 06
+- task-id: Test 06..copy-files.76
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 06
+  dependencies:
+  - Test 06.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.75
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 06..mkdir.26
+- task-id: Test 06..copy-file.77
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 06
+  dependencies:
+  - Test 06..mkdir.26
+  - Test 06.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.75
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 06..copy-files.76
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 06.754690df-8ba0-11ec-986f-f39926f24a9c.run.78
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in.huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 06..mkdir.26
+  - Test 06.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.75
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 06..copy-files.76
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - Test 06..copy-file.77
+  test-id: Test 06
+  type: execution
+  sandbox:
+    name: isolate
+    stderr: ${EVAL_DIR}/execution.z4jl4su7uuk86hffxol7.stderr
+    working-directory: Test 06
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 06.754690df-8ba0-11ec-986f-f39926f24a9c.expected.79
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - c21e4a35f58216e0863e916cdcb60a9281e95737
+    - ${SOURCE_DIR}/Test 06/expected.out
+  dependencies:
+  - Test 06..mkdir.26
+  test-id: Test 06
+- task-id: Test 06.754690df-8ba0-11ec-986f-f39926f24a9c.judge.80
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/diff
+    args:
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/data.in
+  dependencies:
+  - Test 06..mkdir.26
+  - Test 06.754690df-8ba0-11ec-986f-f39926f24a9c.expected.79
+  - Test 06.754690df-8ba0-11ec-986f-f39926f24a9c.run.78
+  test-id: Test 06
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 06
+- task-id: Test 07.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.81
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 5e20b5812bffbf31dac667a42c19a4b004b2531b
+    - ${SOURCE_DIR}/Test 07/data.in.huff
+  dependencies:
+  - Test 07..mkdir.24
+  test-id: Test 07
+- task-id: Test 07..copy-files.82
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 07
+  dependencies:
+  - Test 07.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.81
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 07..mkdir.24
+- task-id: Test 07..copy-file.83
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 07
+  dependencies:
+  - Test 07..mkdir.24
+  - Test 07.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.81
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 07..copy-files.82
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 07.754690df-8ba0-11ec-986f-f39926f24a9c.run.84
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in.huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 07..mkdir.24
+  - Test 07.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.81
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 07..copy-files.82
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - Test 07..copy-file.83
+  test-id: Test 07
+  type: execution
+  sandbox:
+    name: isolate
+    stderr: ${EVAL_DIR}/execution.xo1opsm9d9ga4a5vz1wz.stderr
+    working-directory: Test 07
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 07.754690df-8ba0-11ec-986f-f39926f24a9c.expected.85
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 1ef3ed12081ab55049b969eb3e70caaa958bdfa1
+    - ${SOURCE_DIR}/Test 07/expected.out
+  dependencies:
+  - Test 07..mkdir.24
+  test-id: Test 07
+- task-id: Test 07.754690df-8ba0-11ec-986f-f39926f24a9c.judge.86
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/diff
+    args:
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/data.in
+  dependencies:
+  - Test 07..mkdir.24
+  - Test 07.754690df-8ba0-11ec-986f-f39926f24a9c.expected.85
+  - Test 07.754690df-8ba0-11ec-986f-f39926f24a9c.run.84
+  test-id: Test 07
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 07
+- task-id: Test 08.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.87
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 00728b175493d77ba6d4f65fce038c0cbb6d7a78
+    - ${SOURCE_DIR}/Test 08/data.in.huff
+  dependencies:
+  - Test 08..mkdir.22
+  test-id: Test 08
+- task-id: Test 08..copy-files.88
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 08
+  dependencies:
+  - Test 08.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.87
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 08..mkdir.22
+- task-id: Test 08..copy-file.89
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 08
+  dependencies:
+  - Test 08..mkdir.22
+  - Test 08.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.87
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 08..copy-files.88
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 08.754690df-8ba0-11ec-986f-f39926f24a9c.run.90
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in.huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 08..mkdir.22
+  - Test 08.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.87
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 08..copy-files.88
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - Test 08..copy-file.89
+  test-id: Test 08
+  type: execution
+  sandbox:
+    name: isolate
+    stderr: ${EVAL_DIR}/execution.g5rpvka0i9vzrcyh6f68.stderr
+    working-directory: Test 08
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 08.754690df-8ba0-11ec-986f-f39926f24a9c.expected.91
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - da87cac62d9609c7c8cc87738a073db068d1bbd4
+    - ${SOURCE_DIR}/Test 08/expected.out
+  dependencies:
+  - Test 08..mkdir.22
+  test-id: Test 08
+- task-id: Test 08.754690df-8ba0-11ec-986f-f39926f24a9c.judge.92
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/diff
+    args:
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/data.in
+  dependencies:
+  - Test 08..mkdir.22
+  - Test 08.754690df-8ba0-11ec-986f-f39926f24a9c.expected.91
+  - Test 08.754690df-8ba0-11ec-986f-f39926f24a9c.run.90
+  test-id: Test 08
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 08
+- task-id: Test 09.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.93
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - a948b43d37e8577d86045874716389a0c81eddd4
+    - ${SOURCE_DIR}/Test 09/data.in.huff
+  dependencies:
+  - Test 09..mkdir.20
+  test-id: Test 09
+- task-id: Test 09..copy-files.94
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 09
+  dependencies:
+  - Test 09.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.93
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 09..mkdir.20
+- task-id: Test 09..copy-file.95
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 09
+  dependencies:
+  - Test 09..mkdir.20
+  - Test 09.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.93
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 09..copy-files.94
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 09.754690df-8ba0-11ec-986f-f39926f24a9c.run.96
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in.huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 09..mkdir.20
+  - Test 09.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.93
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 09..copy-files.94
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - Test 09..copy-file.95
+  test-id: Test 09
+  type: execution
+  sandbox:
+    name: isolate
+    stderr: ${EVAL_DIR}/execution.c5uzsw0ouy6q0vf2v90n.stderr
+    working-directory: Test 09
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 09.754690df-8ba0-11ec-986f-f39926f24a9c.expected.97
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 6eeebf06b8d376128e039ce2b2b8ec1c4ab3bc3a
+    - ${SOURCE_DIR}/Test 09/expected.out
+  dependencies:
+  - Test 09..mkdir.20
+  test-id: Test 09
+- task-id: Test 09.754690df-8ba0-11ec-986f-f39926f24a9c.judge.98
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/diff
+    args:
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/data.in
+  dependencies:
+  - Test 09..mkdir.20
+  - Test 09.754690df-8ba0-11ec-986f-f39926f24a9c.expected.97
+  - Test 09.754690df-8ba0-11ec-986f-f39926f24a9c.run.96
+  test-id: Test 09
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 09
+- task-id: Test 10.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.99
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 4672d0aac16157d8efb6b7842183e6acfd8afc2e
+    - ${SOURCE_DIR}/Test 10/data.in.huff
+  dependencies:
+  - Test 10..mkdir.18
+  test-id: Test 10
+- task-id: Test 10..copy-files.100
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 10
+  dependencies:
+  - Test 10.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.99
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 10..mkdir.18
+- task-id: Test 10..copy-file.101
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 10
+  dependencies:
+  - Test 10..mkdir.18
+  - Test 10.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.99
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 10..copy-files.100
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 10.754690df-8ba0-11ec-986f-f39926f24a9c.run.102
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in.huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 10..mkdir.18
+  - Test 10.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.99
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 10..copy-files.100
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - Test 10..copy-file.101
+  test-id: Test 10
+  type: execution
+  sandbox:
+    name: isolate
+    stderr: ${EVAL_DIR}/execution.74enr3lxzih78dwbr79t.stderr
+    working-directory: Test 10
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 10.754690df-8ba0-11ec-986f-f39926f24a9c.expected.103
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - d3f3bf862f9d46a5ada462c07c3315a7de7bcc63
+    - ${SOURCE_DIR}/Test 10/expected.out
+  dependencies:
+  - Test 10..mkdir.18
+  test-id: Test 10
+- task-id: Test 10.754690df-8ba0-11ec-986f-f39926f24a9c.judge.104
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/diff
+    args:
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/data.in
+  dependencies:
+  - Test 10..mkdir.18
+  - Test 10.754690df-8ba0-11ec-986f-f39926f24a9c.expected.103
+  - Test 10.754690df-8ba0-11ec-986f-f39926f24a9c.run.102
+  test-id: Test 10
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 10
+- task-id: Test 11.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.105
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - f9f2e4764afa1abcf95a7d0643c734a175457ab0
+    - ${SOURCE_DIR}/Test 11/data.in.huff
+  dependencies:
+  - Test 11..mkdir.16
+  test-id: Test 11
+- task-id: Test 11..copy-files.106
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 11
+  dependencies:
+  - Test 11.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.105
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 11..mkdir.16
+- task-id: Test 11..copy-file.107
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 11
+  dependencies:
+  - Test 11..mkdir.16
+  - Test 11.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.105
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 11..copy-files.106
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 11.754690df-8ba0-11ec-986f-f39926f24a9c.run.108
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in.huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 11..mkdir.16
+  - Test 11.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.105
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 11..copy-files.106
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - Test 11..copy-file.107
+  test-id: Test 11
+  type: execution
+  sandbox:
+    name: isolate
+    stderr: ${EVAL_DIR}/execution.vy88dahyjs4w8etk688d.stderr
+    working-directory: Test 11
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 11.754690df-8ba0-11ec-986f-f39926f24a9c.expected.109
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - d38a8ab08654098262912a21aa54671db11b2f9b
+    - ${SOURCE_DIR}/Test 11/expected.out
+  dependencies:
+  - Test 11..mkdir.16
+  test-id: Test 11
+- task-id: Test 11.754690df-8ba0-11ec-986f-f39926f24a9c.judge.110
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/diff
+    args:
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/data.in
+  dependencies:
+  - Test 11..mkdir.16
+  - Test 11.754690df-8ba0-11ec-986f-f39926f24a9c.expected.109
+  - Test 11.754690df-8ba0-11ec-986f-f39926f24a9c.run.108
+  test-id: Test 11
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 11
+- task-id: Test 12.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.111
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - a259da15d43b84445cf42bbf806356d50eb029c1
+    - ${SOURCE_DIR}/Test 12/data.in.huff
+  dependencies:
+  - Test 12..mkdir.14
+  test-id: Test 12
+- task-id: Test 12..copy-files.112
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 12
+  dependencies:
+  - Test 12.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.111
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 12..mkdir.14
+- task-id: Test 12..copy-file.113
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 12
+  dependencies:
+  - Test 12..mkdir.14
+  - Test 12.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.111
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 12..copy-files.112
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 12.754690df-8ba0-11ec-986f-f39926f24a9c.run.114
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in.huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 12..mkdir.14
+  - Test 12.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.111
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 12..copy-files.112
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - Test 12..copy-file.113
+  test-id: Test 12
+  type: execution
+  sandbox:
+    name: isolate
+    stderr: ${EVAL_DIR}/execution.slq6fhhmprdszwwer8rm.stderr
+    working-directory: Test 12
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 12.754690df-8ba0-11ec-986f-f39926f24a9c.expected.115
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 3afb78dae7bfcd8fce6226d968d0e21854b4b83f
+    - ${SOURCE_DIR}/Test 12/expected.out
+  dependencies:
+  - Test 12..mkdir.14
+  test-id: Test 12
+- task-id: Test 12.754690df-8ba0-11ec-986f-f39926f24a9c.judge.116
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/diff
+    args:
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/data.in
+  dependencies:
+  - Test 12..mkdir.14
+  - Test 12.754690df-8ba0-11ec-986f-f39926f24a9c.expected.115
+  - Test 12.754690df-8ba0-11ec-986f-f39926f24a9c.run.114
+  test-id: Test 12
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 12
+- task-id: Test 13.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.117
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - cf3bcc04d1c6b937bebc4a99b04e336f339aa887
+    - ${SOURCE_DIR}/Test 13/data.in.huff
+  dependencies:
+  - Test 13..mkdir.12
+  test-id: Test 13
+- task-id: Test 13..copy-files.118
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 13
+  dependencies:
+  - Test 13.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.117
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 13..mkdir.12
+- task-id: Test 13..copy-file.119
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 13
+  dependencies:
+  - Test 13..mkdir.12
+  - Test 13.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.117
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 13..copy-files.118
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 13.7551994e-8ba0-11ec-986f-f39926f24a9c.run.120
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in.huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 13..mkdir.12
+  - Test 13.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.117
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 13..copy-files.118
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - Test 13..copy-file.119
+  test-id: Test 13
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/dlniz7jabi0snnd2fcji.stdout
+    stderr: ${EVAL_DIR}/execution.snlgn775exdt2htf5qzv.stderr
+    working-directory: Test 13
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 13.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.121
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 6df76265918d31c6c2399f73f15da0fae7b13220
+    - ${SOURCE_DIR}/Test 13/expected.out
+  dependencies:
+  - Test 13..mkdir.12
+  test-id: Test 13
+- task-id: Test 13.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.122
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/dlniz7jabi0snnd2fcji.stdout
+  dependencies:
+  - Test 13..mkdir.12
+  - Test 13.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.121
+  - Test 13.7551994e-8ba0-11ec-986f-f39926f24a9c.run.120
+  test-id: Test 13
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 13
+- task-id: Test 14.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.123
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 30a2a2c3d2bb3b410c2b1d19153ded820556424d
+    - ${SOURCE_DIR}/Test 14/data.in.huff
+  dependencies:
+  - Test 14..mkdir.10
+  test-id: Test 14
+- task-id: Test 14..copy-files.124
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 14
+  dependencies:
+  - Test 14.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.123
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 14..mkdir.10
+- task-id: Test 14..copy-file.125
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 14
+  dependencies:
+  - Test 14..mkdir.10
+  - Test 14.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.123
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 14..copy-files.124
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 14.7551994e-8ba0-11ec-986f-f39926f24a9c.run.126
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in.huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 14..mkdir.10
+  - Test 14.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.123
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 14..copy-files.124
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - Test 14..copy-file.125
+  test-id: Test 14
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/x5s0okmo3rafhquh80vz.stdout
+    stderr: ${EVAL_DIR}/execution.zk3q9gwjr8uwkz6xyaee.stderr
+    working-directory: Test 14
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 14.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.127
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 6df76265918d31c6c2399f73f15da0fae7b13220
+    - ${SOURCE_DIR}/Test 14/expected.out
+  dependencies:
+  - Test 14..mkdir.10
+  test-id: Test 14
+- task-id: Test 14.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.128
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/x5s0okmo3rafhquh80vz.stdout
+  dependencies:
+  - Test 14..mkdir.10
+  - Test 14.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.127
+  - Test 14.7551994e-8ba0-11ec-986f-f39926f24a9c.run.126
+  test-id: Test 14
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 14
+- task-id: Test 15.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.129
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 588f7ca52300986213ff3e93a0cb135671d5a2e4
+    - ${SOURCE_DIR}/Test 15/data.in.huff
+  dependencies:
+  - Test 15..mkdir.8
+  test-id: Test 15
+- task-id: Test 15..copy-files.130
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 15
+  dependencies:
+  - Test 15.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.129
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 15..mkdir.8
+- task-id: Test 15..copy-file.131
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 15
+  dependencies:
+  - Test 15..mkdir.8
+  - Test 15.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.129
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 15..copy-files.130
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 15.7551994e-8ba0-11ec-986f-f39926f24a9c.run.132
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in.huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 15..mkdir.8
+  - Test 15.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.129
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 15..copy-files.130
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - Test 15..copy-file.131
+  test-id: Test 15
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/xfpdm9fpwr4aw40hod44.stdout
+    stderr: ${EVAL_DIR}/execution.zirm5dff98n0k9f2sddf.stderr
+    working-directory: Test 15
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 15.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.133
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 6df76265918d31c6c2399f73f15da0fae7b13220
+    - ${SOURCE_DIR}/Test 15/expected.out
+  dependencies:
+  - Test 15..mkdir.8
+  test-id: Test 15
+- task-id: Test 15.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.134
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/xfpdm9fpwr4aw40hod44.stdout
+  dependencies:
+  - Test 15..mkdir.8
+  - Test 15.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.133
+  - Test 15.7551994e-8ba0-11ec-986f-f39926f24a9c.run.132
+  test-id: Test 15
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 15
+- task-id: Test 16.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.135
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - b3de0c02034f4bbcd8cb509fcb71a8d42cbc7405
+    - ${SOURCE_DIR}/Test 16/data.in.huff
+  dependencies:
+  - Test 16..mkdir.6
+  test-id: Test 16
+- task-id: Test 16..copy-files.136
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 16
+  dependencies:
+  - Test 16.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.135
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 16..mkdir.6
+- task-id: Test 16..copy-file.137
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 16
+  dependencies:
+  - Test 16..mkdir.6
+  - Test 16.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.135
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 16..copy-files.136
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 16.7551994e-8ba0-11ec-986f-f39926f24a9c.run.138
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in.huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 16..mkdir.6
+  - Test 16.7551994e-8ba0-11ec-986f-f39926f24a9c.input-files.135
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 16..copy-files.136
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - Test 16..copy-file.137
+  test-id: Test 16
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/56smrfrb02pe5eqa9an0.stdout
+    stderr: ${EVAL_DIR}/execution.3mjts9s2qcfaqi6w59xc.stderr
+    working-directory: Test 16
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 131072
+      bound-directories: []
+- task-id: Test 16.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.139
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 6df76265918d31c6c2399f73f15da0fae7b13220
+    - ${SOURCE_DIR}/Test 16/expected.out
+  dependencies:
+  - Test 16..mkdir.6
+  test-id: Test 16
+- task-id: Test 16.7551994e-8ba0-11ec-986f-f39926f24a9c.judge.140
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/56smrfrb02pe5eqa9an0.stdout
+  dependencies:
+  - Test 16..mkdir.6
+  - Test 16.7551994e-8ba0-11ec-986f-f39926f24a9c.expected.139
+  - Test 16.7551994e-8ba0-11ec-986f-f39926f24a9c.run.138
+  test-id: Test 16
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 16
+- task-id: Test 17.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.141
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - bf7a5f955ccd1e26f9316b6ae3fd594055686015
+    - ${SOURCE_DIR}/Test 17/data.in.huff
+  dependencies:
+  - Test 17..mkdir.4
+  test-id: Test 17
+- task-id: Test 17..copy-files.142
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 17
+  dependencies:
+  - Test 17.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.141
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 17..mkdir.4
+- task-id: Test 17..copy-file.143
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 17
+  dependencies:
+  - Test 17..mkdir.4
+  - Test 17.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.141
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 17..copy-files.142
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 17.754690df-8ba0-11ec-986f-f39926f24a9c.run.144
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in.huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 17..mkdir.4
+  - Test 17.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.141
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 17..copy-files.142
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - Test 17..copy-file.143
+  test-id: Test 17
+  type: execution
+  sandbox:
+    name: isolate
+    stderr: ${EVAL_DIR}/execution.f7bp7y89uggvd1tp0nng.stderr
+    working-directory: Test 17
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 5
+      memory: 131072
+      bound-directories: []
+- task-id: Test 17.754690df-8ba0-11ec-986f-f39926f24a9c.expected.145
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 092d9469a08db5ae5f247b787a649bb3d793c80f
+    - ${SOURCE_DIR}/Test 17/expected.out
+  dependencies:
+  - Test 17..mkdir.4
+  test-id: Test 17
+- task-id: Test 17.754690df-8ba0-11ec-986f-f39926f24a9c.judge.146
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/diff
+    args:
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/data.in
+  dependencies:
+  - Test 17..mkdir.4
+  - Test 17.754690df-8ba0-11ec-986f-f39926f24a9c.expected.145
+  - Test 17.754690df-8ba0-11ec-986f-f39926f24a9c.run.144
+  test-id: Test 17
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 17
+- task-id: Test 18.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.147
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 3416519df77fcca41c9dca7a1c92aa187d923b43
+    - ${SOURCE_DIR}/Test 18/data.in.huff
+  dependencies:
+  - Test 18..mkdir.2
+  test-id: Test 18
+- task-id: Test 18..copy-files.148
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.runtimeconfig.json
+    - ${SOURCE_DIR}/Test 18
+  dependencies:
+  - Test 18.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.147
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 18..mkdir.2
+- task-id: Test 18..copy-file.149
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/initiation_5zakivho57/Program.exe
+    - ${SOURCE_DIR}/Test 18
+  dependencies:
+  - Test 18..mkdir.2
+  - Test 18.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.147
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 18..copy-files.148
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+- task-id: Test 18.754690df-8ba0-11ec-986f-f39926f24a9c.run.150
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/dotnet
+    args:
+    - ${EVAL_DIR}/Program.exe
+    - data.in.huff
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 18..mkdir.2
+  - Test 18.754690df-8ba0-11ec-986f-f39926f24a9c.input-files.147
+  - initiation_5zakivho57.7551994e-8ba0-11ec-986f-f39926f24a9c.fetch-runtime-config.43
+  - Test 18..copy-files.148
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.41
+  - initiation_5zakivho57.bfeb1e6c-e84f-11ea-89e4-c9e210aa25b8.compilation.42
+  - initiation_5zakivho57..mkdir.0
+  - Test 18..copy-file.149
+  test-id: Test 18
+  type: execution
+  sandbox:
+    name: isolate
+    stderr: ${EVAL_DIR}/execution.rfrbtosbbjc5cxmmqcp0.stderr
+    working-directory: Test 18
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 16
+      memory: 131072
+      bound-directories: []
+- task-id: Test 18.754690df-8ba0-11ec-986f-f39926f24a9c.expected.151
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - e961a75c335ba79216be62eee9fccdb9240b356f
+    - ${SOURCE_DIR}/Test 18/expected.out
+  dependencies:
+  - Test 18..mkdir.2
+  test-id: Test 18
+- task-id: Test 18.754690df-8ba0-11ec-986f-f39926f24a9c.judge.152
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: /usr/bin/diff
+    args:
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/data.in
+  dependencies:
+  - Test 18..mkdir.2
+  - Test 18.754690df-8ba0-11ec-986f-f39926f24a9c.expected.151
+  - Test 18.754690df-8ba0-11ec-986f-f39926f24a9c.run.150
+  test-id: Test 18
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 18
+...

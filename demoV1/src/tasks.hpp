@@ -145,7 +145,7 @@ namespace tasks
             rlimit as{bytes,bytes};
             if(setrlimit(RLIMIT_AS, &as) == -1)
             {
-                std::cout << std::format("Failed to set address space limit for the child process. Arg: {} Errno: {}", bytes, errno);
+                std::cerr << std::format("Failed to set address space limit for the child process. Arg: {} Errno: {}", bytes, errno);
             }
         }
 
@@ -154,7 +154,7 @@ namespace tasks
             rlimit cpu_time{s,s};
             if(setrlimit(RLIMIT_CPU, &cpu_time) == -1)
             {
-                std::cout << std::format("Failed to set cpu_time limit for the child process. Errno: {}", errno);
+                std::cerr << std::format("Failed to set cpu_time limit for the child process. Errno: {}", errno);
             }
         }
 

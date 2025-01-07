@@ -1,0 +1,917 @@
+---
+submission:
+  job-id: reference_2db25eb5-8389-40bf-b71e-31ba7c6b0738
+  file-collector: https://recodex.mff.cuni.cz/api/v1/worker-files/supplementary-file
+  log: "true"
+  hw-groups:
+  - 01-supmic-regular
+tasks:
+- task-id: g12s2ij0fr..mkdir.0
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/g12s2ij0fr
+- task-id: g12s2ij0fr..dump-results.1
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/g12s2ij0fr
+    - ${RESULT_DIR}/g12s2ij0fr
+    - 65536
+  dependencies:
+  - g12s2ij0fr..mkdir.0
+- task-id: Test 05..mkdir.2
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 05
+- task-id: Test 05..dump-results.3
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 05
+    - ${RESULT_DIR}/Test 05
+    - 65536
+  dependencies:
+  - Test 05..mkdir.2
+- task-id: Test 04..mkdir.4
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 04
+- task-id: Test 04..dump-results.5
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 04
+    - ${RESULT_DIR}/Test 04
+    - 65536
+  dependencies:
+  - Test 04..mkdir.4
+- task-id: Test 03..mkdir.6
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 03
+- task-id: Test 03..dump-results.7
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 03
+    - ${RESULT_DIR}/Test 03
+    - 65536
+  dependencies:
+  - Test 03..mkdir.6
+- task-id: Test 02..mkdir.8
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 02
+- task-id: Test 02..dump-results.9
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 02
+    - ${RESULT_DIR}/Test 02
+    - 65536
+  dependencies:
+  - Test 02..mkdir.8
+- task-id: Test 01..mkdir.10
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 01
+- task-id: Test 01..dump-results.11
+  priority: 1
+  fatal-failure: false
+  cmd:
+    bin: dumpdir
+    args:
+    - ${SOURCE_DIR}/Test 01
+    - ${RESULT_DIR}/Test 01
+    - 65536
+  dependencies:
+  - Test 01..mkdir.10
+- task-id: g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/solution.zip
+    - ${SOURCE_DIR}/g12s2ij0fr/solution.zip
+  dependencies:
+  - g12s2ij0fr..mkdir.0
+- task-id: Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.13
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 753af1c51a3b9ef9476339f1d2a1ce767b008f78
+    - ${SOURCE_DIR}/Test 01/overlay1.zip
+  dependencies:
+  - Test 01..mkdir.10
+  test-id: Test 01
+- task-id: Test 01..copy-files.14
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/g12s2ij0fr/solution.zip
+    - ${SOURCE_DIR}/Test 01
+  dependencies:
+  - Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.13
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 01..mkdir.10
+- task-id: Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.15
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 01/extract_pqh8297gfycnhip7uhbd
+  dependencies:
+  - Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.13
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 01..mkdir.10
+  - Test 01..copy-files.14
+  test-id: Test 01
+  type: initiation
+- task-id: Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.16
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: extract
+    args:
+    - ${SOURCE_DIR}/Test 01/solution.zip
+    - ${SOURCE_DIR}/Test 01/extract_pqh8297gfycnhip7uhbd
+  dependencies:
+  - Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.13
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 01..mkdir.10
+  - Test 01..copy-files.14
+  - Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.15
+  test-id: Test 01
+- task-id: Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.17
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: extract
+    args:
+    - ${SOURCE_DIR}/Test 01/overlay1.zip
+    - ${SOURCE_DIR}/Test 01/extract_pqh8297gfycnhip7uhbd
+  dependencies:
+  - Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.13
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 01..mkdir.10
+  - Test 01..copy-files.14
+  - Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.16
+  test-id: Test 01
+- task-id: Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.project-compilation.18
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: /opt/maven/bin/mvn
+    args:
+    - -Dmaven.repo.local=/opt/maven-repo/.m2
+    - -q
+    - clean
+    - compile
+    - -f
+    - ${EVAL_DIR}/extract_pqh8297gfycnhip7uhbd
+  dependencies:
+  - Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.15
+  - Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.16
+  - Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.17
+  - Test 01..mkdir.10
+  test-id: Test 01
+  type: initiation
+  sandbox:
+    name: isolate
+    stderr-to-stdout: true
+    output: true
+    carboncopy-stdout: ${RESULT_DIR}/compilation.l7vbjzvgi0p9icbnilja.out
+    working-directory: Test 01
+- task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.19
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /opt/maven/bin/mvn
+    args:
+    - exec:java
+    - -q
+    - -Dmaven.repo.local=/opt/maven-repo/.m2
+    - -f
+    - ${EVAL_DIR}/extract_pqh8297gfycnhip7uhbd
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 01..mkdir.10
+  - Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.15
+  - Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.16
+  - Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.17
+  test-id: Test 01
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/a4q1oz8u95cobvfplvdq.stdout
+    stderr: ${EVAL_DIR}/execution.zs3mxssz73ix7q5uu4vp.stderr
+    working-directory: Test 01
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 17
+      memory: 512000
+      bound-directories: []
+- task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.expected.20
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - adfab3ac73e0b02c784a38f4a729172a4ba01e1f
+    - ${SOURCE_DIR}/Test 01/expected.out
+  dependencies:
+  - Test 01..mkdir.10
+  test-id: Test 01
+- task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.judge.21
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/a4q1oz8u95cobvfplvdq.stdout
+  dependencies:
+  - Test 01..mkdir.10
+  - Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.expected.20
+  - Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.19
+  test-id: Test 01
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 01
+- task-id: Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.22
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 54fed5f8d79386d13eaf0e2da77cca486affb56f
+    - ${SOURCE_DIR}/Test 02/overlay2.zip
+  dependencies:
+  - Test 02..mkdir.8
+  test-id: Test 02
+- task-id: Test 02..copy-files.23
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/g12s2ij0fr/solution.zip
+    - ${SOURCE_DIR}/Test 02
+  dependencies:
+  - Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.22
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 02..mkdir.8
+- task-id: Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.24
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 02/extract_9hzelubjxd56h2ujgim3
+  dependencies:
+  - Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.22
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 02..mkdir.8
+  - Test 02..copy-files.23
+  test-id: Test 02
+  type: initiation
+- task-id: Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.25
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: extract
+    args:
+    - ${SOURCE_DIR}/Test 02/solution.zip
+    - ${SOURCE_DIR}/Test 02/extract_9hzelubjxd56h2ujgim3
+  dependencies:
+  - Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.22
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 02..mkdir.8
+  - Test 02..copy-files.23
+  - Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.24
+  test-id: Test 02
+- task-id: Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.26
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: extract
+    args:
+    - ${SOURCE_DIR}/Test 02/overlay2.zip
+    - ${SOURCE_DIR}/Test 02/extract_9hzelubjxd56h2ujgim3
+  dependencies:
+  - Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.22
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 02..mkdir.8
+  - Test 02..copy-files.23
+  - Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.25
+  test-id: Test 02
+- task-id: Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.project-compilation.27
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: /opt/maven/bin/mvn
+    args:
+    - -Dmaven.repo.local=/opt/maven-repo/.m2
+    - -q
+    - clean
+    - compile
+    - -f
+    - ${EVAL_DIR}/extract_9hzelubjxd56h2ujgim3
+  dependencies:
+  - Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.24
+  - Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.25
+  - Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.26
+  - Test 02..mkdir.8
+  test-id: Test 02
+  type: initiation
+  sandbox:
+    name: isolate
+    stderr-to-stdout: true
+    output: true
+    carboncopy-stdout: ${RESULT_DIR}/compilation.41fwr6ov58zdjdvc1mz1.out
+    working-directory: Test 02
+- task-id: Test 02.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.28
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /opt/maven/bin/mvn
+    args:
+    - exec:java
+    - -q
+    - -Dmaven.repo.local=/opt/maven-repo/.m2
+    - -f
+    - ${EVAL_DIR}/extract_9hzelubjxd56h2ujgim3
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 02..mkdir.8
+  - Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.24
+  - Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.25
+  - Test 02.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.26
+  test-id: Test 02
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/2ynyey2g6sos9249dn9k.stdout
+    stderr: ${EVAL_DIR}/execution.y7926pvh18mkkvzu7cx2.stderr
+    working-directory: Test 02
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 17
+      memory: 512000
+      bound-directories: []
+- task-id: Test 02.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.expected.29
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 724ba28f4a9a1b472057ff99511ed393a45552e1
+    - ${SOURCE_DIR}/Test 02/expected.out
+  dependencies:
+  - Test 02..mkdir.8
+  test-id: Test 02
+- task-id: Test 02.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.judge.30
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/2ynyey2g6sos9249dn9k.stdout
+  dependencies:
+  - Test 02..mkdir.8
+  - Test 02.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.expected.29
+  - Test 02.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.28
+  test-id: Test 02
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 02
+- task-id: Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.31
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 675c07a5aa233080479c27b4ace0339629b8b574
+    - ${SOURCE_DIR}/Test 03/overlay3.zip
+  dependencies:
+  - Test 03..mkdir.6
+  test-id: Test 03
+- task-id: Test 03..copy-files.32
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/g12s2ij0fr/solution.zip
+    - ${SOURCE_DIR}/Test 03
+  dependencies:
+  - Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.31
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 03..mkdir.6
+- task-id: Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.33
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 03/extract_19of066f4dk3eln78mmq
+  dependencies:
+  - Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.31
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 03..mkdir.6
+  - Test 03..copy-files.32
+  test-id: Test 03
+  type: initiation
+- task-id: Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.34
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: extract
+    args:
+    - ${SOURCE_DIR}/Test 03/solution.zip
+    - ${SOURCE_DIR}/Test 03/extract_19of066f4dk3eln78mmq
+  dependencies:
+  - Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.31
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 03..mkdir.6
+  - Test 03..copy-files.32
+  - Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.33
+  test-id: Test 03
+- task-id: Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.35
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: extract
+    args:
+    - ${SOURCE_DIR}/Test 03/overlay3.zip
+    - ${SOURCE_DIR}/Test 03/extract_19of066f4dk3eln78mmq
+  dependencies:
+  - Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.31
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 03..mkdir.6
+  - Test 03..copy-files.32
+  - Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.34
+  test-id: Test 03
+- task-id: Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.project-compilation.36
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: /opt/maven/bin/mvn
+    args:
+    - -Dmaven.repo.local=/opt/maven-repo/.m2
+    - -q
+    - clean
+    - compile
+    - -f
+    - ${EVAL_DIR}/extract_19of066f4dk3eln78mmq
+  dependencies:
+  - Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.33
+  - Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.34
+  - Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.35
+  - Test 03..mkdir.6
+  test-id: Test 03
+  type: initiation
+  sandbox:
+    name: isolate
+    stderr-to-stdout: true
+    output: true
+    carboncopy-stdout: ${RESULT_DIR}/compilation.2e1g1ha96isjce7olh82.out
+    working-directory: Test 03
+- task-id: Test 03.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.37
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /opt/maven/bin/mvn
+    args:
+    - exec:java
+    - -q
+    - -Dmaven.repo.local=/opt/maven-repo/.m2
+    - -f
+    - ${EVAL_DIR}/extract_19of066f4dk3eln78mmq
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 03..mkdir.6
+  - Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.33
+  - Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.34
+  - Test 03.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.35
+  test-id: Test 03
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/70s2mc5dw5lj71nfczwd.stdout
+    stderr: ${EVAL_DIR}/execution.x1pk7fqd1p3ilbameeh6.stderr
+    working-directory: Test 03
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 17
+      memory: 512000
+      bound-directories: []
+- task-id: Test 03.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.expected.38
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 724ba28f4a9a1b472057ff99511ed393a45552e1
+    - ${SOURCE_DIR}/Test 03/expected.out
+  dependencies:
+  - Test 03..mkdir.6
+  test-id: Test 03
+- task-id: Test 03.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.judge.39
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/70s2mc5dw5lj71nfczwd.stdout
+  dependencies:
+  - Test 03..mkdir.6
+  - Test 03.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.expected.38
+  - Test 03.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.37
+  test-id: Test 03
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 03
+- task-id: Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.40
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 2c1802febc47b9b88eb1bb043014b23f9baf6827
+    - ${SOURCE_DIR}/Test 04/overlay4.zip
+  dependencies:
+  - Test 04..mkdir.4
+  test-id: Test 04
+- task-id: Test 04..copy-files.41
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/g12s2ij0fr/solution.zip
+    - ${SOURCE_DIR}/Test 04
+  dependencies:
+  - Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.40
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 04..mkdir.4
+- task-id: Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.42
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 04/extract_v7ctj0l6z6cduieafqh2
+  dependencies:
+  - Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.40
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 04..mkdir.4
+  - Test 04..copy-files.41
+  test-id: Test 04
+  type: initiation
+- task-id: Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.43
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: extract
+    args:
+    - ${SOURCE_DIR}/Test 04/solution.zip
+    - ${SOURCE_DIR}/Test 04/extract_v7ctj0l6z6cduieafqh2
+  dependencies:
+  - Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.40
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 04..mkdir.4
+  - Test 04..copy-files.41
+  - Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.42
+  test-id: Test 04
+- task-id: Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.44
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: extract
+    args:
+    - ${SOURCE_DIR}/Test 04/overlay4.zip
+    - ${SOURCE_DIR}/Test 04/extract_v7ctj0l6z6cduieafqh2
+  dependencies:
+  - Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.40
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 04..mkdir.4
+  - Test 04..copy-files.41
+  - Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.43
+  test-id: Test 04
+- task-id: Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.project-compilation.45
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: /opt/maven/bin/mvn
+    args:
+    - -Dmaven.repo.local=/opt/maven-repo/.m2
+    - -q
+    - clean
+    - compile
+    - -f
+    - ${EVAL_DIR}/extract_v7ctj0l6z6cduieafqh2
+  dependencies:
+  - Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.42
+  - Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.43
+  - Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.44
+  - Test 04..mkdir.4
+  test-id: Test 04
+  type: initiation
+  sandbox:
+    name: isolate
+    stderr-to-stdout: true
+    output: true
+    carboncopy-stdout: ${RESULT_DIR}/compilation.uu6jvenmdx4ifg6nadhe.out
+    working-directory: Test 04
+- task-id: Test 04.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.46
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /opt/maven/bin/mvn
+    args:
+    - exec:java
+    - -q
+    - -Dmaven.repo.local=/opt/maven-repo/.m2
+    - -f
+    - ${EVAL_DIR}/extract_v7ctj0l6z6cduieafqh2
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 04..mkdir.4
+  - Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.42
+  - Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.43
+  - Test 04.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.44
+  test-id: Test 04
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/ztcdaldt1m33e493edzk.stdout
+    stderr: ${EVAL_DIR}/execution.blub9pgq5zbb9hbijz3m.stderr
+    working-directory: Test 04
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 17
+      memory: 512000
+      bound-directories: []
+- task-id: Test 04.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.expected.47
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - b73d74fcede92cdd78ec92c2c5899671d1b32044
+    - ${SOURCE_DIR}/Test 04/expected.out
+  dependencies:
+  - Test 04..mkdir.4
+  test-id: Test 04
+- task-id: Test 04.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.judge.48
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/ztcdaldt1m33e493edzk.stdout
+  dependencies:
+  - Test 04..mkdir.4
+  - Test 04.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.expected.47
+  - Test 04.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.46
+  test-id: Test 04
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 04
+- task-id: Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.49
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 6bd9237496f055dbc835f77c36de19f60fe35e9e
+    - ${SOURCE_DIR}/Test 05/overlay5.zip
+  dependencies:
+  - Test 05..mkdir.2
+  test-id: Test 05
+- task-id: Test 05..copy-files.50
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: cp
+    args:
+    - ${SOURCE_DIR}/g12s2ij0fr/solution.zip
+    - ${SOURCE_DIR}/Test 05
+  dependencies:
+  - Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.49
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 05..mkdir.2
+- task-id: Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.51
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: mkdir
+    args:
+    - ${SOURCE_DIR}/Test 05/extract_cy51sdznm0ifnjshd4t8
+  dependencies:
+  - Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.49
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 05..mkdir.2
+  - Test 05..copy-files.50
+  test-id: Test 05
+  type: initiation
+- task-id: Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.52
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: extract
+    args:
+    - ${SOURCE_DIR}/Test 05/solution.zip
+    - ${SOURCE_DIR}/Test 05/extract_cy51sdznm0ifnjshd4t8
+  dependencies:
+  - Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.49
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 05..mkdir.2
+  - Test 05..copy-files.50
+  - Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.51
+  test-id: Test 05
+- task-id: Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.53
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: extract
+    args:
+    - ${SOURCE_DIR}/Test 05/overlay5.zip
+    - ${SOURCE_DIR}/Test 05/extract_cy51sdznm0ifnjshd4t8
+  dependencies:
+  - Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extras.49
+  - g12s2ij0fr.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.12
+  - g12s2ij0fr..mkdir.0
+  - Test 05..mkdir.2
+  - Test 05..copy-files.50
+  - Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.52
+  test-id: Test 05
+- task-id: Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.project-compilation.54
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: /opt/maven/bin/mvn
+    args:
+    - -Dmaven.repo.local=/opt/maven-repo/.m2
+    - -q
+    - clean
+    - compile
+    - -f
+    - ${EVAL_DIR}/extract_cy51sdznm0ifnjshd4t8
+  dependencies:
+  - Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.51
+  - Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.52
+  - Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.53
+  - Test 05..mkdir.2
+  test-id: Test 05
+  type: initiation
+  sandbox:
+    name: isolate
+    stderr-to-stdout: true
+    output: true
+    carboncopy-stdout: ${RESULT_DIR}/compilation.3unu5xa3zlfycl2wwjgf.out
+    working-directory: Test 05
+- task-id: Test 05.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.55
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: /opt/maven/bin/mvn
+    args:
+    - exec:java
+    - -q
+    - -Dmaven.repo.local=/opt/maven-repo/.m2
+    - -f
+    - ${EVAL_DIR}/extract_cy51sdznm0ifnjshd4t8
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 05..mkdir.2
+  - Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.51
+  - Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.52
+  - Test 05.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.53
+  test-id: Test 05
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/wt8n1pqo66qtaivfvpmx.stdout
+    stderr: ${EVAL_DIR}/execution.0a8pqkhq9wyd0vjjj9t2.stderr
+    working-directory: Test 05
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 17
+      memory: 512000
+      bound-directories: []
+- task-id: Test 05.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.expected.56
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - b73d74fcede92cdd78ec92c2c5899671d1b32044
+    - ${SOURCE_DIR}/Test 05/expected.out
+  dependencies:
+  - Test 05..mkdir.2
+  test-id: Test 05
+- task-id: Test 05.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.judge.57
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/wt8n1pqo66qtaivfvpmx.stdout
+  dependencies:
+  - Test 05..mkdir.2
+  - Test 05.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.expected.56
+  - Test 05.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.55
+  test-id: Test 05
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 05
+...

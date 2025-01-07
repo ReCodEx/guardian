@@ -1,0 +1,59 @@
+job-id: reference_4c7b0f38-1427-42ab-8b95-cb871fe64731
+hw-group: 01-supmic-regular
+results:
+  - task-id: Test 01..mkdir.0
+    status: OK
+  - task-id: Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.2
+    status: OK
+  - task-id: Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.3
+    status: OK
+  - task-id: Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.4
+    status: OK
+  - task-id: Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.project-compilation.5
+    status: OK
+    sandbox_results:
+      exitcode: 0
+      time: 2.39199996
+      wall-time: 2.41300011
+      memory: 221696
+      max-rss: 254396
+      status: OK
+      exitsig: 0
+      killed: false
+      message: ""
+      csw-voluntary: 11218
+      csw-forced: 6890
+  - task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.6
+    status: OK
+    sandbox_results:
+      exitcode: 0
+      time: 1.68799996
+      wall-time: 1.70700002
+      memory: 155548
+      max-rss: 176800
+      status: OK
+      exitsig: 0
+      killed: false
+      message: ""
+      csw-voluntary: 9146
+      csw-forced: 5182
+  - task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.expected.7
+    status: OK
+  - task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.judge.8
+    status: OK
+    output:
+      stdout: "1\n"
+    sandbox_results:
+      exitcode: 0
+      time: 0.00100000005
+      wall-time: 0.00100000005
+      memory: 860
+      max-rss: 4132
+      status: OK
+      exitsig: 0
+      killed: false
+      message: ""
+      csw-voluntary: 3
+      csw-forced: 4
+  - task-id: Test 01..dump-results.1
+    status: OK
