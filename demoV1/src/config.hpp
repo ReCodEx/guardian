@@ -5,6 +5,7 @@
 #include <vector>
 #include <optional>
 #include <memory>
+#include <regex>
 
 #include "cgrps.hpp"
 #include "namespaces.hpp"
@@ -318,6 +319,83 @@ namespace config
         }
     };
 
+    class dir_rule
+    {
+    public:
+        dir_rule(const std::string& rule)
+        {
+            parse_rule(rule);
+        }
+    private:
+        const char* rule_regex_ = "([^=]+)(=(.+))?:(.+)";
+        fs::path in_;
+        std::optional<fs::path> out_;
+
+        bool rw_;
+        bool dev_;
+        bool noexec_;
+        bool maybe_;
+        bool fs_;
+        bool tmp_;
+        bool norec_;
+    
+        void parse_rule(const std::string& rule)
+        {
+            std::regex rule_regex(rule_regex_);
+            std::smatch m;
+            if(std::regex_match(rule, m, rule_regex))
+            {
+                fs::path in = fs::path(m[1]);
+                std::optional<fs::path> out = m[3] == "" ? std::optional<fs::path>(m[1]) : std::optional<fs::path>();
+                std::vector<std::string> options = string_utils::split(m[4]);
+                
+                if(!file_utils::is_path_valid(in)) { terminate("Invalid path syntax in fs-rule: {}", m[1].str()); }
+                if(out.has_value() && !file_utils::is_path_valid(out.value())) { terminate("Invalid path syntax in fs-rule: {}", m[3].str()); } 
+                if(!check_options(options)) { terminate("Invalid options in fs-rule"); }
+                
+                in_ = in;
+                out_ = out;
+            }
+            else
+            {
+                terminate("Invalid fs-rule syntax: {}", rule);
+            }
+        }
+        
+        bool check_options(const std::vector<std::string>& options)
+        {
+            
+        }
+    };
+
+    class box_fs_config
+    {
+    public:
+        box_fs_config() {}
+        box_fs_config(const YAML::Node& fs_node)
+        {
+
+        }
+
+        const auto& rules() const
+        {
+            return rules_;
+        }
+              
+    private:
+        std::vector<dir_rule> rules_;
+
+        void parse_rules()
+        {
+            
+        }
+        
+        void add_default_rules()
+        {
+
+        }
+    };
+    
     class proxy_config
     {
     public:
@@ -339,6 +417,7 @@ namespace config
     private:
         std::optional<fs::path> chroot_dir_;
         tasks_config tasks_;
+        box_fs_config box_fs_;
     };
 
     class root_interface

@@ -49,6 +49,21 @@ namespace env
                 terminate("failed to remount cgroup2 filesystem, errno: {}", errno);
         }
     };
+    
+    class box_fs_manager
+    {
+    public:
+        box_fs_manager(config::box_fs_config& fs_config) : fs_config_(&fs_config) 
+        {}
+        
+        void run()
+        {
+
+        }
+
+    private:
+        config::box_fs_config* fs_config_;
+    };
 
 }
 

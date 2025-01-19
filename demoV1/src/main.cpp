@@ -19,9 +19,9 @@ namespace fs = std::filesystem;
 int main(int argc, char ** argv)
 {
     spdlog::set_level(spdlog::level::debug);
-    container_core::root_core core(argc, argv);
-    core.run();
-    //core.run_tasks_directly();
+    //container_core::root_core core(argc, argv);
+    config::dir_rule rule("temp:fs");
+    //core.run();
     
     std::cout << "finished!" << std::endl;
 }

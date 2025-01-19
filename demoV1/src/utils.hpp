@@ -46,7 +46,15 @@ namespace string_utils
 namespace file_utils
 {
     namespace fs = std::filesystem;
-
+    
+    bool is_path_valid(const std::filesystem::path& p) {
+    try {
+        auto normalized = p.lexically_normal();
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
     void list_directory(const fs::path& path)
     {
         for (const auto & entry : fs::directory_iterator(path))
