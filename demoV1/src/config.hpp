@@ -191,9 +191,11 @@ namespace config
 
         task_config(const YAML::Node& task_node)
         {
-            if(task_node[config_options::task::EXEC_PATH]) exec_ = fs::path(task_node[config_options::task::EXEC_PATH].as<std::string>());
-            else terminate("Missing path to executable for task \"{}\"", name_);
+            if(!task_node[config_options::task::EXEC_PATH])
+                { terminate("Missing path to executable for task \"{}\"", name_); }
             
+            exec_ = fs::path(task_node[config_options::task::EXEC_PATH].as<std::string>());
+
             if(task_node[config_options::task::TASK_NAME]) name_ = task_node[config_options::task::TASK_NAME].as<std::string>();
             
             if(task_node[config_options::task::EXEC_ARGS]) args_ = yaml_utils::get_vector<std::string>(task_node[config_options::task::EXEC_ARGS]);
@@ -334,7 +336,8 @@ namespace config
         bool tmp()      { return tmp_; }
         bool norec()    { return norec_; }
     private:
-        const char* rule_regex_ = "([^=]+)(=([^:]+))?(:(.+))?";
+        // !!!
+        static constexpr auto rule_regex_ = "([^=:]+)(=([^:]+))?(:(.+))?";
         fs::path inner_;
         std::optional<fs::path> outer_;
 
@@ -353,20 +356,26 @@ namespace config
             if(!std::regex_match(rule, m, rule_regex))
                 { terminate("Invalid fs-rule syntax: {}", rule); }
 
-            fs::path inner = fs::path(m[1]);
-            std::optional<fs::path> outer = m[3] != "" ? std::optional<fs::path>(m[3]) : std::optional<fs::path>();
-            std::vector<std::string> options = string_utils::split(m[5]);
+            auto& inner_token = m[1];
+            auto& outer_token = m[3];
+            auto& options_token = m[5];
+
+            fs::path inner = fs::path(inner_token);
+
+            std::optional<fs::path> outer;
+            if ( outer_token != "" ) { outer = std::optional<fs::path>(outer_token); }
+
+            std::vector<std::string> options = string_utils::split(options_token);
             
             if(!check_inner_dir(inner))
-                { terminate("Invalid path syntax in fs-rule: {}", m[1].str()); }
+                { terminate("Invalid inner path in fs-rule: {}", inner_token.str()); }
             
             if(!check_outer_dir(outer)) 
-                { terminate("Invalid path syntax in fs-rule: {}", m[3].str()); } 
+                { terminate("Invalid outer path in fs-rule: {}", outer_token.str()); } 
             
             parse_options(options);
             inner_ = inner;
             outer_ = outer;
-
         }
         
         void parse_options(const std::vector<std::string>& options)
@@ -387,12 +396,12 @@ namespace config
         
         bool check_inner_dir(const fs::path& in)
         {
-            return file_utils::is_path_valid(in);
+            return file_utils::is_valid_path(in) && file_utils::is_subdirectory(in);
         }
 
         bool check_outer_dir(const std::optional<fs::path>& out)
         {
-            return !out.has_value() || file_utils::is_path_valid(out.value());
+            return !out.has_value() || file_utils::is_valid_path(out.value());
         }
         
         bool check_options(const std::vector<std::string>& options)

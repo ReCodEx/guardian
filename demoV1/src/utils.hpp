@@ -47,14 +47,24 @@ namespace file_utils
 {
     namespace fs = std::filesystem;
     
-    bool is_path_valid(const std::filesystem::path& p) {
-    try {
-        auto normalized = p.lexically_normal();
-        return true;
-    } catch (...) {
-        return false;
+    bool is_valid_path(const fs::path& p) 
+    {
+        try 
+        {
+            auto normalized = p.lexically_normal();
+            return true;
+        } 
+        catch (...) 
+        {
+            return false;
+        }
     }
-}
+    
+    bool is_subdirectory(const std::filesystem::path& relative) 
+    {
+        return relative.lexically_relative(".") == relative.string();
+    }
+
     void list_directory(const fs::path& path)
     {
         for (const auto & entry : fs::directory_iterator(path))
