@@ -50,9 +50,10 @@ namespace config
             constexpr auto MEMORY = "mem";
         }
 
-        constexpr auto ENVIRONMENT = "environment";
+        constexpr auto ENVIRONMENT = "env";
         namespace env
         {
+            constexpr auto DIRECTORY_RULES = "dir-rules";
             constexpr auto CHROOT_DIR = "chroot-dir";
         }
 
@@ -180,13 +181,13 @@ namespace config
     class task_config
     {
     public:
-        task_config(const fs::path& exec, const std::vector<std::string>& args, const r_limits& rlims, const fs::path& cg_rel_path) : 
+/*         task_config(const fs::path& exec, const std::vector<std::string>& args, const r_limits& rlims, const fs::path& cg_rel_path) : 
         exec_(exec), args_(args), rlimits_(rlims), cg_rel_path_(cg_rel_path) 
         {}
 
         task_config(fs::path&& exec, std::vector<std::string>&& args, r_limits&& rlims, fs::path&& cg_rel_path): 
         exec_(std::move(exec)), args_(std::move(args)), rlimits_(std::move(rlims)), cg_rel_path_(std::move(cg_rel_path))
-        {}
+        {} */
 
         task_config(const YAML::Node& task_node)
         {
@@ -206,14 +207,10 @@ namespace config
 
         task_config(const options::variables_map& options_map) : rlimits_(options_map)
         {
-            if(options_map.contains(config_options::task::EXEC_PATH))
-            {
-                exec_ = fs::path(options_map[config_options::task::EXEC_PATH].as<std::string>());
-            }
-            else
-            {
-                terminate("No path to executable provided");
-            }
+            if(!options_map.contains(config_options::task::EXEC_PATH))
+                { terminate("No path to executable provided"); }
+                
+            exec_ = fs::path(options_map[config_options::task::EXEC_PATH].as<std::string>());
 
             if(options_map.contains(config_options::task::EXEC_ARGS))
             {
@@ -226,12 +223,12 @@ namespace config
             }
         }
         
-        const auto& name() const        { return name_; }
-        const auto& exec_path() const   { return exec_; }
-        auto& exec_args()               { return args_; }
-        const auto& rlimits() const       { return rlimits_; }
-        const auto& cg_rel_path() const { return cg_rel_path_; }
-        const auto& stats_path() const  { return stats_path_; }
+              auto& exec_args()             { return args_; }
+        const auto& name()          const   { return name_; }
+        const auto& exec_path()     const   { return exec_; }
+        const auto& rlimits()       const   { return rlimits_; }
+        const auto& cg_rel_path()   const   { return cg_rel_path_; }
+        const auto& stats_path()    const   { return stats_path_; }
 
         void finalize_task(const task_stats& stats)
         {
@@ -324,47 +321,83 @@ namespace config
     public:
         dir_rule(const std::string& rule)
         {
-            parse_rule(rule);
+            construct_rule(rule);
         }
+        
+        const fs::path& in_dir() { return inner_; }
+        const std::optional<fs::path>& out_dir() { return outer_; }
+        bool rw()       { return rw_; }
+        bool dev()      { return dev_; }
+        bool noexec()   { return noexec_; }
+        bool maybe()    { return maybe_; }
+        bool fs()       { return fs_; }
+        bool tmp()      { return tmp_; }
+        bool norec()    { return norec_; }
     private:
         const char* rule_regex_ = "([^=]+)(=(.+))?:(.+)";
-        fs::path in_;
-        std::optional<fs::path> out_;
+        fs::path inner_;
+        std::optional<fs::path> outer_;
 
-        bool rw_;
-        bool dev_;
-        bool noexec_;
-        bool maybe_;
-        bool fs_;
-        bool tmp_;
-        bool norec_;
+        bool rw_        = false;
+        bool dev_       = false;
+        bool noexec_    = false;
+        bool maybe_     = false;
+        bool fs_        = false;
+        bool tmp_       = false;
+        bool norec_     = false;
     
-        void parse_rule(const std::string& rule)
+        void construct_rule(const std::string& rule)
         {
             std::regex rule_regex(rule_regex_);
             std::smatch m;
-            if(std::regex_match(rule, m, rule_regex))
+            if(!std::regex_match(rule, m, rule_regex))
+                { terminate("Invalid fs-rule syntax: {}", rule); }
+
+            fs::path inner = fs::path(m[1]);
+            std::optional<fs::path> outer = m[3] == "" ? std::optional<fs::path>(m[1]) : std::optional<fs::path>();
+            std::vector<std::string> options = string_utils::split(m[4]);
+            
+            if(!check_inner_dir(inner))
+                { terminate("Invalid path syntax in fs-rule: {}", m[1].str()); }
+            
+            if(check_outer_dir(outer)) 
+                { terminate("Invalid path syntax in fs-rule: {}", m[3].str()); } 
+            
+            parse_options(options);
+            inner_ = inner;
+            outer_ = outer;
+
+        }
+        
+        void parse_options(const std::vector<std::string>& options)
+        {
+            if(!check_options(options)) 
+                { terminate("Invalid options in fs-rule"); }
+            for(auto&& o : options)
             {
-                fs::path in = fs::path(m[1]);
-                std::optional<fs::path> out = m[3] == "" ? std::optional<fs::path>(m[1]) : std::optional<fs::path>();
-                std::vector<std::string> options = string_utils::split(m[4]);
-                
-                if(!file_utils::is_path_valid(in)) { terminate("Invalid path syntax in fs-rule: {}", m[1].str()); }
-                if(out.has_value() && !file_utils::is_path_valid(out.value())) { terminate("Invalid path syntax in fs-rule: {}", m[3].str()); } 
-                if(!check_options(options)) { terminate("Invalid options in fs-rule"); }
-                
-                in_ = in;
-                out_ = out;
+                if(o == "rw")       { rw_ = true; }
+                if(o == "dev")      { dev_ = true; }
+                if(o == "noexec")   { noexec_ = true; }
+                if(o == "maybe")    { maybe_ = true; }
+                if(o == "fs")       { fs_ = true; }
+                if(o == "tmp")      { tmp_ = true; }
+                if(o == "norec")    { norec_ = true; }
             }
-            else
-            {
-                terminate("Invalid fs-rule syntax: {}", rule);
-            }
+        }
+        
+        bool check_inner_dir(const fs::path& in)
+        {
+            return file_utils::is_path_valid(in);
+        }
+
+        bool check_outer_dir(const std::optional<fs::path>& out)
+        {
+            return !out.has_value() || !file_utils::is_path_valid(out.value());
         }
         
         bool check_options(const std::vector<std::string>& options)
         {
-            
+            return true;
         }
     };
 
@@ -372,9 +405,9 @@ namespace config
     {
     public:
         box_fs_config() {}
-        box_fs_config(const YAML::Node& fs_node)
+        box_fs_config(const YAML::Node& env_node)
         {
-
+            parse_rules(env_node[config_options::env::DIRECTORY_RULES]);
         }
 
         const auto& rules() const
@@ -385,14 +418,27 @@ namespace config
     private:
         std::vector<dir_rule> rules_;
 
-        void parse_rules()
+        void parse_rules(const YAML::Node& rules_list)
         {
+            add_default_rules();
+            
+            for(auto i = 0; i < rules_list.size(); i++)
+            {
+                rules_.push_back(dir_rule(rules_list[i].as<std::string>()));
+            }
             
         }
         
         void add_default_rules()
         {
-
+            rules_.emplace_back(dir_rule("box=./box:rw"));
+            rules_.emplace_back(dir_rule( "bin" ));
+            rules_.emplace_back(dir_rule( "dev:dev" ));
+            rules_.emplace_back(dir_rule("lib"));
+            rules_.emplace_back(dir_rule("lib64:maybe"));
+            rules_.emplace_back(dir_rule("proc=proc:fs"));
+            rules_.emplace_back(dir_rule("tmp:tmp"));
+            rules_.emplace_back(dir_rule("usr")); 
         }
     };
     
@@ -400,7 +446,7 @@ namespace config
     {
     public:
         proxy_config() {}
-        proxy_config(const YAML::Node& proxy_node) : tasks_(proxy_node[config_options::TASKS])
+        proxy_config(const YAML::Node& proxy_node) : tasks_(proxy_node[config_options::TASKS]), box_fs_(proxy_node[config_options::ENVIRONMENT])
         {
             if(proxy_node[config_options::env::CHROOT_DIR]) chroot_dir_ = fs::path(proxy_node[config_options::env::CHROOT_DIR].as<std::string>());
         }

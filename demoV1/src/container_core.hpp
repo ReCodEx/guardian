@@ -149,11 +149,10 @@ private:
         int stat{};
         auto p = waitpid(proxy_pid, &stat, 0);
 
-        if (p == proxy_pid)
-        {
-            logs::debug("Proxy exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
-        }
-        else terminate("waitpid() for the proxy process failed. Stat: {}, Errno: {}", stat, errno);
+        if (p != proxy_pid)
+            { terminate("waitpid() for the proxy process failed. Stat: {}, Errno: {}", stat, errno); }
+        
+        logs::debug("Proxy exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
     }
     
     void generate_results()
