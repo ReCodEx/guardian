@@ -1,4 +1,6 @@
 chroot-dir: "/alpine"
+env: 
+  dir-rules:
 tasks:
     - task-id: "bsearch"
       stats-yaml: "/result.yaml"

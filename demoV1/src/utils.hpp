@@ -36,7 +36,7 @@ namespace string_utils
         std::vector<std::string> res;
         for(boost::tokenizer<>::iterator it = tok.begin(); it != tok.end(); ++it)
         {
-            res.push_back(*it);
+            res.emplace_back(*it);
         }
         return res;
     }

@@ -76,9 +76,9 @@ namespace process_utils
 
         for(auto&& string : args)
         {
-            cstrings.push_back(string.data());
+            cstrings.emplace_back(string.data());
         }
-        cstrings.push_back(nullptr);
+        cstrings.emplace_back(nullptr);
 
         return cstrings;
     }

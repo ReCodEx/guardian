@@ -84,7 +84,7 @@ namespace config
             std::vector<T> v;
             for(auto i = 0; i < seq.size(); i++)
             {
-                v.push_back(seq[i].as<T>());
+                v.emplace_back(seq[i].as<T>());
             }
             return std::move(v);
         }
@@ -172,7 +172,7 @@ namespace config
     public:
         void insert(task_stats task)
         {
-            tasks_.push_back(task);
+            tasks_.emplace_back(task);
         }
     private:
         std::vector<task_stats> tasks_;
@@ -296,7 +296,7 @@ namespace config
         {
             for(auto i = 0; i < tasks_node.size(); i++)
             {
-                tasks_.push_back(std::make_unique<task_config>(tasks_node[i]));
+                tasks_.emplace_back(std::make_unique<task_config>(tasks_node[i]));
             }
         }
         auto& get_tasks()
@@ -311,7 +311,7 @@ namespace config
             auto tasks_node = proxy_node[config_options::TASKS];
             for(auto i = 0; i < tasks_node.size(); i++)
             {
-                tasks_.push_back(std::make_unique<task_config>(tasks_node[i]));
+                tasks_.emplace_back(std::make_unique<task_config>(tasks_node[i]));
             }
         }
     };
@@ -334,7 +334,7 @@ namespace config
         bool tmp()      { return tmp_; }
         bool norec()    { return norec_; }
     private:
-        const char* rule_regex_ = "([^=]+)(=(.+))?:(.+)";
+        const char* rule_regex_ = "([^=]+)(=([^:]+))?(:(.+))?";
         fs::path inner_;
         std::optional<fs::path> outer_;
 
@@ -354,13 +354,13 @@ namespace config
                 { terminate("Invalid fs-rule syntax: {}", rule); }
 
             fs::path inner = fs::path(m[1]);
-            std::optional<fs::path> outer = m[3] == "" ? std::optional<fs::path>(m[1]) : std::optional<fs::path>();
-            std::vector<std::string> options = string_utils::split(m[4]);
+            std::optional<fs::path> outer = m[3] != "" ? std::optional<fs::path>(m[3]) : std::optional<fs::path>();
+            std::vector<std::string> options = string_utils::split(m[5]);
             
             if(!check_inner_dir(inner))
                 { terminate("Invalid path syntax in fs-rule: {}", m[1].str()); }
             
-            if(check_outer_dir(outer)) 
+            if(!check_outer_dir(outer)) 
                 { terminate("Invalid path syntax in fs-rule: {}", m[3].str()); } 
             
             parse_options(options);
@@ -392,7 +392,7 @@ namespace config
 
         bool check_outer_dir(const std::optional<fs::path>& out)
         {
-            return !out.has_value() || !file_utils::is_path_valid(out.value());
+            return !out.has_value() || file_utils::is_path_valid(out.value());
         }
         
         bool check_options(const std::vector<std::string>& options)
@@ -424,7 +424,7 @@ namespace config
             
             for(auto i = 0; i < rules_list.size(); i++)
             {
-                rules_.push_back(dir_rule(rules_list[i].as<std::string>()));
+                rules_.emplace_back(dir_rule(rules_list[i].as<std::string>()));
             }
             
         }
@@ -565,7 +565,7 @@ namespace config
             }
             else
             {
-                tasks_.push_back(std::make_unique<task_config>(options_map));
+                tasks_.emplace_back(std::make_unique<task_config>(options_map));
                 return;
             }
         }
