@@ -19,7 +19,10 @@ namespace container_core
     {
     public:
 
-        proxy_core(config::proxy_config& config) : proxy_config_(&config), mount_mngr_(&config), task_runner_(config.get_tasks_config())
+        proxy_core(config::proxy_config& config) :  proxy_config_(&config),
+                                                    mount_mngr_(&config), 
+                                                    task_runner_(config.get_tasks_config()),
+                                                    fs_manager_(config.fs_config())
         {
             logs::info("Hello world from the proxy!");
             init_proxy_logger();
@@ -36,6 +39,7 @@ namespace container_core
 private: 
     config::proxy_config* proxy_config_;
     env::proxy_mount_manager mount_mngr_;
+    env::box_fs_manager fs_manager_;
     cgroup::proxy_cgroup_manager cg_mngr_;
     tasks::task_manager task_runner_;
 
@@ -63,9 +67,9 @@ private:
     }
     void pivot_root()
     {
-        if(proxy_config_->get_chroot_dir())
+        if(proxy_config_->chroot_dir())
         {
-            auto chroot_dir = proxy_config_->get_chroot_dir().value();
+            auto chroot_dir = proxy_config_->chroot_dir().value();
             process_utils::pivot_root(chroot_dir, chroot_dir / fs::path("old_root"));
         }
     } 

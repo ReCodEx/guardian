@@ -54,6 +54,7 @@ namespace config
         namespace env
         {
             constexpr auto DIRECTORY_RULES = "dir-rules";
+            constexpr auto USE_DEFAULT_DIR_RULES = "use-defaults";
             constexpr auto CHROOT_DIR = "chroot-dir";
         }
 
@@ -417,6 +418,8 @@ namespace config
         box_fs_config() {}
         box_fs_config(const YAML::Node& env_node)
         {
+            if(env_node[config_options::env::USE_DEFAULT_DIR_RULES]) use_defaults_ = env_node[config_options::env::USE_DEFAULT_DIR_RULES].as<bool>();
+            add_default_rules();
             parse_rules(env_node[config_options::env::DIRECTORY_RULES]);
         }
 
@@ -429,32 +432,43 @@ namespace config
         {
             return box_root_;
         }
+        
+        bool use_default_rules() const
+        {
+            return use_defaults_;
+        }
+        
+        const auto& default_rules() const 
+        {
+            return default_rules_;
+        }
               
     private:
         fs::path                box_root_;
         std::vector<dir_rule>   rules_;
+        
+
+        bool use_defaults_ = true;
+        std::vector<dir_rule>   default_rules_;
 
         void parse_rules(const YAML::Node& rules_list)
         {
-            add_default_rules();
-            
             for(auto i = 0; i < rules_list.size(); i++)
             {
                 rules_.emplace_back(dir_rule(rules_list[i].as<std::string>()));
             }
-            
         }
         
         void add_default_rules()
         {
-            rules_.emplace_back(dir_rule("box=./box:rw"));
-            rules_.emplace_back(dir_rule( "bin" ));
-            rules_.emplace_back(dir_rule( "dev:dev" ));
-            rules_.emplace_back(dir_rule("lib"));
-            rules_.emplace_back(dir_rule("lib64:maybe"));
-            rules_.emplace_back(dir_rule("proc=proc:fs"));
-            rules_.emplace_back(dir_rule("tmp:tmp"));
-            rules_.emplace_back(dir_rule("usr")); 
+            default_rules_.emplace_back(dir_rule("box=./box:rw"));
+            default_rules_.emplace_back(dir_rule("bin"));
+            default_rules_.emplace_back(dir_rule("dev:dev"));
+            default_rules_.emplace_back(dir_rule("lib"));
+            default_rules_.emplace_back(dir_rule("lib64:maybe"));
+            default_rules_.emplace_back(dir_rule("proc=proc:fs"));
+            //default_rules_.emplace_back(dir_rule("tmp:tmp"));
+            default_rules_.emplace_back(dir_rule("usr")); 
         }
     };
     
@@ -471,8 +485,13 @@ namespace config
         {
             return tasks_;
         }
+        
+        auto& fs_config()
+        {
+            return box_fs_;
+        }
 
-        const auto& get_chroot_dir()
+        const auto& chroot_dir()
         {
             return chroot_dir_;
         }

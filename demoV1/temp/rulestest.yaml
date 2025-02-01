@@ -1,10 +1,5 @@
-chroot-dir: "/alpine"
+chroot-dir: "/box"
 tasks:
-    - task-id: "bsearch"
-      stats-yaml: "/result.yaml"
-      path: "/tests/test_binaries/bsearch"
-      rlims:
-          #cpu-time: 1
-          mem: 5000000
 box-fs:
-    rules:
+env:
+  dir-rules:

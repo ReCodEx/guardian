@@ -34,7 +34,7 @@ namespace env
 
         void mount_pivot_dir()
         {
-            auto& chroot_dir = proxy_config_->get_chroot_dir().value();
+            auto& chroot_dir = proxy_config_->chroot_dir().value();
             if(mount(chroot_dir.c_str(), chroot_dir.c_str(), nullptr, MS_REC | MS_BIND, nullptr))
                 { terminate("failed to bind mount the pivot directory, errno: {}", errno); }
         }
@@ -48,7 +48,7 @@ namespace env
             if(umount(cgroup::ROOT_CG_PATH().c_str()))
                 { terminate("failed to unmount cgroup filesystem, errno: {}", errno); }
             
-            auto& chroot_dir = proxy_config_->get_chroot_dir().value();
+            auto& chroot_dir = proxy_config_->chroot_dir().value();
             if(mount("none", (chroot_dir / cgroup::ROOT_CG_PATH().relative_path()).c_str(), "cgroup2", 0, nullptr))
                 { terminate("failed to remount cgroup2 filesystem, errno: {}", errno); }
         }
@@ -69,6 +69,14 @@ namespace env
         {
             auto& rules = fs_config_->rules();
             auto& box_root = fs_config_->box_root();
+
+            if(fs_config_->use_default_rules())
+            {
+                for(auto&& rule : fs_config_->default_rules())
+                {
+                    apply_rule(rule);
+                }
+            } 
 
             for(auto&& rule : rules)
             {
