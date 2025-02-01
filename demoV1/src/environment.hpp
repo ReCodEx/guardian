@@ -1,6 +1,7 @@
 #ifndef CONTAINER_ENV
 #define CONTAINER_ENV
 
+#include <filesystem>
 #include <sys/mount.h>
 #include <errno.h>
 #include "config.hpp"
@@ -9,6 +10,8 @@
 
 namespace env
 {
+    namespace fs = std::filesystem;
+
     class root_env_mngr
     {
 
@@ -19,6 +22,7 @@ namespace env
     public:
         proxy_mount_manager(config::proxy_config* proxy_config) : proxy_config_(proxy_config)
         {}
+
         void run()
         {
             make_root_rslave();
@@ -32,21 +36,21 @@ namespace env
         {
             auto& chroot_dir = proxy_config_->get_chroot_dir().value();
             if(mount(chroot_dir.c_str(), chroot_dir.c_str(), nullptr, MS_REC | MS_BIND, nullptr))
-                terminate("failed to bind mount the pivot directory, errno: {}", errno);
+                { terminate("failed to bind mount the pivot directory, errno: {}", errno); }
         }
         void make_root_rslave()
         {
             if(mount(nullptr, "/", nullptr, MS_SLAVE | MS_REC, nullptr))
-                terminate("failed to change propagation type of root mount, errno: {}", errno);
+                { terminate("failed to change propagation type of root mount, errno: {}", errno); }
         }
         void mount_cgroup()
         {
             if(umount(cgroup::ROOT_CG_PATH().c_str()))
-                terminate("failed to unmount cgroup filesystem, errno: {}", errno);
+                { terminate("failed to unmount cgroup filesystem, errno: {}", errno); }
             
             auto& chroot_dir = proxy_config_->get_chroot_dir().value();
             if(mount("none", (chroot_dir / cgroup::ROOT_CG_PATH().relative_path()).c_str(), "cgroup2", 0, nullptr))
-                terminate("failed to remount cgroup2 filesystem, errno: {}", errno);
+                { terminate("failed to remount cgroup2 filesystem, errno: {}", errno); }
         }
     };
     
@@ -58,11 +62,70 @@ namespace env
         
         void run()
         {
+            create_box_fs();
+        }
+        
+        void create_box_fs()
+        {
+            auto& rules = fs_config_->rules();
+            auto& box_root = fs_config_->box_root();
 
+            for(auto&& rule : rules)
+            {
+                apply_rule(rule);
+            }
         }
 
     private:
         config::box_fs_config* fs_config_;
+
+        void apply_rule(const config::dir_rule& rule)
+        {
+            fs::path in(fs_config_->box_root() / rule.in_dir());
+            auto& out = rule.out_dir().value();
+            auto flags = mount_flags(rule);
+
+            create_inner_dir(in);
+            
+            if(rule.fs())
+            {
+                if(mount("none", in.c_str(), out.c_str(), flags, ""))
+                    { terminate("Mount failed for directory rule: {}", rule.string()); }
+                
+                if(in.c_str() == "proc")
+                {
+                    if (mount("none", in.c_str(), out.c_str(), MS_REMOUNT | flags , "hidepid=2"))
+		                { terminate("Cannot re-mount proc with hidepid option."); }
+                }
+            }
+            else
+            {
+                flags |= MS_BIND | MS_NOSUID;
+                if(!rule.norec()) { flags |= MS_REC; }
+
+                if( mount(out.c_str(), in.c_str(), "none", flags, "") ||
+                    mount(out.c_str(), in.c_str(), "none", MS_REMOUNT | flags, ""))
+                    { terminate("Mount failed for directory rule: {}", rule.string()); }
+            }
+        }
+        
+        void create_inner_dir(const fs::path& dir)
+        {
+            if(fs::is_directory(dir))
+                { terminate("Box directory already exists: {}", dir.string()); }
+
+            fs::create_directory(dir);
+        }
+        
+        unsigned long mount_flags(const config::dir_rule& rule)
+        {
+            unsigned long flags = 0;
+            if(!rule.rw())      { flags |= MS_RDONLY; }
+            if(rule.noexec())   { flags |= MS_NOEXEC; }            
+            if(!rule.dev())     { flags |= MS_NODEV; }            
+            
+            return flags;
+        }
     };
 
 }

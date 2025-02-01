@@ -237,7 +237,7 @@ namespace config
             task_stats_ = stats;
             if(stats_path_.has_value())
             {
-                create_stats_yaml(stats_path_.value(), task_stats_.value());
+                generate_stats_yaml(stats_path_.value(), task_stats_.value());
             }
         }
 
@@ -251,7 +251,7 @@ namespace config
         std::optional<fs::path>   stats_path_;
         std::optional<task_stats> task_stats_;
 
-        static void create_stats_yaml(const fs::path& path, const task_stats& stats)
+        static void generate_stats_yaml(const fs::path& path, const task_stats& stats)
         {
             YAML::Emitter yaml;
             yaml << YAML::BeginMap;
@@ -321,23 +321,24 @@ namespace config
     class dir_rule
     {
     public:
-        dir_rule(const std::string& rule)
+        dir_rule(const std::string& rule) : rule_(rule)
         {
             construct_rule(rule);
         }
-        
-        const fs::path& in_dir() { return inner_; }
-        const std::optional<fs::path>& out_dir() { return outer_; }
-        bool rw()       { return rw_; }
-        bool dev()      { return dev_; }
-        bool noexec()   { return noexec_; }
-        bool maybe()    { return maybe_; }
-        bool fs()       { return fs_; }
-        bool tmp()      { return tmp_; }
-        bool norec()    { return norec_; }
+         
+        const fs::path& in_dir() const                  { return inner_; }
+        const std::optional<fs::path>& out_dir() const  { return outer_; }
+        const std::string& string() const                 { return rule_; }
+        bool rw() const      { return rw_; }
+        bool dev() const     { return dev_; }
+        bool noexec() const  { return noexec_; }
+        bool maybe() const   { return maybe_; }
+        bool fs() const      { return fs_; }
+        bool tmp() const     { return tmp_; }
+        bool norec() const   { return norec_; }
     private:
-        // !!!
         static constexpr auto rule_regex_ = "([^=:]+)(=([^:]+))?(:(.+))?";
+        std::string rule_;
         fs::path inner_;
         std::optional<fs::path> outer_;
 
@@ -423,9 +424,15 @@ namespace config
         {
             return rules_;
         }
+
+        const auto& box_root() const
+        {
+            return box_root_;
+        }
               
     private:
-        std::vector<dir_rule> rules_;
+        fs::path                box_root_;
+        std::vector<dir_rule>   rules_;
 
         void parse_rules(const YAML::Node& rules_list)
         {
