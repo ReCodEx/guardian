@@ -463,10 +463,10 @@ namespace config
         {
             //default_rules_.emplace_back(dir_rule("box=./box:rw"));
             default_rules_.emplace_back(dir_rule("bin"));
-            default_rules_.emplace_back(dir_rule("dev:dev"));
+            //default_rules_.emplace_back(dir_rule("dev:dev"));
             default_rules_.emplace_back(dir_rule("lib"));
             default_rules_.emplace_back(dir_rule("lib64:maybe"));
-            default_rules_.emplace_back(dir_rule("proc=proc:fs"));
+            //default_rules_.emplace_back(dir_rule("proc=proc:fs"));
             //default_rules_.emplace_back(dir_rule("tmp:tmp"));
             default_rules_.emplace_back(dir_rule("usr")); 
         }

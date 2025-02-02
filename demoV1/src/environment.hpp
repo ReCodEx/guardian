@@ -29,6 +29,8 @@ namespace env
 
         void mount_pivot_dir()
         {
+            //the directory that we pivot_root to has to be a mount point
+
             auto& box_root = proxy_config_->box_root().value();
             if(mount(box_root.c_str(), box_root.c_str(), nullptr, MS_REC | MS_BIND, nullptr))
                 { terminate("failed to bind mount the pivot directory, errno: {}", errno); }
@@ -36,12 +38,17 @@ namespace env
         
         void make_root_rslave()
         {
+            //don't propagate mount events to other namespaces
+            
             if(mount(nullptr, "/", nullptr, MS_SLAVE | MS_REC, nullptr))
                 { terminate("failed to change propagation type of root mount, errno: {}", errno); }
         }
-        
+
         void mount_cgroup()
         {
+            //remount cgroup filesystem into the box, questionable for security but simplifies delegation
+            // of responsibilities
+
             if(umount(cgroup::ROOT_CG_PATH().c_str()))
                 { terminate("failed to unmount cgroup filesystem, errno: {}", errno); }
             
@@ -80,7 +87,7 @@ namespace env
                 apply_rule(rule);
             }
             
-            file_utils::list_directory(fs::path("/box"));
+            file_utils::list_directory(fs::path("/box/lib64"));
         }
 
     private:
@@ -89,10 +96,12 @@ namespace env
         void apply_rule(const config::dir_rule& rule)
         {
             fs::path in(fs_config_->box_root().value() / rule.in_dir());
-            auto& out = rule.out_dir() ? rule.out_dir().value() : rule.in_dir();
+            fs::path out = rule.out_dir() ? rule.out_dir().value() : rule.in_dir();
+            out = fs::path("/" / out);
             auto flags = mount_flags(rule);
             
-            std::cout << in << std::endl;
+            std::cout << "inner: " + in.string() + ", outer: " + out.string() << std::endl;
+            
             create_inner_dir(in);
             
             if(rule.fs())
@@ -113,8 +122,8 @@ namespace env
                 flags |= MS_BIND | MS_NOSUID;
                 if(!rule.norec()) { flags |= MS_REC; }
 
-                if( mount(out.c_str(), in.c_str(), "none", flags, "") ||
-                    mount(out.c_str(), in.c_str(), "none", MS_REMOUNT | flags, ""))
+                if( mount(out.c_str(), in.c_str(), "none", flags, "") < 0 ||
+                    mount(out.c_str(), in.c_str(), "none", MS_REMOUNT | flags, "") < 0)
                     { terminate("Mount failed for directory rule: {}", rule.string()); }
             }
         }
@@ -122,8 +131,8 @@ namespace env
         void create_inner_dir(const fs::path& dir)
         {
             if(fs::is_directory(dir))
-                { terminate("Box inner directory already exists: {}", dir.string()); }
-
+                { //terminate("Box inner directory already exists: {}", dir.string()); }
+                }else
             fs::create_directory(dir);
         }
         
