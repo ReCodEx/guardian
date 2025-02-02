@@ -55,7 +55,7 @@ namespace config
         {
             constexpr auto DIRECTORY_RULES = "dir-rules";
             constexpr auto USE_DEFAULT_DIR_RULES = "use-defaults";
-            constexpr auto CHROOT_DIR = "chroot-dir";
+            constexpr auto BOX_ROOT = "box-root";
         }
 
         constexpr auto TASK_CG = "task-cg";
@@ -416,7 +416,7 @@ namespace config
     {
     public:
         box_fs_config() {}
-        box_fs_config(const YAML::Node& env_node)
+        box_fs_config(std::optional<fs::path> box_root, const YAML::Node& env_node) : box_root_(box_root)
         {
             if(env_node[config_options::env::USE_DEFAULT_DIR_RULES]) use_defaults_ = env_node[config_options::env::USE_DEFAULT_DIR_RULES].as<bool>();
             add_default_rules();
@@ -444,7 +444,7 @@ namespace config
         }
               
     private:
-        fs::path                box_root_;
+        std::optional<fs::path> box_root_;
         std::vector<dir_rule>   rules_;
         
 
@@ -461,7 +461,7 @@ namespace config
         
         void add_default_rules()
         {
-            default_rules_.emplace_back(dir_rule("box=./box:rw"));
+            //default_rules_.emplace_back(dir_rule("box=./box:rw"));
             default_rules_.emplace_back(dir_rule("bin"));
             default_rules_.emplace_back(dir_rule("dev:dev"));
             default_rules_.emplace_back(dir_rule("lib"));
@@ -476,9 +476,10 @@ namespace config
     {
     public:
         proxy_config() {}
-        proxy_config(const YAML::Node& proxy_node) : tasks_(proxy_node[config_options::TASKS]), box_fs_(proxy_node[config_options::ENVIRONMENT])
+        proxy_config(const YAML::Node& proxy_node) : tasks_(proxy_node[config_options::TASKS])
         {
-            if(proxy_node[config_options::env::CHROOT_DIR]) chroot_dir_ = fs::path(proxy_node[config_options::env::CHROOT_DIR].as<std::string>());
+            if(proxy_node[config_options::env::BOX_ROOT]) box_root_ = fs::path(proxy_node[config_options::env::BOX_ROOT].as<std::string>());
+            box_fs_ = box_fs_config(box_root_, proxy_node[config_options::ENVIRONMENT]);
         }
         
         auto& get_tasks_config()
@@ -491,12 +492,12 @@ namespace config
             return box_fs_;
         }
 
-        const auto& chroot_dir()
+        const auto& box_root()
         {
-            return chroot_dir_;
+            return box_root_;
         }
     private:
-        std::optional<fs::path> chroot_dir_;
+        std::optional<fs::path> box_root_;
         tasks_config tasks_;
         box_fs_config box_fs_;
     };

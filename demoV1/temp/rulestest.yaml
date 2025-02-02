@@ -1,4 +1,4 @@
-chroot-dir: "/box"
+box-root: "/box"
 tasks:
 box-fs:
 env:

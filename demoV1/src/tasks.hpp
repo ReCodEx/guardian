@@ -173,6 +173,7 @@ namespace tasks
     public:
         task_manager(config::tasks_config& tasks) : tasks_config(&tasks)
         {}
+
         config::task_report run_all_tasks()
         {
             config::task_report report;
@@ -188,12 +189,6 @@ namespace tasks
         }
     private:
         config::tasks_config* tasks_config;
-
-        config::task_stats run_next_task()
-        {
-            
-            return config::task_stats();
-        }
     };
 }
 

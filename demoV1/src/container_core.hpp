@@ -52,6 +52,7 @@ private:
     {
         init_proxy_logger();
         mount_mngr_.run();
+        fs_manager_.run();
         pivot_root();
         cg_mngr_.run();
     }
@@ -67,10 +68,10 @@ private:
     }
     void pivot_root()
     {
-        if(proxy_config_->chroot_dir())
+        if(proxy_config_->box_root())
         {
-            auto chroot_dir = proxy_config_->chroot_dir().value();
-            process_utils::pivot_root(chroot_dir, chroot_dir / fs::path("old_root"));
+            auto box_root = proxy_config_->box_root().value();
+            process_utils::pivot_root(box_root, box_root / fs::path("old_root"));
         }
     } 
     void mount_setup()
@@ -87,17 +88,6 @@ public:
     {
         logs::init_default_logger();
         logs::info("Hello world from container!");
-    }
-
-    config::root_stats run_tasks_directly()
-    {
-        for(auto&& task_intfc : root_intfc_.tasks())
-        {
-            tasks::task_supervisor task_(*task_intfc);
-            auto stats = task_.run_task();
-            logs::debug("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.cg_total_time_usec, stats.cg_total_mem_bytes);
-        }
-        return config::root_stats();
     }
 
     void run()

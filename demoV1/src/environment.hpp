@@ -12,11 +12,6 @@ namespace env
 {
     namespace fs = std::filesystem;
 
-    class root_env_mngr
-    {
-
-    };
-    
     class proxy_mount_manager
     {
     public:
@@ -34,22 +29,24 @@ namespace env
 
         void mount_pivot_dir()
         {
-            auto& chroot_dir = proxy_config_->chroot_dir().value();
-            if(mount(chroot_dir.c_str(), chroot_dir.c_str(), nullptr, MS_REC | MS_BIND, nullptr))
+            auto& box_root = proxy_config_->box_root().value();
+            if(mount(box_root.c_str(), box_root.c_str(), nullptr, MS_REC | MS_BIND, nullptr))
                 { terminate("failed to bind mount the pivot directory, errno: {}", errno); }
         }
+        
         void make_root_rslave()
         {
             if(mount(nullptr, "/", nullptr, MS_SLAVE | MS_REC, nullptr))
                 { terminate("failed to change propagation type of root mount, errno: {}", errno); }
         }
+        
         void mount_cgroup()
         {
             if(umount(cgroup::ROOT_CG_PATH().c_str()))
                 { terminate("failed to unmount cgroup filesystem, errno: {}", errno); }
             
-            auto& chroot_dir = proxy_config_->chroot_dir().value();
-            if(mount("none", (chroot_dir / cgroup::ROOT_CG_PATH().relative_path()).c_str(), "cgroup2", 0, nullptr))
+            auto& box_root = proxy_config_->box_root().value();
+            if(mount("none", (box_root / cgroup::ROOT_CG_PATH().relative_path()).c_str(), "cgroup2", 0, nullptr))
                 { terminate("failed to remount cgroup2 filesystem, errno: {}", errno); }
         }
     };
@@ -62,10 +59,10 @@ namespace env
         
         void run()
         {
-            create_box_fs();
+            if(fs_config_->box_root().has_value()) { construct_box_fs(); }
         }
         
-        void create_box_fs()
+        void construct_box_fs()
         {
             auto& rules = fs_config_->rules();
             auto& box_root = fs_config_->box_root();
@@ -82,6 +79,8 @@ namespace env
             {
                 apply_rule(rule);
             }
+            
+            file_utils::list_directory(fs::path("/box"));
         }
 
     private:
@@ -89,10 +88,11 @@ namespace env
 
         void apply_rule(const config::dir_rule& rule)
         {
-            fs::path in(fs_config_->box_root() / rule.in_dir());
-            auto& out = rule.out_dir().value();
+            fs::path in(fs_config_->box_root().value() / rule.in_dir());
+            auto& out = rule.out_dir() ? rule.out_dir().value() : rule.in_dir();
             auto flags = mount_flags(rule);
-
+            
+            std::cout << in << std::endl;
             create_inner_dir(in);
             
             if(rule.fs())
@@ -100,6 +100,8 @@ namespace env
                 if(mount("none", in.c_str(), out.c_str(), flags, ""))
                     { terminate("Mount failed for directory rule: {}", rule.string()); }
                 
+                // If we are mounting procfs, add hidepid=2, so that only the processes
+	            // of the same user are visible. This has to be done as a remount.
                 if(in.c_str() == "proc")
                 {
                     if (mount("none", in.c_str(), out.c_str(), MS_REMOUNT | flags , "hidepid=2"))
@@ -120,7 +122,7 @@ namespace env
         void create_inner_dir(const fs::path& dir)
         {
             if(fs::is_directory(dir))
-                { terminate("Box directory already exists: {}", dir.string()); }
+                { terminate("Box inner directory already exists: {}", dir.string()); }
 
             fs::create_directory(dir);
         }

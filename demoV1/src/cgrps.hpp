@@ -71,6 +71,7 @@ namespace cgroup
         static fs::path fname("memory.min");
         return fname;
     }
+
     inline fs::path cg_abs_path(const fs::path& cg_rel_path)
     {
         return fs::path(ROOT_CG_PATH() / cg_rel_path);
@@ -250,6 +251,7 @@ namespace cgroup
             file_utils::print_lines(cgroup_procs);
         }
     private:
+
         void init_path()
         {
             if(!fs::is_directory(cgrp_path_))
@@ -273,9 +275,7 @@ namespace cgroup
             }
         }
 
-
         const fs::path cgrp_path_;
-        
 
         cpu_cntrlr cpu_;
         memory_cntrlr mem_;
@@ -375,8 +375,7 @@ namespace cgroup
     {
     public:
         root_cgroup_manager()
-        {
-        }
+        {}
         
         ~root_cgroup_manager()
         {
@@ -390,7 +389,6 @@ namespace cgroup
             proxy_cgrp_ = std::move(std::make_unique<cgroupv2_t>("container_instance/proxy"));
             leaf_cgrp_->add_me();
             root_cgrp_->enable_all_cntrlrs();
-            //proxy_cgrp_->enable_all_cntrlrs(); 
         }
 
         int open_proxy_fd()
