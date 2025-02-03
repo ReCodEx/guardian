@@ -31,6 +31,10 @@ namespace tasks
         }
 
     private:
+        void* stack_ = nullptr;
+        config::task_config* const task_config_;
+        cgroup::cgroupv2_t task_cgrp_;
+
         config::task_stats generate_task_stats(int stat)
         {
             auto r_usage = get_children_rusage();
@@ -170,9 +174,6 @@ namespace tasks
             return std::chrono::milliseconds(1000);
         }
 
-        void* stack_ = nullptr;
-        config::task_config* const task_config_;
-        cgroup::cgroupv2_t task_cgrp_;
     };
     
     class task_manager

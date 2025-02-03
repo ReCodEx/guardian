@@ -143,9 +143,7 @@ namespace config
         std::optional<size_t> memory_bytes_;
         std::optional<size_t> as_size_bytes_;
         std::optional<size_t> forked_processes_;
-        
         size_t wall_time_s_ = DEFAULT_WALL_TIME; 
-        
         
         static constexpr size_t DEFAULT_WALL_TIME = 20;
     };
@@ -173,7 +171,6 @@ namespace config
 
         long rusage_total_mem_bytes;
         long rusage_total_time_usec;
-
     };
     
     class task_report
@@ -288,17 +285,6 @@ namespace config
         }
     };
 
-    class root_config
-    {
-    public:
-        root_config() {}
-        root_config(YAML::Node config)
-        {
-            
-        }
-
-    };
-    
     class tasks_config
     {
     public:
@@ -539,7 +525,6 @@ namespace config
         }
 
     private:
-        root_config root_config_;
         proxy_config proxy_config_;
         std::vector<std::unique_ptr<task_config>> tasks_;
         
@@ -617,7 +602,6 @@ namespace config
         void configure_from_yaml(const fs::path& f)
         {
             YAML::Node config = YAML::LoadFile(f);
-            root_config_ = root_config(config);
             proxy_config_ = proxy_config(config);          
         }
         

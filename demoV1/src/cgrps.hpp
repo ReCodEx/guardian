@@ -318,6 +318,7 @@ namespace cgroup
         }
 
     };
+
     class root_cgroupv2_t
     {
     public:
@@ -360,6 +361,13 @@ namespace cgroup
             file_utils::print_lines(cgroup_procs);
         }
     private:
+        const fs::path cgrp_path_;
+
+        cpu_cntrlr cpu_;
+        memory_cntrlr mem_;
+        pid_cntrlr pid_;
+        std::optional<int> fd_;
+
         void init_path()
         {
             if(!fs::is_directory(cgrp_path_))
@@ -382,15 +390,6 @@ namespace cgroup
                 throw std::runtime_error("Creating the cgroup failed");
             }
         }
-
-
-        const fs::path cgrp_path_;
-        
-
-        cpu_cntrlr cpu_;
-        memory_cntrlr mem_;
-        pid_cntrlr pid_;
-        std::optional<int> fd_;
     };
 
     class proxy_cgroup_manager
