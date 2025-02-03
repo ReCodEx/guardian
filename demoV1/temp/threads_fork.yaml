@@ -1,7 +1,12 @@
+box-root: "/box"
+env: 
+  dir-rules:
+    - "tests=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests"
 tasks:
     - task-id: "threads_fork"
-      path: "/tests/test_binaries/threads_fork"
+      path: "/tests/build/threads_fork"
       args: 
          - "hello"
       rlims:
-          cpu-time: 1
+          cpu-time: 10
+          processes: 3

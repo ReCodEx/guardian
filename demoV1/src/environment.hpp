@@ -86,8 +86,6 @@ namespace env
             {
                 apply_rule(rule);
             }
-            
-            file_utils::list_directory(fs::path("/box/lib64"));
         }
 
     private:
@@ -99,8 +97,6 @@ namespace env
             fs::path out = rule.out_dir() ? rule.out_dir().value() : rule.in_dir();
             out = fs::path("/" / out);
             auto flags = mount_flags(rule);
-            
-            std::cout << "inner: " + in.string() + ", outer: " + out.string() << std::endl;
             
             create_inner_dir(in);
             

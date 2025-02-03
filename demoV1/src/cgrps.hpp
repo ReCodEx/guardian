@@ -72,6 +72,12 @@ namespace cgroup
         return fname;
     }
 
+    inline auto const& PIDS_MAX()
+    {
+        static fs::path fname("pids.max");
+        return fname;
+    }
+
     inline fs::path cg_abs_path(const fs::path& cg_rel_path)
     {
         return fs::path(ROOT_CG_PATH() / cg_rel_path);
@@ -182,6 +188,29 @@ namespace cgroup
         }
 
     };
+
+    class pid_cntrlr : public controller
+    {   
+        inline static const std::string type = "pid";
+    public:
+        using controller::controller;
+
+        bool set_pids_max(size_t count)
+        {
+            //  echo "$BYTES" > memory.max
+
+            fs::path pids_max(*cgrp_path_ / MEMORY_MAX());
+            bool success = file_utils::write_formatted(pids_max, "{}", count);
+            
+            return success;
+        }
+    protected:
+        const std::string& cntrlr_type() override
+        {
+            return type;
+        }
+
+    };
         
 
     class cgroupv2_t
@@ -189,7 +218,8 @@ namespace cgroup
     public:
         cgroupv2_t(const fs::path& rel_cgrp_path) : cgrp_path_(ROOT_CG_PATH() / rel_cgrp_path),
                                                     cpu_(cgrp_path_),
-                                                    mem_(cgrp_path_)
+                                                    mem_(cgrp_path_),
+                                                    pid_(cgrp_path_)
         {
             reset_path();
         }
@@ -219,6 +249,7 @@ namespace cgroup
         {
             cpu_.enable();
             mem_.enable();
+            pid_.enable();
         }
 
         
@@ -245,12 +276,23 @@ namespace cgroup
             mem_.set_memory_min_to_max();
         }
 
+        void set_processes_limit(size_t n)
+        {
+            pid_.set_pids_max(n);
+        }
+
         void list_procs()
         {
             auto cgroup_procs(cgrp_path_ / CGROUP_PROCS());
             file_utils::print_lines(cgroup_procs);
         }
     private:
+        const fs::path cgrp_path_;
+
+        cpu_cntrlr cpu_;
+        memory_cntrlr mem_;
+        pid_cntrlr pid_;
+        std::optional<int> fd_;
 
         void init_path()
         {
@@ -275,24 +317,19 @@ namespace cgroup
             }
         }
 
-        const fs::path cgrp_path_;
-
-        cpu_cntrlr cpu_;
-        memory_cntrlr mem_;
-        std::optional<int> fd_;
     };
     class root_cgroupv2_t
     {
     public:
         root_cgroupv2_t() :  cgrp_path_(ROOT_CG_PATH()),
                         cpu_(ROOT_CG_PATH()),
-                        mem_(ROOT_CG_PATH())
+                        mem_(ROOT_CG_PATH()),
+                        pid_(ROOT_CG_PATH())
         {}
 
-        void enable_all_cntrlrs()
+        bool enable_all_cntrlrs()
         {
-            cpu_.enable();
-            mem_.enable();
+            return cpu_.enable() && mem_.enable() && pid_.enable();
         }
         
         bool add_me()
@@ -312,10 +349,9 @@ namespace cgroup
             return memory_usage_bytes_abs(cgrp_path_);
         }
 
-        void set_strict_memory_limit(size_t bytes)
+        bool set_strict_memory_limit(size_t bytes)
         {
-            mem_.set_memory_max(bytes);
-            mem_.set_memory_min_to_max();
+            return mem_.set_memory_max(bytes) && mem_.set_memory_min_to_max();
         }
 
         void list_procs()
@@ -353,6 +389,7 @@ namespace cgroup
 
         cpu_cntrlr cpu_;
         memory_cntrlr mem_;
+        pid_cntrlr pid_;
         std::optional<int> fd_;
     };
 

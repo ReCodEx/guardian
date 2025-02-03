@@ -133,14 +133,21 @@ namespace tasks
             if(limits.cpu_time()) set_cpu_limit(limits.cpu_time().value());
 
             if(limits.as_size()) set_as_size_limit(limits.as_size().value());
+
+            if(limits.processes()) set_processes_limit(limits.processes().value());
         }
 
-        void set_mem_limit(unsigned int bytes)
+        void set_mem_limit(size_t bytes)
         {
             task_cgrp_.set_strict_memory_limit(bytes);
         }
 
-        static void set_as_size_limit(unsigned int bytes)
+        void set_processes_limit(size_t n)
+        {
+            task_cgrp_.set_processes_limit(n);
+        }
+
+        static void set_as_size_limit(size_t bytes)
         {
             rlimit as{bytes,bytes};
             if(setrlimit(RLIMIT_AS, &as) == -1)
@@ -149,7 +156,7 @@ namespace tasks
             }
         }
 
-        static void set_cpu_limit(unsigned int s)
+        static void set_cpu_limit(size_t s)
         {
             rlimit cpu_time{s,s};
             if(setrlimit(RLIMIT_CPU, &cpu_time) == -1)

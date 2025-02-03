@@ -28,7 +28,6 @@ namespace config
 
     struct task_config;
 
-    constexpr size_t DEFAULT_WALL_TIME = 20;
 
     constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWCGROUP | CLONE_NEWUTS;  //user namespaces might not always be supported
 
@@ -48,6 +47,7 @@ namespace config
             constexpr auto CPU_TIME = "cpu-time";
             constexpr auto WALL_TIME = "wall-time";
             constexpr auto MEMORY = "mem";
+            constexpr auto PROCESSES = "processes";
         }
 
         constexpr auto ENVIRONMENT = "env";
@@ -91,21 +91,23 @@ namespace config
         }
     }
 
-    class r_limits
+    class resource_limits
     {
     public:
-        r_limits() {}
-        r_limits(size_t cpu_time, size_t mem) : cpu_time_s_(cpu_time), memory_bytes_(mem) 
+        resource_limits() {}
+        resource_limits(size_t cpu_time, size_t mem) : cpu_time_s_(cpu_time), memory_bytes_(mem) 
         {}
 
-        r_limits(const YAML::Node& limits_node)
+        resource_limits(const YAML::Node& limits_node)
         {
             if(limits_node[config_options::task::CPU_TIME]) cpu_time_s_ = limits_node[config_options::task::CPU_TIME].as<size_t>();
             if(limits_node[config_options::task::MEMORY]) memory_bytes_ = limits_node[config_options::task::MEMORY].as<size_t>();
             if(limits_node[config_options::task::WALL_TIME]) wall_time_s_ = limits_node[config_options::task::WALL_TIME].as<size_t>();
+            if(limits_node[config_options::task::WALL_TIME]) wall_time_s_ = limits_node[config_options::task::WALL_TIME].as<size_t>();
+            if(limits_node[config_options::task::PROCESSES]) forked_processes_ = limits_node[config_options::task::PROCESSES].as<size_t>();
         }
 
-        r_limits(const options::variables_map& options_map)
+        resource_limits(const options::variables_map& options_map)
         {
             if (options_map.contains(config_options::task::MEMORY)) 
             {
@@ -129,17 +131,23 @@ namespace config
         auto memory() const { return memory_bytes_; }
         auto wall_time() const { return wall_time_s_; }
         auto as_size() const { return as_size_bytes_; }
+        auto processes() const { return forked_processes_; }
 
         void set_cpu_time(size_t s) { cpu_time_s_ = s; }
         void set_memory(size_t bytes) { memory_bytes_ = bytes; }
         void set_wall_time(size_t s) { wall_time_s_ = s; }
         void set_as_size(size_t s) { as_size_bytes_ = s; }
+        void set_processes(size_t n) { forked_processes_ = n; }
     private:
         std::optional<size_t> cpu_time_s_; 
         std::optional<size_t> memory_bytes_;
         std::optional<size_t> as_size_bytes_;
+        std::optional<size_t> forked_processes_;
         
         size_t wall_time_s_ = DEFAULT_WALL_TIME; 
+        
+        
+        static constexpr size_t DEFAULT_WALL_TIME = 20;
     };
 
     struct root_stats
@@ -203,7 +211,7 @@ namespace config
 
             if(task_node[config_options::STATS_YAML]) stats_path_ = task_node[config_options::STATS_YAML].as<std::string>();
             
-            if(task_node[config_options::task::RLIMS]) rlimits_ = r_limits(task_node[config_options::task::RLIMS]);
+            if(task_node[config_options::task::RLIMS]) rlimits_ = resource_limits(task_node[config_options::task::RLIMS]);
 
             cg_rel_path_ = name_; 
         }
@@ -246,7 +254,7 @@ namespace config
         std::string name_;
         fs::path exec_;
         std::vector<std::string> args_;
-        r_limits rlimits_;
+        resource_limits rlimits_;
         fs::path cg_rel_path_;
 
         std::optional<fs::path>   stats_path_;
