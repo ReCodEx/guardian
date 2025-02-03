@@ -31,6 +31,10 @@ namespace tasks
         }
 
     private:
+        void* stack_ = nullptr;
+        config::task_config* const task_config_;
+        cgroup::cgroupv2_t task_cgrp_;
+
         config::task_stats generate_task_stats(int stat)
         {
             auto r_usage = get_children_rusage();
@@ -133,14 +137,21 @@ namespace tasks
             if(limits.cpu_time()) set_cpu_limit(limits.cpu_time().value());
 
             if(limits.as_size()) set_as_size_limit(limits.as_size().value());
+
+            if(limits.processes()) set_processes_limit(limits.processes().value());
         }
 
-        void set_mem_limit(unsigned int bytes)
+        void set_mem_limit(size_t bytes)
         {
             task_cgrp_.set_strict_memory_limit(bytes);
         }
 
-        static void set_as_size_limit(unsigned int bytes)
+        void set_processes_limit(size_t n)
+        {
+            task_cgrp_.set_processes_limit(n);
+        }
+
+        static void set_as_size_limit(size_t bytes)
         {
             rlimit as{bytes,bytes};
             if(setrlimit(RLIMIT_AS, &as) == -1)
@@ -149,7 +160,7 @@ namespace tasks
             }
         }
 
-        static void set_cpu_limit(unsigned int s)
+        static void set_cpu_limit(size_t s)
         {
             rlimit cpu_time{s,s};
             if(setrlimit(RLIMIT_CPU, &cpu_time) == -1)
@@ -163,9 +174,6 @@ namespace tasks
             return std::chrono::milliseconds(1000);
         }
 
-        void* stack_ = nullptr;
-        config::task_config* const task_config_;
-        cgroup::cgroupv2_t task_cgrp_;
     };
     
     class task_manager
@@ -173,6 +181,7 @@ namespace tasks
     public:
         task_manager(config::tasks_config& tasks) : tasks_config(&tasks)
         {}
+
         config::task_report run_all_tasks()
         {
             config::task_report report;
@@ -188,12 +197,6 @@ namespace tasks
         }
     private:
         config::tasks_config* tasks_config;
-
-        config::task_stats run_next_task()
-        {
-            
-            return config::task_stats();
-        }
     };
 }
 

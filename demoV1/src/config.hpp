@@ -5,6 +5,7 @@
 #include <vector>
 #include <optional>
 #include <memory>
+#include <regex>
 
 #include "cgrps.hpp"
 #include "namespaces.hpp"
@@ -27,7 +28,6 @@ namespace config
 
     struct task_config;
 
-    constexpr size_t DEFAULT_WALL_TIME = 20;
 
     constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWCGROUP | CLONE_NEWUTS;  //user namespaces might not always be supported
 
@@ -47,12 +47,15 @@ namespace config
             constexpr auto CPU_TIME = "cpu-time";
             constexpr auto WALL_TIME = "wall-time";
             constexpr auto MEMORY = "mem";
+            constexpr auto PROCESSES = "processes";
         }
 
-        constexpr auto ENVIRONMENT = "environment";
+        constexpr auto ENVIRONMENT = "env";
         namespace env
         {
-            constexpr auto CHROOT_DIR = "chroot-dir";
+            constexpr auto DIRECTORY_RULES = "dir-rules";
+            constexpr auto USE_DEFAULT_DIR_RULES = "use-defaults";
+            constexpr auto BOX_ROOT = "box-root";
         }
 
         constexpr auto TASK_CG = "task-cg";
@@ -82,27 +85,29 @@ namespace config
             std::vector<T> v;
             for(auto i = 0; i < seq.size(); i++)
             {
-                v.push_back(seq[i].as<T>());
+                v.emplace_back(seq[i].as<T>());
             }
             return std::move(v);
         }
     }
 
-    class r_limits
+    class resource_limits
     {
     public:
-        r_limits() {}
-        r_limits(size_t cpu_time, size_t mem) : cpu_time_s_(cpu_time), memory_bytes_(mem) 
+        resource_limits() {}
+        resource_limits(size_t cpu_time, size_t mem) : cpu_time_s_(cpu_time), memory_bytes_(mem) 
         {}
 
-        r_limits(const YAML::Node& limits_node)
+        resource_limits(const YAML::Node& limits_node)
         {
             if(limits_node[config_options::task::CPU_TIME]) cpu_time_s_ = limits_node[config_options::task::CPU_TIME].as<size_t>();
             if(limits_node[config_options::task::MEMORY]) memory_bytes_ = limits_node[config_options::task::MEMORY].as<size_t>();
             if(limits_node[config_options::task::WALL_TIME]) wall_time_s_ = limits_node[config_options::task::WALL_TIME].as<size_t>();
+            if(limits_node[config_options::task::WALL_TIME]) wall_time_s_ = limits_node[config_options::task::WALL_TIME].as<size_t>();
+            if(limits_node[config_options::task::PROCESSES]) forked_processes_ = limits_node[config_options::task::PROCESSES].as<size_t>();
         }
 
-        r_limits(const options::variables_map& options_map)
+        resource_limits(const options::variables_map& options_map)
         {
             if (options_map.contains(config_options::task::MEMORY)) 
             {
@@ -126,17 +131,21 @@ namespace config
         auto memory() const { return memory_bytes_; }
         auto wall_time() const { return wall_time_s_; }
         auto as_size() const { return as_size_bytes_; }
+        auto processes() const { return forked_processes_; }
 
         void set_cpu_time(size_t s) { cpu_time_s_ = s; }
         void set_memory(size_t bytes) { memory_bytes_ = bytes; }
         void set_wall_time(size_t s) { wall_time_s_ = s; }
         void set_as_size(size_t s) { as_size_bytes_ = s; }
+        void set_processes(size_t n) { forked_processes_ = n; }
     private:
         std::optional<size_t> cpu_time_s_; 
         std::optional<size_t> memory_bytes_;
         std::optional<size_t> as_size_bytes_;
-        
+        std::optional<size_t> forked_processes_;
         size_t wall_time_s_ = DEFAULT_WALL_TIME; 
+        
+        static constexpr size_t DEFAULT_WALL_TIME = 20;
     };
 
     struct root_stats
@@ -162,7 +171,6 @@ namespace config
 
         long rusage_total_mem_bytes;
         long rusage_total_time_usec;
-
     };
     
     class task_report
@@ -170,7 +178,7 @@ namespace config
     public:
         void insert(task_stats task)
         {
-            tasks_.push_back(task);
+            tasks_.emplace_back(task);
         }
     private:
         std::vector<task_stats> tasks_;
@@ -179,40 +187,38 @@ namespace config
     class task_config
     {
     public:
-        task_config(const fs::path& exec, const std::vector<std::string>& args, const r_limits& rlims, const fs::path& cg_rel_path) : 
+/*         task_config(const fs::path& exec, const std::vector<std::string>& args, const r_limits& rlims, const fs::path& cg_rel_path) : 
         exec_(exec), args_(args), rlimits_(rlims), cg_rel_path_(cg_rel_path) 
         {}
 
         task_config(fs::path&& exec, std::vector<std::string>&& args, r_limits&& rlims, fs::path&& cg_rel_path): 
         exec_(std::move(exec)), args_(std::move(args)), rlimits_(std::move(rlims)), cg_rel_path_(std::move(cg_rel_path))
-        {}
+        {} */
 
         task_config(const YAML::Node& task_node)
         {
-            if(task_node[config_options::task::EXEC_PATH]) exec_ = fs::path(task_node[config_options::task::EXEC_PATH].as<std::string>());
-            else terminate("Missing path to executable for task \"{}\"", name_);
+            if(!task_node[config_options::task::EXEC_PATH])
+                { terminate("Missing path to executable for task \"{}\"", name_); }
             
+            exec_ = fs::path(task_node[config_options::task::EXEC_PATH].as<std::string>());
+
             if(task_node[config_options::task::TASK_NAME]) name_ = task_node[config_options::task::TASK_NAME].as<std::string>();
             
             if(task_node[config_options::task::EXEC_ARGS]) args_ = yaml_utils::get_vector<std::string>(task_node[config_options::task::EXEC_ARGS]);
 
             if(task_node[config_options::STATS_YAML]) stats_path_ = task_node[config_options::STATS_YAML].as<std::string>();
             
-            if(task_node[config_options::task::RLIMS]) rlimits_ = r_limits(task_node[config_options::task::RLIMS]);
+            if(task_node[config_options::task::RLIMS]) rlimits_ = resource_limits(task_node[config_options::task::RLIMS]);
 
             cg_rel_path_ = name_; 
         }
 
         task_config(const options::variables_map& options_map) : rlimits_(options_map)
         {
-            if(options_map.contains(config_options::task::EXEC_PATH))
-            {
-                exec_ = fs::path(options_map[config_options::task::EXEC_PATH].as<std::string>());
-            }
-            else
-            {
-                terminate("No path to executable provided");
-            }
+            if(!options_map.contains(config_options::task::EXEC_PATH))
+                { terminate("No path to executable provided"); }
+                
+            exec_ = fs::path(options_map[config_options::task::EXEC_PATH].as<std::string>());
 
             if(options_map.contains(config_options::task::EXEC_ARGS))
             {
@@ -225,19 +231,19 @@ namespace config
             }
         }
         
-        const auto& name() const        { return name_; }
-        const auto& exec_path() const   { return exec_; }
-        auto& exec_args()               { return args_; }
-        const auto& rlimits() const       { return rlimits_; }
-        const auto& cg_rel_path() const { return cg_rel_path_; }
-        const auto& stats_path() const  { return stats_path_; }
+              auto& exec_args()             { return args_; }
+        const auto& name()          const   { return name_; }
+        const auto& exec_path()     const   { return exec_; }
+        const auto& rlimits()       const   { return rlimits_; }
+        const auto& cg_rel_path()   const   { return cg_rel_path_; }
+        const auto& stats_path()    const   { return stats_path_; }
 
         void finalize_task(const task_stats& stats)
         {
             task_stats_ = stats;
             if(stats_path_.has_value())
             {
-                create_stats_yaml(stats_path_.value(), task_stats_.value());
+                generate_stats_yaml(stats_path_.value(), task_stats_.value());
             }
         }
 
@@ -245,13 +251,13 @@ namespace config
         std::string name_;
         fs::path exec_;
         std::vector<std::string> args_;
-        r_limits rlimits_;
+        resource_limits rlimits_;
         fs::path cg_rel_path_;
 
         std::optional<fs::path>   stats_path_;
         std::optional<task_stats> task_stats_;
 
-        static void create_stats_yaml(const fs::path& path, const task_stats& stats)
+        static void generate_stats_yaml(const fs::path& path, const task_stats& stats)
         {
             YAML::Emitter yaml;
             yaml << YAML::BeginMap;
@@ -279,17 +285,6 @@ namespace config
         }
     };
 
-    class root_config
-    {
-    public:
-        root_config() {}
-        root_config(YAML::Node config)
-        {
-            
-        }
-
-    };
-    
     class tasks_config
     {
     public:
@@ -298,7 +293,7 @@ namespace config
         {
             for(auto i = 0; i < tasks_node.size(); i++)
             {
-                tasks_.push_back(std::make_unique<task_config>(tasks_node[i]));
+                tasks_.emplace_back(std::make_unique<task_config>(tasks_node[i]));
             }
         }
         auto& get_tasks()
@@ -313,32 +308,192 @@ namespace config
             auto tasks_node = proxy_node[config_options::TASKS];
             for(auto i = 0; i < tasks_node.size(); i++)
             {
-                tasks_.push_back(std::make_unique<task_config>(tasks_node[i]));
+                tasks_.emplace_back(std::make_unique<task_config>(tasks_node[i]));
             }
         }
     };
 
+    class dir_rule
+    {
+    public:
+        dir_rule(const std::string& rule) : rule_(rule)
+        {
+            construct_rule(rule);
+        }
+         
+        const fs::path& in_dir() const                  { return inner_; }
+        const std::optional<fs::path>& out_dir() const  { return outer_; }
+        const std::string& string() const                 { return rule_; }
+        bool rw() const      { return rw_; }
+        bool dev() const     { return dev_; }
+        bool noexec() const  { return noexec_; }
+        bool maybe() const   { return maybe_; }
+        bool fs() const      { return fs_; }
+        bool tmp() const     { return tmp_; }
+        bool norec() const   { return norec_; }
+    private:
+        static constexpr auto rule_regex_ = "([^=:]+)(=([^:]+))?(:(.+))?";
+        std::string rule_;
+        fs::path inner_;
+        std::optional<fs::path> outer_;
+
+        bool rw_        = false;
+        bool dev_       = false;
+        bool noexec_    = false;
+        bool maybe_     = false;
+        bool fs_        = false;
+        bool tmp_       = false;
+        bool norec_     = false;
+    
+        void construct_rule(const std::string& rule)
+        {
+            std::regex rule_regex(rule_regex_);
+            std::smatch m;
+            if(!std::regex_match(rule, m, rule_regex))
+                { terminate("Invalid fs-rule syntax: {}", rule); }
+
+            auto& inner_token = m[1];
+            auto& outer_token = m[3];
+            auto& options_token = m[5];
+
+            fs::path inner = fs::path(inner_token);
+
+            std::optional<fs::path> outer;
+            if ( outer_token != "" ) { outer = std::optional<fs::path>(outer_token); }
+
+            std::vector<std::string> options = string_utils::split(options_token);
+            
+            if(!check_inner_dir(inner))
+                { terminate("Invalid inner path in fs-rule: {}", inner_token.str()); }
+            
+            if(!check_outer_dir(outer)) 
+                { terminate("Invalid outer path in fs-rule: {}", outer_token.str()); } 
+            
+            parse_options(options);
+            inner_ = inner;
+            outer_ = outer;
+        }
+        
+        void parse_options(const std::vector<std::string>& options)
+        {
+            if(!check_options(options)) 
+                { terminate("Invalid options in fs-rule"); }
+            for(auto&& o : options)
+            {
+                if(o == "rw")       { rw_ = true; }
+                if(o == "dev")      { dev_ = true; }
+                if(o == "noexec")   { noexec_ = true; }
+                if(o == "maybe")    { maybe_ = true; }
+                if(o == "fs")       { fs_ = true; }
+                if(o == "tmp")      { tmp_ = true; }
+                if(o == "norec")    { norec_ = true; }
+            }
+        }
+        
+        bool check_inner_dir(const fs::path& in)
+        {
+            return file_utils::is_valid_path(in) && file_utils::is_subdirectory(in);
+        }
+
+        bool check_outer_dir(const std::optional<fs::path>& out)
+        {
+            return !out.has_value() || file_utils::is_valid_path(out.value());
+        }
+        
+        bool check_options(const std::vector<std::string>& options)
+        {
+            return true;
+        }
+    };
+
+    class box_fs_config
+    {
+    public:
+        box_fs_config() {}
+        box_fs_config(std::optional<fs::path> box_root, const YAML::Node& env_node) : box_root_(box_root)
+        {
+            if(env_node[config_options::env::USE_DEFAULT_DIR_RULES]) use_defaults_ = env_node[config_options::env::USE_DEFAULT_DIR_RULES].as<bool>();
+            add_default_rules();
+            parse_rules(env_node[config_options::env::DIRECTORY_RULES]);
+        }
+
+        const auto& rules() const
+        {
+            return rules_;
+        }
+
+        const auto& box_root() const
+        {
+            return box_root_;
+        }
+        
+        bool use_default_rules() const
+        {
+            return use_defaults_;
+        }
+        
+        const auto& default_rules() const 
+        {
+            return default_rules_;
+        }
+              
+    private:
+        std::optional<fs::path> box_root_;
+        std::vector<dir_rule>   rules_;
+        
+
+        bool use_defaults_ = true;
+        std::vector<dir_rule>   default_rules_;
+
+        void parse_rules(const YAML::Node& rules_list)
+        {
+            for(auto i = 0; i < rules_list.size(); i++)
+            {
+                rules_.emplace_back(dir_rule(rules_list[i].as<std::string>()));
+            }
+        }
+        
+        void add_default_rules()
+        {
+            //default_rules_.emplace_back(dir_rule("box=./box:rw"));
+            default_rules_.emplace_back(dir_rule("bin"));
+            //default_rules_.emplace_back(dir_rule("dev:dev"));
+            default_rules_.emplace_back(dir_rule("lib"));
+            default_rules_.emplace_back(dir_rule("lib64:maybe"));
+            //default_rules_.emplace_back(dir_rule("proc=proc:fs"));
+            //default_rules_.emplace_back(dir_rule("tmp:tmp"));
+            default_rules_.emplace_back(dir_rule("usr")); 
+        }
+    };
+    
     class proxy_config
     {
     public:
         proxy_config() {}
         proxy_config(const YAML::Node& proxy_node) : tasks_(proxy_node[config_options::TASKS])
         {
-            if(proxy_node[config_options::env::CHROOT_DIR]) chroot_dir_ = fs::path(proxy_node[config_options::env::CHROOT_DIR].as<std::string>());
+            if(proxy_node[config_options::env::BOX_ROOT]) box_root_ = fs::path(proxy_node[config_options::env::BOX_ROOT].as<std::string>());
+            box_fs_ = box_fs_config(box_root_, proxy_node[config_options::ENVIRONMENT]);
         }
         
         auto& get_tasks_config()
         {
             return tasks_;
         }
-
-        const auto& get_chroot_dir()
+        
+        auto& fs_config()
         {
-            return chroot_dir_;
+            return box_fs_;
+        }
+
+        const auto& box_root()
+        {
+            return box_root_;
         }
     private:
-        std::optional<fs::path> chroot_dir_;
+        std::optional<fs::path> box_root_;
         tasks_config tasks_;
+        box_fs_config box_fs_;
     };
 
     class root_interface
@@ -370,7 +525,6 @@ namespace config
         }
 
     private:
-        root_config root_config_;
         proxy_config proxy_config_;
         std::vector<std::unique_ptr<task_config>> tasks_;
         
@@ -440,7 +594,7 @@ namespace config
             }
             else
             {
-                tasks_.push_back(std::make_unique<task_config>(options_map));
+                tasks_.emplace_back(std::make_unique<task_config>(options_map));
                 return;
             }
         }
@@ -448,7 +602,6 @@ namespace config
         void configure_from_yaml(const fs::path& f)
         {
             YAML::Node config = YAML::LoadFile(f);
-            root_config_ = root_config(config);
             proxy_config_ = proxy_config(config);          
         }
         

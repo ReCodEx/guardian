@@ -36,7 +36,7 @@ namespace string_utils
         std::vector<std::string> res;
         for(boost::tokenizer<>::iterator it = tok.begin(); it != tok.end(); ++it)
         {
-            res.push_back(*it);
+            res.emplace_back(*it);
         }
         return res;
     }
@@ -46,6 +46,24 @@ namespace string_utils
 namespace file_utils
 {
     namespace fs = std::filesystem;
+    
+    bool is_valid_path(const fs::path& p) 
+    {
+        try 
+        {
+            auto normalized = p.lexically_normal();
+            return true;
+        } 
+        catch (...) 
+        {
+            return false;
+        }
+    }
+    
+    bool is_subdirectory(const std::filesystem::path& relative) 
+    {
+        return relative.lexically_relative(".") == relative.string();
+    }
 
     void list_directory(const fs::path& path)
     {
