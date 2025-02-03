@@ -5,8 +5,6 @@ env:
 tasks:
     - task-id: "threads_fork"
       path: "/tests/build/threads_fork"
-      args: 
-         - "hello"
       rlims:
           cpu-time: 10
           processes: 3

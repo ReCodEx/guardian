@@ -1,11 +1,11 @@
 box-root: "/box"
 env: 
   dir-rules:
-    - "tests=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests"
+    - "lib64/tests=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests"
 tasks:
     - task-id: "bsearch"
       stats-yaml: "/result.yaml"
-      path: "/tests/test_binaries/bsearch"
+      path: "lib64/tests/test_binaries/bsearch"
       rlims:
           #cpu-time: 1
           mem: 5000000
