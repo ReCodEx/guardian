@@ -7,4 +7,4 @@ tasks:
       path: "/tests/build/threads_fork"
       rlims:
           cpu-time: 10
-          processes: 3
+          processes: 11

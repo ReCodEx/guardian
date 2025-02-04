@@ -191,17 +191,16 @@ namespace cgroup
 
     class pid_cntrlr : public controller
     {   
-        inline static const std::string type = "pid";
+        inline static const std::string type = "pids";
     public:
         using controller::controller;
 
         bool set_pids_max(size_t count)
         {
-            //  echo "$BYTES" > memory.max
+            //  echo "$count" > pids.max
 
-            fs::path pids_max(*cgrp_path_ / MEMORY_MAX());
+            fs::path pids_max(*cgrp_path_ / PIDS_MAX());
             bool success = file_utils::write_formatted(pids_max, "{}", count);
-            
             return success;
         }
     protected:
@@ -247,9 +246,8 @@ namespace cgroup
 
         void enable_all_cntrlrs()
         {
-            cpu_.enable();
-            mem_.enable();
-            pid_.enable();
+            if(!(cpu_.enable() && mem_.enable() && pid_.enable()))
+                { terminate("Failed to enable cgroup controllers"); }
         }
 
         

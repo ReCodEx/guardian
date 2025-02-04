@@ -58,6 +58,27 @@ namespace env
         }
     };
     
+    class proxy_credentials_manager
+    {
+    public:
+        void run()
+        {
+            
+        }
+
+        void change_to_user()
+        {
+            
+        }
+
+        void change_to_box()
+        {
+
+        }
+    private:
+
+    };
+    
     class box_fs_manager
     {
     public:

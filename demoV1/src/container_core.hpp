@@ -41,6 +41,7 @@ namespace container_core
         env::box_fs_manager fs_manager_;
         cgroup::proxy_cgroup_manager cg_mngr_;
         tasks::task_manager task_runner_;
+        env::proxy_credentials_manager credentials_mngr_;
 
         void init_proxy_logger()
         {
