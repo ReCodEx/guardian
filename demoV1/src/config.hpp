@@ -296,7 +296,7 @@ namespace config
                 tasks_.emplace_back(std::make_unique<task_config>(tasks_node[i]));
             }
         }
-        auto& get_tasks()
+        auto& get_tasks() const
         {
             return tasks_;
         }
@@ -390,17 +390,17 @@ namespace config
             }
         }
         
-        bool check_inner_dir(const fs::path& in)
+        static bool check_inner_dir(const fs::path& in)
         {
             return file_utils::is_valid_path(in) && file_utils::is_subdirectory(in);
         }
 
-        bool check_outer_dir(const std::optional<fs::path>& out)
+        static bool check_outer_dir(const std::optional<fs::path>& out)
         {
             return !out.has_value() || file_utils::is_valid_path(out.value());
         }
         
-        bool check_options(const std::vector<std::string>& options)
+        static bool check_options(const std::vector<std::string>& options)
         {
             return true;
         }
@@ -476,17 +476,17 @@ namespace config
             box_fs_ = box_fs_config(box_root_, proxy_node[config_options::ENVIRONMENT]);
         }
         
-        auto& get_tasks_config()
+        const auto& get_tasks_config() const
         {
             return tasks_;
         }
         
-        auto& fs_config()
+        const auto& fs_config() const
         {
             return box_fs_;
         }
 
-        const auto& box_root()
+        const auto& box_root() const
         {
             return box_root_;
         }
@@ -509,12 +509,12 @@ namespace config
             return tasks_.size();
         }
 
-        auto& tasks()
+        auto& tasks() const
         {
             return tasks_;
         }
         
-        auto& get_proxy_config()
+        auto& get_proxy_config() const
         {
             return proxy_config_;
         }

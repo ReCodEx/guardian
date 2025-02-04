@@ -179,7 +179,7 @@ namespace tasks
     class task_manager
     {
     public:
-        task_manager(config::tasks_config& tasks) : tasks_config(&tasks)
+        task_manager(const config::tasks_config& tasks) : tasks_config(&tasks)
         {}
 
         config::task_report run_all_tasks()
@@ -196,7 +196,7 @@ namespace tasks
             return report;
         }
     private:
-        config::tasks_config* tasks_config;
+        const config::tasks_config* tasks_config;
     };
 }
 

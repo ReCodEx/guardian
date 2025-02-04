@@ -115,7 +115,7 @@ namespace cgroup
     protected:
         const fs::path* cgrp_path_;
 
-        virtual const std::string& cntrlr_type() = 0;
+        virtual const std::string& cntrlr_type() const = 0;
 
     public:
         controller(const fs::path& path) : cgrp_path_(&path) {}
@@ -148,7 +148,7 @@ namespace cgroup
         }
 
     protected:
-        const std::string& cntrlr_type() override
+        const std::string& cntrlr_type() const override
         {
             return type;
         }
@@ -182,7 +182,7 @@ namespace cgroup
             return success;
         }
     protected:
-        const std::string& cntrlr_type() override
+        const std::string& cntrlr_type() const override
         {
             return type;
         }
@@ -204,7 +204,7 @@ namespace cgroup
             return success;
         }
     protected:
-        const std::string& cntrlr_type() override
+        const std::string& cntrlr_type() const override
         {
             return type;
         }
@@ -258,12 +258,12 @@ namespace cgroup
             return file_utils::write_formatted(cgroup_procs, "{}", mypid);
         }
 
-        size_t cpu_usage_usec()
+        size_t cpu_usage_usec() const
         {
             return cpu_usage_usec_abs(cgrp_path_);
         }
 
-        size_t memory_usage_bytes()
+        size_t memory_usage_bytes() const
         {
             return memory_usage_bytes_abs(cgrp_path_);
         }
@@ -279,7 +279,7 @@ namespace cgroup
             pid_.set_pids_max(n);
         }
 
-        void list_procs()
+        void list_procs() const
         {
             auto cgroup_procs(cgrp_path_ / CGROUP_PROCS());
             file_utils::print_lines(cgroup_procs);
@@ -338,12 +338,12 @@ namespace cgroup
             return file_utils::write_formatted(cgroup_procs, "{}", mypid);
         }
 
-        size_t cpu_usage_usec()
+        size_t cpu_usage_usec() const
         {
             return cpu_usage_usec_abs(cgrp_path_);
         }
 
-        size_t memory_usage_bytes()
+        size_t memory_usage_bytes() const
         {
             return memory_usage_bytes_abs(cgrp_path_);
         }
@@ -353,7 +353,7 @@ namespace cgroup
             return mem_.set_memory_max(bytes) && mem_.set_memory_min_to_max();
         }
 
-        void list_procs()
+        void list_procs() const
         {
             auto cgroup_procs(cgrp_path_ / CGROUP_PROCS());
             file_utils::print_lines(cgroup_procs);

@@ -18,7 +18,7 @@ namespace container_core
     class proxy_core
     {
     public:
-        proxy_core(config::proxy_config& config) :  proxy_config_(&config),
+        proxy_core(const config::proxy_config& config) :  proxy_config_(&config),
                                                     mount_mngr_(&config), 
                                                     task_runner_(config.get_tasks_config()),
                                                     fs_manager_(config.fs_config())
@@ -36,7 +36,7 @@ namespace container_core
         }
 
     private: 
-        config::proxy_config* proxy_config_;
+        const config::proxy_config* proxy_config_;
         env::proxy_mount_manager mount_mngr_;
         env::box_fs_manager fs_manager_;
         cgroup::proxy_cgroup_manager cg_mngr_;

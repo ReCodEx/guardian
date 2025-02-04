@@ -15,7 +15,7 @@ namespace env
     class proxy_mount_manager
     {
     public:
-        proxy_mount_manager(config::proxy_config* proxy_config) : proxy_config_(proxy_config)
+        proxy_mount_manager(const config::proxy_config* proxy_config) : proxy_config_(proxy_config)
         {}
 
         void run()
@@ -25,7 +25,7 @@ namespace env
             mount_cgroup();
         }
     private:
-        config::proxy_config* proxy_config_;
+        const config::proxy_config* proxy_config_;
 
         void mount_pivot_dir()
         {
@@ -82,7 +82,7 @@ namespace env
     class box_fs_manager
     {
     public:
-        box_fs_manager(config::box_fs_config& fs_config) : fs_config_(&fs_config) 
+        box_fs_manager(const config::box_fs_config& fs_config) : fs_config_(&fs_config) 
         {}
         
         void run()
@@ -90,6 +90,10 @@ namespace env
             if(fs_config_->box_root().has_value()) { construct_box_fs(); }
         }
         
+
+    private:
+        const config::box_fs_config* fs_config_;
+
         void construct_box_fs()
         {
             auto& rules = fs_config_->rules();
@@ -108,9 +112,6 @@ namespace env
                 apply_rule(rule);
             }
         }
-
-    private:
-        config::box_fs_config* fs_config_;
 
         void apply_rule(const config::dir_rule& rule)
         {
@@ -145,7 +146,7 @@ namespace env
             }
         }
         
-        void create_inner_dir(const fs::path& dir)
+        static void create_inner_dir(const fs::path& dir)
         {
             if(fs::is_directory(dir))
                 { //terminate("Box inner directory already exists: {}", dir.string()); }
@@ -153,7 +154,7 @@ namespace env
             fs::create_directory(dir);
         }
         
-        unsigned long mount_flags(const config::dir_rule& rule)
+        static unsigned long mount_flags(const config::dir_rule& rule)
         {
             unsigned long flags = 0;
             if(!rule.rw())      { flags |= MS_RDONLY; }
