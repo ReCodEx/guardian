@@ -49,34 +49,14 @@ namespace env
             //remount cgroup filesystem into the box, questionable for security but simplifies delegation
             // of responsibilities
 
-            if(umount(cgroup::ROOT_CG_PATH().c_str()))
-                { terminate("failed to unmount cgroup filesystem, errno: {}", errno); }
+            // umount in old namespace is not possible from new user namespace.
+/*             if(umount(cgroup::ROOT_CG_PATH().c_str()))
+                { terminate("failed to unmount cgroup filesystem, errno: {}", errno); } */
             
             auto& box_root = proxy_config_->box_root().value();
             if(mount("none", (box_root / cgroup::ROOT_CG_PATH().relative_path()).c_str(), "cgroup2", 0, nullptr))
                 { terminate("failed to remount cgroup2 filesystem, errno: {}", errno); }
         }
-    };
-    
-    class proxy_credentials_manager
-    {
-    public:
-        void run()
-        {
-            
-        }
-
-        void change_to_user()
-        {
-            
-        }
-
-        void change_to_box()
-        {
-
-        }
-    private:
-
     };
     
     class box_fs_manager
@@ -118,8 +98,8 @@ namespace env
             fs::path in(fs_config_->box_root().value() / rule.in_dir());
             fs::path out = rule.out_dir() ? rule.out_dir().value() : rule.in_dir();
             out = fs::path("/" / out);
-            auto flags = mount_flags(rule);
-            
+            auto flags = default_flags(rule);
+            std::cout << "in: " + in.string() + " out: " + out.string() << std::endl;
             create_inner_dir(in);
             
             if(rule.fs())
@@ -139,22 +119,24 @@ namespace env
             {
                 flags |= MS_BIND | MS_NOSUID;
                 if(!rule.norec()) { flags |= MS_REC; }
-
+/*                 file_utils::list_directory(fs::path("/home/simonkurz/mff")); */
                 if( mount(out.c_str(), in.c_str(), "none", flags, "") < 0 ||
                     mount(out.c_str(), in.c_str(), "none", MS_REMOUNT | flags, "") < 0)
-                    { terminate("Mount failed for directory rule: {}", rule.string()); }
+                    { terminate("Mount failed for directory rule: {}, errno: {}", rule.string(), errno); }
             }
         }
         
         static void create_inner_dir(const fs::path& dir)
         {
             if(fs::is_directory(dir))
-                { //terminate("Box inner directory already exists: {}", dir.string()); }
-                }else
-            fs::create_directory(dir);
+            { 
+                //terminate("Box inner directory already exists: {}", dir.string()); }
+            }
+            else
+            { fs::create_directory(dir); } 
         }
-        
-        static unsigned long mount_flags(const config::dir_rule& rule)
+
+        static unsigned long default_flags(const config::dir_rule& rule)
         {
             unsigned long flags = 0;
             if(!rule.rw())      { flags |= MS_RDONLY; }

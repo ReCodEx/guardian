@@ -103,7 +103,6 @@ namespace config
             if(limits_node[config_options::task::CPU_TIME]) cpu_time_s_ = limits_node[config_options::task::CPU_TIME].as<size_t>();
             if(limits_node[config_options::task::MEMORY]) memory_bytes_ = limits_node[config_options::task::MEMORY].as<size_t>();
             if(limits_node[config_options::task::WALL_TIME]) wall_time_s_ = limits_node[config_options::task::WALL_TIME].as<size_t>();
-            if(limits_node[config_options::task::WALL_TIME]) wall_time_s_ = limits_node[config_options::task::WALL_TIME].as<size_t>();
             if(limits_node[config_options::task::PROCESSES]) forked_processes_ = limits_node[config_options::task::PROCESSES].as<size_t>();
         }
 
@@ -365,10 +364,11 @@ namespace config
             
             if(!check_inner_dir(inner))
                 { terminate("Invalid inner path in fs-rule: {}", inner_token.str()); }
-            
             if(!check_outer_dir(outer)) 
                 { terminate("Invalid outer path in fs-rule: {}", outer_token.str()); } 
-            
+            if(!check_options(options))
+                { terminate("Invalid options in fs-rule: {}", options_token.str()); }
+
             parse_options(options);
             inner_ = inner;
             outer_ = outer;
@@ -376,8 +376,6 @@ namespace config
         
         void parse_options(const std::vector<std::string>& options)
         {
-            if(!check_options(options)) 
-                { terminate("Invalid options in fs-rule"); }
             for(auto&& o : options)
             {
                 if(o == "rw")       { rw_ = true; }
@@ -459,11 +457,27 @@ namespace config
             default_rules_.emplace_back(dir_rule("bin"));
             //default_rules_.emplace_back(dir_rule("dev:dev"));
             default_rules_.emplace_back(dir_rule("lib"));
-            default_rules_.emplace_back(dir_rule("lib64:maybe"));
+            default_rules_.emplace_back(dir_rule("lib64:maybe,rw"));
             //default_rules_.emplace_back(dir_rule("proc=proc:fs"));
             //default_rules_.emplace_back(dir_rule("tmp:tmp"));
             default_rules_.emplace_back(dir_rule("usr")); 
         }
+    };
+
+    class credentials_config
+    {
+    public:
+        credentials_config()
+        {
+
+        }
+
+
+
+    private:
+        int box_id;
+        uid_t box_uid_range_start;
+        gid_t box_gid_range_start;
     };
     
     class proxy_config

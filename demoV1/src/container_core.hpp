@@ -5,6 +5,7 @@
 #include "process.hpp"
 #include "tasks.hpp"
 #include "environment.hpp"
+#include "credentials.hpp"
 
 #include <chrono>
 #include <filesystem>
@@ -41,7 +42,7 @@ namespace container_core
         env::box_fs_manager fs_manager_;
         cgroup::proxy_cgroup_manager cg_mngr_;
         tasks::task_manager task_runner_;
-        env::proxy_credentials_manager credentials_mngr_;
+        credentials::proxy_credentials_manager credentials_mngr_;
 
         void init_proxy_logger()
         {
