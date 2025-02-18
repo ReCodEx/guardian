@@ -10,6 +10,7 @@
 
 #include "terminate.hpp"
 #include "cgrps.hpp"
+#include "credentials.hpp"
 
 namespace tasks
 {
@@ -19,7 +20,9 @@ namespace tasks
     class task_supervisor
     {
     public:
-        task_supervisor(config::task_config& conf) : task_config_(&conf), task_cgrp_(conf.cg_rel_path())
+        task_supervisor(config::task_config& conf, credentials::proxy_credentials_manager& credentials) :   task_config_(&conf),
+                                                                                                            credentials_(&credentials),
+                                                                                                            task_cgrp_(conf.cg_rel_path())
         {}
 
         config::task_stats run_task()
@@ -33,6 +36,7 @@ namespace tasks
     private:
         void* stack_ = nullptr;
         config::task_config* const task_config_;
+        credentials::proxy_credentials_manager* credentials_;
         cgroup::cgroupv2_t task_cgrp_;
 
         config::task_stats generate_task_stats(int stat)
@@ -113,7 +117,7 @@ namespace tasks
             else if (!outside_pid)
             {
                 set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use cgroup freezer.
-
+                credentials_->switch_to_box();
                 cpp_execve(task_config_->exec_path(), task_config_->exec_args());
 
                 // We should never get here
@@ -179,7 +183,8 @@ namespace tasks
     class task_manager
     {
     public:
-        task_manager(const config::tasks_config& tasks) : tasks_config(&tasks)
+        task_manager(const config::tasks_config& tasks, credentials::proxy_credentials_manager& credentials) :  tasks_config(&tasks),
+                                                                                                                credentials_(&credentials)
         {}
 
         config::task_report run_all_tasks()
@@ -188,7 +193,7 @@ namespace tasks
 
             for(auto&& task_config : tasks_config->get_tasks())
             {
-                tasks::task_supervisor task_(*task_config);
+                tasks::task_supervisor task_(*task_config, *credentials_);
                 auto stats = task_.run_task();
                 report.insert(stats);
                 logs::debug("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.cg_total_time_usec, stats.cg_total_mem_bytes);
@@ -197,6 +202,7 @@ namespace tasks
         }
     private:
         const config::tasks_config* tasks_config;
+        credentials::proxy_credentials_manager* credentials_;
     };
 }
 

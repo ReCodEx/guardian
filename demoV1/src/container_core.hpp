@@ -20,9 +20,10 @@ namespace container_core
     {
     public:
         proxy_core(const config::proxy_config& config) :  proxy_config_(&config),
+                                                    credentials_mngr_(),
                                                     mount_mngr_(&config), 
-                                                    task_runner_(config.get_tasks_config()),
-                                                    fs_manager_(config.fs_config())
+                                                    task_runner_(config.get_tasks_config(), credentials_mngr_),
+                                                    fs_manager_(config.fs_config(), credentials_mngr_)
         {
             logs::info("Hello world from the proxy!");
             init_proxy_logger();
@@ -31,20 +32,18 @@ namespace container_core
         void run()
         {
             proxy_env_setup();
-            credentials_mngr_.switch_to_box();
             auto task_report = task_runner_.run_all_tasks();
-            credentials_mngr_.switch_to_user();
             generate_proxy_report(task_report);
             exit(0);
         }
 
     private: 
         const config::proxy_config* proxy_config_;
+        credentials::proxy_credentials_manager credentials_mngr_;
         env::proxy_mount_manager mount_mngr_;
         env::box_fs_manager fs_manager_;
         cgroup::proxy_cgroup_manager cg_mngr_;
         tasks::task_manager task_runner_;
-        credentials::proxy_credentials_manager credentials_mngr_;
 
         void init_proxy_logger()
         {

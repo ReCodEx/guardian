@@ -75,6 +75,17 @@ namespace credentials
         {
 
         }
+        
+        uid_t box_uid()
+        {
+            return credentials_root_->box_uid();
+        }
+
+        uid_t box_gid()
+        {
+            return credentials_root_->box_gid();
+        }
+
         void switch_to_user()
         {
             auto orig_gid = credentials_root_->orig_gid();

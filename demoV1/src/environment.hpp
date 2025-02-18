@@ -7,6 +7,7 @@
 #include "config.hpp"
 #include "terminate.hpp"
 #include "cgrps.hpp"
+#include "credentials.hpp"
 
 namespace env
 {
@@ -61,7 +62,8 @@ namespace env
     class box_fs_manager
     {
     public:
-        box_fs_manager(const config::box_fs_config& fs_config) : fs_config_(&fs_config) 
+        box_fs_manager(const config::box_fs_config& fs_config, credentials::proxy_credentials_manager& credentials) :   fs_config_(&fs_config),
+                                                                                                                        credentials_(&credentials)
         {}
         
         void run()
@@ -72,6 +74,7 @@ namespace env
 
     private:
         const config::box_fs_config* fs_config_;
+        credentials::proxy_credentials_manager* credentials_;
 
         void construct_box_fs()
         {
@@ -125,7 +128,7 @@ namespace env
             }
         }
         
-        static void create_inner_dir(const fs::path& dir)
+        void create_inner_dir(const fs::path& dir)
         {
             if(fs::is_directory(dir))
             { 
@@ -133,6 +136,9 @@ namespace env
             }
             else
             { fs::create_directory(dir); } 
+            
+/*             if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
+                { terminate("chown on directory inside box failed, errno: {}", errno); } */
         }
 
         static unsigned long default_flags(const config::dir_rule& rule)
