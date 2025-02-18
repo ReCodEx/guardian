@@ -7,5 +7,5 @@ tasks:
       stats-yaml: "/result.yaml"
       path: "lib64/tests/test_binaries/bsearch"
       rlims:
-          #cpu-time: 1
           mem: 5000000
+          cpu-time: 1

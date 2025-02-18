@@ -119,7 +119,6 @@ namespace tasks
             else if (!outside_pid)
             {
                 set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use cgroup freezer.
-                set_disk_quota_quotactl(1);
                 credentials_->switch_to_box();
                 cpp_execve(task_config_->exec_path(), task_config_->exec_args());
 
@@ -146,6 +145,8 @@ namespace tasks
             if(limits.as_size()) set_as_size_limit(limits.as_size().value());
 
             if(limits.processes()) set_processes_limit(limits.processes().value());
+
+            if(limits.disk_usage()) set_disk_quota_quotactl(limits.disk_usage().value());
         }
 
         void set_mem_limit(size_t bytes)
@@ -155,11 +156,17 @@ namespace tasks
 
         void set_disk_quota_quotactl(size_t bytes)
         {
+            std::string device = devices::find_cwd_device();
             uid_t box_uid = credentials_->box_uid();
-            const char* device;
-            std::cout << devices::find_cwd_device() << std::endl;
-/*             if(quotactl(QCMD(Q_SETQUOTA, USRQUOTA), device, box_uid, (caddr_t) &dq) < 0)
-                { terminate("quotactl() failed, errno: {}", errno); } */
+            struct dqblk dq = 
+            {
+                .dqb_bhardlimit = bytes / 1024,
+                .dqb_bsoftlimit = bytes / 1024,
+                .dqb_valid = QIF_BLIMITS,
+            };
+
+            if(quotactl(QCMD(Q_SETQUOTA, USRQUOTA), device.c_str(), box_uid, (caddr_t) &dq) < 0)
+                { terminate("quotactl() failed, errno: {}", errno); }
         }
 
         

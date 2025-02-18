@@ -48,6 +48,7 @@ namespace config
             constexpr auto WALL_TIME = "wall-time";
             constexpr auto MEMORY = "mem";
             constexpr auto PROCESSES = "processes";
+            constexpr auto DISK_USAGE = "disk-usage";
         }
 
         constexpr auto ENVIRONMENT = "env";
@@ -104,6 +105,7 @@ namespace config
             if(limits_node[config_options::task::MEMORY]) memory_bytes_ = limits_node[config_options::task::MEMORY].as<size_t>();
             if(limits_node[config_options::task::WALL_TIME]) wall_time_s_ = limits_node[config_options::task::WALL_TIME].as<size_t>();
             if(limits_node[config_options::task::PROCESSES]) forked_processes_ = limits_node[config_options::task::PROCESSES].as<size_t>();
+            if(limits_node[config_options::task::DISK_USAGE]) disk_usage_bytes_ = limits_node[config_options::task::DISK_USAGE].as<size_t>();
         }
 
         resource_limits(const options::variables_map& options_map)
@@ -131,6 +133,7 @@ namespace config
         auto wall_time() const { return wall_time_s_; }
         auto as_size() const { return as_size_bytes_; }
         auto processes() const { return forked_processes_; }
+        auto disk_usage() const { return disk_usage_bytes_; }
 
         void set_cpu_time(size_t s) { cpu_time_s_ = s; }
         void set_memory(size_t bytes) { memory_bytes_ = bytes; }
@@ -142,6 +145,7 @@ namespace config
         std::optional<size_t> memory_bytes_;
         std::optional<size_t> as_size_bytes_;
         std::optional<size_t> forked_processes_;
+        std::optional<size_t> disk_usage_bytes_;
         size_t wall_time_s_ = DEFAULT_WALL_TIME; 
         
         static constexpr size_t DEFAULT_WALL_TIME = 20;
