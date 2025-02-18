@@ -98,22 +98,21 @@ namespace env
         void apply_rule(const config::dir_rule& rule)
         {
             fs::path in(fs_config_->box_root().value() / rule.in_dir());
-            fs::path out = rule.out_dir() ? rule.out_dir().value() : rule.in_dir();
-            out = fs::path("/" / out);
+            fs::path out = fs::path("/") / (rule.out_dir() ? rule.out_dir().value() : rule.in_dir());
             auto flags = default_flags(rule);
             std::cout << "in: " + in.string() + " out: " + out.string() << std::endl;
             create_inner_dir(in);
             
             if(rule.fs())
             {
-                if(mount("none", in.c_str(), out.c_str(), flags, ""))
-                    { terminate("Mount failed for directory rule: {}", rule.string()); }
+                if(mount("none", in.c_str(), out.c_str() + 1, flags, "") < 0)
+                    { terminate("Mount failed for directory rule: {}, errno: {}", rule.string(), errno); }
                 
                 // If we are mounting procfs, add hidepid=2, so that only the processes
 	            // of the same user are visible. This has to be done as a remount.
                 if(in.c_str() == "proc")
                 {
-                    if (mount("none", in.c_str(), out.c_str(), MS_REMOUNT | flags , "hidepid=2"))
+                    if (mount("none", in.c_str(), out.c_str() + 1, MS_REMOUNT | flags , "hidepid=2") < 0)
 		                { terminate("Cannot re-mount proc with hidepid option."); }
                 }
             }

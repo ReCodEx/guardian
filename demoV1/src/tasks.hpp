@@ -7,10 +7,12 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/quota.h>
 
 #include "terminate.hpp"
 #include "cgrps.hpp"
 #include "credentials.hpp"
+#include "devices.hpp"
 
 namespace tasks
 {
@@ -117,6 +119,7 @@ namespace tasks
             else if (!outside_pid)
             {
                 set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use cgroup freezer.
+                set_disk_quota_quotactl(1);
                 credentials_->switch_to_box();
                 cpp_execve(task_config_->exec_path(), task_config_->exec_args());
 
@@ -150,6 +153,16 @@ namespace tasks
             task_cgrp_.set_strict_memory_limit(bytes);
         }
 
+        void set_disk_quota_quotactl(size_t bytes)
+        {
+            uid_t box_uid = credentials_->box_uid();
+            const char* device;
+            std::cout << devices::find_cwd_device() << std::endl;
+/*             if(quotactl(QCMD(Q_SETQUOTA, USRQUOTA), device, box_uid, (caddr_t) &dq) < 0)
+                { terminate("quotactl() failed, errno: {}", errno); } */
+        }
+
+        
         void set_processes_limit(size_t n)
         {
             task_cgrp_.set_processes_limit(n);
