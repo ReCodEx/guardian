@@ -49,9 +49,8 @@ namespace env
             //remount cgroup filesystem into the box, questionable for security but simplifies delegation
             // of responsibilities
 
-            // umount in old namespace is not possible from new user namespace.
-/*             if(umount(cgroup::ROOT_CG_PATH().c_str()))
-                { terminate("failed to unmount cgroup filesystem, errno: {}", errno); } */
+            if(umount(cgroup::ROOT_CG_PATH().c_str()))
+                { terminate("failed to unmount cgroup filesystem, errno: {}", errno); }
             
             auto& box_root = proxy_config_->box_root().value();
             if(mount("none", (box_root / cgroup::ROOT_CG_PATH().relative_path()).c_str(), "cgroup2", 0, nullptr))

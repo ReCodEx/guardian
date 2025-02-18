@@ -31,7 +31,9 @@ namespace container_core
         void run()
         {
             proxy_env_setup();
+            credentials_mngr_.switch_to_box();
             auto task_report = task_runner_.run_all_tasks();
+            credentials_mngr_.switch_to_user();
             generate_proxy_report(task_report);
             exit(0);
         }
@@ -106,9 +108,7 @@ namespace container_core
             pid_t outside_pid = clone3_proxy(proxy_conf, nullptr, cg_mngr_.open_proxy_fd());
 
             if (outside_pid < 0)
-            {
-                terminate("Cannot run the proxy process, clone3 failed. Errno: {}", errno);
-            }
+                { terminate("Cannot run the proxy process, clone3 failed. Errno: {}", errno); }
                 
             else if (!outside_pid)
             {
