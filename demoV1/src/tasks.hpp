@@ -154,6 +154,7 @@ namespace tasks
             task_cgrp_.set_strict_memory_limit(bytes);
         }
 
+        // Will work only on filesystems supporting quotactl() (i.e. not btrfs). And even then needs testing.
         void set_disk_quota_quotactl(size_t bytes)
         {
             std::string device = devices::find_cwd_device();
@@ -164,7 +165,6 @@ namespace tasks
                 .dqb_bsoftlimit = bytes / 1024,
                 .dqb_valid = QIF_BLIMITS,
             };
-
             if(quotactl(QCMD(Q_SETQUOTA, USRQUOTA), device.c_str(), box_uid, (caddr_t) &dq) < 0)
                 { terminate("quotactl() failed, errno: {}", errno); }
         }

@@ -100,7 +100,6 @@ namespace env
             fs::path in(fs_config_->box_root().value() / rule.in_dir());
             fs::path out = fs::path("/") / (rule.out_dir() ? rule.out_dir().value() : rule.in_dir());
             auto flags = default_flags(rule);
-            std::cout << "in: " + in.string() + " out: " + out.string() << std::endl;
             create_inner_dir(in);
             
             if(rule.fs())
