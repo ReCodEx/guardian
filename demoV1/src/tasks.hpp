@@ -159,11 +159,16 @@ namespace tasks
         {
             std::string device = devices::find_cwd_device();
             uid_t box_uid = credentials_->box_uid();
+            std::cout << device << std::endl;
+            std::cout << box_uid << std::endl;
             struct dqblk dq = 
             {
                 .dqb_bhardlimit = bytes / 1024,
                 .dqb_bsoftlimit = bytes / 1024,
-                .dqb_valid = QIF_BLIMITS,
+                .dqb_ihardlimit = 10,
+                .dqb_isoftlimit = 10,
+                .dqb_valid = QIF_LIMITS,
+                //.dqb_valid = QIF_BLIMITS,
             };
             if(quotactl(QCMD(Q_SETQUOTA, USRQUOTA), device.c_str(), box_uid, (caddr_t) &dq) < 0)
                 { terminate("quotactl() failed, errno: {}", errno); }

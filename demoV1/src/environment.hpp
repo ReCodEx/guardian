@@ -93,6 +93,7 @@ namespace env
             {
                 apply_rule(rule);
             }
+            file_utils::list_directory("/box/temp");
         }
 
         void apply_rule(const config::dir_rule& rule)
@@ -103,7 +104,8 @@ namespace env
             create_inner_dir(in);
             if(rule.tmp())
             {
-                create_outer_temp_dir(out);
+                //create_outer_temp_dir(out);
+                return;
             }
  
             if(rule.fs())
@@ -139,8 +141,16 @@ namespace env
             else
             { fs::create_directory(dir); } 
             
-/*             if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
-                { terminate("chown on directory inside box failed, errno: {}", errno); } */
+            if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
+                { terminate("chown() on directory inside box failed, errno: {}", errno); }
+
+            if(chmod(dir.c_str(), 0777) < 0)
+                { terminate("chmod() on directory inside box failed, errno: {}", errno); }
+        }
+    
+        void create_inner_temp_dir(const fs::path& dir)
+        {
+
         }
     
         void create_outer_temp_dir(const fs::path& dir)
@@ -155,7 +165,7 @@ namespace env
             if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
                 { terminate("chown() on outside temp directory failed, errno: {}", errno); }
             
-            if(chmod(dir.c_str(),0700) < 0)
+            if(chmod(dir.c_str(), 0777) < 0)
                 { terminate("chmod() on outside temp directory failed, errno: {}", errno); }
         }
 
