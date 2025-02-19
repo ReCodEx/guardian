@@ -1,4 +1,4 @@
-box-root: "/box"
+box-root: "/ext4box"
 env: 
   dir-rules:
     - "lib64/tests=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests"

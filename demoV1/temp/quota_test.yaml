@@ -1,0 +1,12 @@
+
+box-root: "/ext4box"
+env: 
+  dir-rules:
+    - "temp=/home/simonkurz/mff/rcdx_cntnr/demoV1/temp/experiment:tmp"
+    - "tests=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests"
+tasks:
+    - task-id: "quota_test"
+      stats-yaml: "/result.yaml"
+      path: "/tests/build/disk_quota_test"
+      rlims:
+          disk-usage: 10

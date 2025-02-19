@@ -101,7 +101,11 @@ namespace env
             fs::path out = fs::path("/") / (rule.out_dir() ? rule.out_dir().value() : rule.in_dir());
             auto flags = default_flags(rule);
             create_inner_dir(in);
-            
+            if(rule.tmp())
+            {
+                create_outer_temp_dir(out);
+            }
+ 
             if(rule.fs())
             {
                 if(mount("none", in.c_str(), out.c_str() + 1, flags, "") < 0)
@@ -137,6 +141,22 @@ namespace env
             
 /*             if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
                 { terminate("chown on directory inside box failed, errno: {}", errno); } */
+        }
+    
+        void create_outer_temp_dir(const fs::path& dir)
+        {
+            if(fs::is_directory(dir))
+            { 
+                //terminate("Box inner directory already exists: {}", dir.string()); }
+            }
+            else
+            { fs::create_directory(dir); } 
+            
+            if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
+                { terminate("chown() on outside temp directory failed, errno: {}", errno); }
+            
+            if(chmod(dir.c_str(),0700) < 0)
+                { terminate("chmod() on outside temp directory failed, errno: {}", errno); }
         }
 
         static unsigned long default_flags(const config::dir_rule& rule)
