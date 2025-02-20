@@ -154,10 +154,10 @@ namespace tasks
             task_cgrp_.set_strict_memory_limit(bytes);
         }
 
-        // Will work only on filesystems supporting quotactl() (i.e. not btrfs). And even then needs testing.
+        // Will work only on filesystems supporting quotactl() (i.e. not btrfs).
         void set_disk_quota_quotactl(size_t bytes)
         {
-            std::string device = devices::find_cwd_device();
+            std::string device = devices::find_device_for_dir(fs::path("."));
             uid_t box_uid = credentials_->box_uid();
             std::cout << device << std::endl;
             std::cout << box_uid << std::endl;

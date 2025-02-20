@@ -12,10 +12,10 @@
 
 namespace devices
 {
-    inline std::string find_cwd_device()
+    inline std::string find_device_for_dir(const fs::path& p)
     {
         struct stat st;
-        if (stat(".", &st) == -1) 
+        if (stat(p.c_str(), &st) == -1) 
             { terminate("stat() failed when finding device for cwd, errno: {}", errno); }
         
         dev_t target_dev = st.st_dev;

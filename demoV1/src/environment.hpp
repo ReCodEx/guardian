@@ -32,7 +32,7 @@ namespace env
         {
             //the directory that we pivot_root to has to be a mount point
 
-            auto& box_root = proxy_config_->box_root().value();
+            auto& box_root = proxy_config_->box_root();
             if(mount(box_root.c_str(), box_root.c_str(), nullptr, MS_REC | MS_BIND, nullptr))
                 { terminate("failed to bind mount the pivot directory, errno: {}", errno); }
         }
@@ -53,7 +53,7 @@ namespace env
             if(umount(cgroup::ROOT_CG_PATH().c_str()))
                 { terminate("failed to unmount cgroup filesystem, errno: {}", errno); }
             
-            auto& box_root = proxy_config_->box_root().value();
+            auto& box_root = proxy_config_->box_root();
             if(mount("none", (box_root / cgroup::ROOT_CG_PATH().relative_path()).c_str(), "cgroup2", 0, nullptr))
                 { terminate("failed to remount cgroup2 filesystem, errno: {}", errno); }
         }
@@ -68,15 +68,20 @@ namespace env
         
         void run()
         {
-            if(fs_config_->box_root().has_value()) { construct_box_fs(); }
+            construct_box_fs();
         }
-        
 
     private:
         const config::box_fs_config* fs_config_;
         credentials::proxy_credentials_manager* credentials_;
 
         void construct_box_fs()
+        {
+            create_mount_points();
+            apply_rules();
+        }
+        
+        void apply_rules()
         {
             auto& rules = fs_config_->rules();
             auto& box_root = fs_config_->box_root();
@@ -93,21 +98,36 @@ namespace env
             {
                 apply_rule(rule);
             }
-            file_utils::list_directory("/box/temp");
+        }
+        
+        void create_mount_points()
+        {
+            if(fs_config_->use_default_rules())
+            {
+                for(auto&& rule : fs_config_->default_rules())
+                {
+                    create_mount_points_for_rule(rule);
+                }
+            }
+
+            for(auto&& rule : fs_config_->rules())
+            {
+                create_mount_points_for_rule(rule);
+            }
+        }
+        
+        void create_mount_points_for_rule(const config::dir_rule& rule)
+        {
+            create_inner_dir(rule.in_dir());
+            create_outer_dir(rule.out_dir(), rule);
         }
 
         void apply_rule(const config::dir_rule& rule)
         {
-            fs::path in(fs_config_->box_root().value() / rule.in_dir());
-            fs::path out = fs::path("/") / (rule.out_dir() ? rule.out_dir().value() : rule.in_dir());
+            auto& in = rule.in_dir();
+            auto& out = rule.out_dir();
             auto flags = default_flags(rule);
-            create_inner_dir(in);
-            if(rule.tmp())
-            {
-                //create_outer_temp_dir(out);
-                return;
-            }
- 
+
             if(rule.fs())
             {
                 if(mount("none", in.c_str(), out.c_str() + 1, flags, "") < 0)
@@ -125,7 +145,7 @@ namespace env
             {
                 flags |= MS_BIND | MS_NOSUID;
                 if(!rule.norec()) { flags |= MS_REC; }
-/*                 file_utils::list_directory(fs::path("/home/simonkurz/mff")); */
+                logs::debug("Mounting {} to {}", out.string(), in.string());
                 if( mount(out.c_str(), in.c_str(), "none", flags, "") < 0 ||
                     mount(out.c_str(), in.c_str(), "none", MS_REMOUNT | flags, "") < 0)
                     { terminate("Mount failed for directory rule: {}, errno: {}", rule.string(), errno); }
@@ -134,39 +154,37 @@ namespace env
         
         void create_inner_dir(const fs::path& dir)
         {
-            if(fs::is_directory(dir))
+            if(!fs::is_directory(dir))
             { 
-                //terminate("Box inner directory already exists: {}", dir.string()); }
+                std::cout << "creating directory: " << dir.string() << std::endl;
+                if(!fs::create_directory(dir))
+                    { terminate("Failed to create inner directory ({})", dir.string()); }
             }
-            else
-            { fs::create_directory(dir); } 
             
             if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
-                { terminate("chown() on directory inside box failed, errno: {}", errno); }
+                { terminate("chown() on directory ({}) inside box failed, errno: {}", dir.string(), errno); }
 
             if(chmod(dir.c_str(), 0777) < 0)
-                { terminate("chmod() on directory inside box failed, errno: {}", errno); }
+                { terminate("chmod() on directory ({}) inside box failed, errno: {}", dir.string(), errno); }
         }
     
-        void create_inner_temp_dir(const fs::path& dir)
+        void create_outer_dir(const fs::path& dir, const config::dir_rule& rule)
         {
-
-        }
-    
-        void create_outer_temp_dir(const fs::path& dir)
-        {
-            if(fs::is_directory(dir))
+            if(!fs::is_directory(dir))
             { 
-                //terminate("Box inner directory already exists: {}", dir.string()); }
-            }
-            else
-            { fs::create_directory(dir); } 
+                std::cout << "creating directory: " << dir.string() << std::endl;
+                if(!rule.allow_newdir())
+                    { terminate("Directory rule ({}) would create a new directory ({}) outside box, but isn't allowed to.", rule.string(), dir.string()); }
+
+                if(!fs::create_directory(dir))
+                    { terminate("Failed to create outside directory ({})", dir.string()); } 
+            } 
             
             if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
-                { terminate("chown() on outside temp directory failed, errno: {}", errno); }
+                { terminate("chown() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
             
             if(chmod(dir.c_str(), 0777) < 0)
-                { terminate("chmod() on outside temp directory failed, errno: {}", errno); }
+                { terminate("chmod() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
         }
 
         static unsigned long default_flags(const config::dir_rule& rule)

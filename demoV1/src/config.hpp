@@ -6,6 +6,7 @@
 #include <optional>
 #include <memory>
 #include <regex>
+#include <tuple>
 
 #include "cgrps.hpp"
 #include "namespaces.hpp"
@@ -319,36 +320,46 @@ namespace config
     class dir_rule
     {
     public:
-        dir_rule(const std::string& rule) : rule_(rule)
+        dir_rule(const std::string& rule, const fs::path& box_root) : rule_(rule)
         {
-            construct_rule(rule);
+            construct_rule(rule, box_root);
         }
          
         const fs::path& in_dir() const                  { return inner_; }
-        const std::optional<fs::path>& out_dir() const  { return outer_; }
+        const fs::path& out_dir() const  { return outer_; }
+        const std::optional<fs::path>& outer_temp_dir() const  { return outer_temp_dir_; }
         const std::string& string() const                 { return rule_; }
-        bool rw() const      { return rw_; }
-        bool dev() const     { return dev_; }
-        bool noexec() const  { return noexec_; }
-        bool maybe() const   { return maybe_; }
-        bool fs() const      { return fs_; }
-        bool tmp() const     { return tmp_; }
-        bool norec() const   { return norec_; }
+        bool rw() const             { return rw_; }
+        bool dev() const            { return dev_; }
+        bool noexec() const         { return noexec_; }
+        bool maybe() const          { return maybe_; }
+        bool fs() const             { return fs_; }
+        bool tmp() const            { return tmp_; }
+        bool norec() const          { return norec_; }
+        bool allow_newdir() const   { return allow_newdir_; }
+        
+        void set_outer_temp_dir(const fs::path& path)
+        {
+            outer_temp_dir_ = path;
+        }
+
     private:
         static constexpr auto rule_regex_ = "([^=:]+)(=([^:]+))?(:(.+))?";
         std::string rule_;
         fs::path inner_;
-        std::optional<fs::path> outer_;
+        fs::path outer_;
+        std::optional<fs::path> outer_temp_dir_;
 
-        bool rw_        = false;
-        bool dev_       = false;
-        bool noexec_    = false;
-        bool maybe_     = false;
-        bool fs_        = false;
-        bool tmp_       = false;
-        bool norec_     = false;
+        bool rw_            = false;
+        bool dev_           = false;
+        bool noexec_        = false;
+        bool maybe_         = false;
+        bool fs_            = false;
+        bool tmp_           = false;
+        bool norec_         = false;
+        bool allow_newdir_  = false;
     
-        void construct_rule(const std::string& rule)
+        void construct_rule(const std::string& rule, const fs::path& box_root)
         {
             std::regex rule_regex(rule_regex_);
             std::smatch m;
@@ -374,8 +385,8 @@ namespace config
                 { terminate("Invalid options in fs-rule: {}", options_token.str()); }
 
             parse_options(options);
-            inner_ = inner;
-            outer_ = outer;
+            inner_ = box_root / inner;
+            outer_ = fs::path("/") / (outer ? outer.value() : inner);
         }
         
         void parse_options(const std::vector<std::string>& options)
@@ -389,6 +400,7 @@ namespace config
                 if(o == "fs")       { fs_ = true; }
                 if(o == "tmp")      { tmp_ = true; }
                 if(o == "norec")    { norec_ = true; }
+                if(o == "allow_newdir")    { allow_newdir_ = true; }
             }
         }
         
@@ -412,11 +424,12 @@ namespace config
     {
     public:
         box_fs_config() {}
-        box_fs_config(std::optional<fs::path> box_root, const YAML::Node& env_node) : box_root_(box_root)
+        box_fs_config(const fs::path& box_root, const YAML::Node& env_node) : box_root_(box_root)
         {
             if(env_node[config_options::env::USE_DEFAULT_DIR_RULES]) use_defaults_ = env_node[config_options::env::USE_DEFAULT_DIR_RULES].as<bool>();
             add_default_rules();
             parse_rules(env_node[config_options::env::DIRECTORY_RULES]);
+            check_escape_points();
         }
 
         const auto& rules() const
@@ -440,7 +453,7 @@ namespace config
         }
               
     private:
-        std::optional<fs::path> box_root_;
+        fs::path box_root_;
         std::vector<dir_rule>   rules_;
         
 
@@ -451,21 +464,57 @@ namespace config
         {
             for(auto i = 0; i < rules_list.size(); i++)
             {
-                rules_.emplace_back(dir_rule(rules_list[i].as<std::string>()));
+                rules_.emplace_back(dir_rule(rules_list[i].as<std::string>(), box_root_));
             }
         }
         
         void add_default_rules()
         {
             //default_rules_.emplace_back(dir_rule("box=./box:rw"));
-            default_rules_.emplace_back(dir_rule("bin"));
-            default_rules_.emplace_back(dir_rule("dev:dev"));
-            default_rules_.emplace_back(dir_rule("lib"));
-            default_rules_.emplace_back(dir_rule("lib64:maybe,rw"));
-            default_rules_.emplace_back(dir_rule("proc=proc:fs"));
+            default_rules_.emplace_back(dir_rule("bin", box_root()));
+            default_rules_.emplace_back(dir_rule("dev:dev", box_root()));
+            default_rules_.emplace_back(dir_rule("lib", box_root()));
+            default_rules_.emplace_back(dir_rule("lib64:maybe,rw", box_root()));
+            default_rules_.emplace_back(dir_rule("proc=proc:fs", box_root()));
             //default_rules_.emplace_back(dir_rule("tmp:tmp"));
-            default_rules_.emplace_back(dir_rule("usr")); 
+            default_rules_.emplace_back(dir_rule("usr", box_root())); 
         }
+        
+        void check_escape_points()
+        {
+            std::vector<std::tuple<fs::path,fs::path>> mount_points;
+            if(use_default_rules())
+            {
+                for(auto&& rule : default_rules())
+                {
+
+
+                    for(auto&& [inner, outer] : mount_points)
+                    {
+
+                    }                    
+                    // if(!(rule.fs() || rule.dev())) { mount_points.emplace_back(std::tuple(in, out)); }
+                }
+            }
+
+            for(auto&& rule : default_rules())
+            {
+                   
+            }
+        }
+        
+        static bool path_escapes_box(const std::vector<fs::path>& mount_points, const fs::path& path)
+        {
+            for(auto&& ep : mount_points)
+            {
+            }
+            return false;
+        }
+
+        std::optional<fs::path> find_outside_temp_dir(const fs::path& escape_point, const fs::path& , const fs::path& path)
+        {
+            fs::path rel = path.lexically_relative(escape_point);
+        } 
     };
 
     class credentials_config
@@ -509,7 +558,7 @@ namespace config
             return box_root_;
         }
     private:
-        std::optional<fs::path> box_root_;
+        fs::path box_root_;
         tasks_config tasks_;
         box_fs_config box_fs_;
     };

@@ -59,7 +59,7 @@ namespace file_utils
             return false;
         }
     }
-    
+
     bool is_subdirectory(const std::filesystem::path& relative) 
     {
         return relative.lexically_relative(".") == relative.string();

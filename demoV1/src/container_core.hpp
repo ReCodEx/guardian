@@ -66,11 +66,8 @@ namespace container_core
         
         void pivot_root()
         {
-            if(proxy_config_->box_root())
-            {
-                auto box_root = proxy_config_->box_root().value();
-                process_utils::pivot_root(box_root, box_root / fs::path("old_root"));
-            }
+            auto box_root = proxy_config_->box_root();
+            process_utils::pivot_root(box_root, box_root / fs::path("old_root"));
         } 
     };
 

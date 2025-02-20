@@ -9,4 +9,4 @@ tasks:
       stats-yaml: "/result.yaml"
       path: "/tests/build/disk_quota_test"
       rlims:
-        disk-usage: 10240
+          disk-usage: 1024
