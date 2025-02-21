@@ -3,6 +3,7 @@
 
 #include <string>
 #include <fstream>
+#include <filesystem>
 #include <sys/stat.h>
 #include <mntent.h>
 
@@ -12,6 +13,8 @@
 
 namespace devices
 {
+    namespace fs = std::filesystem;
+
     inline std::string find_device_for_dir(const fs::path& p)
     {
         struct stat st;

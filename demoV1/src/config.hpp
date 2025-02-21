@@ -327,7 +327,6 @@ namespace config
          
         const fs::path& in_dir() const                  { return inner_; }
         const fs::path& out_dir() const  { return outer_; }
-        const std::optional<fs::path>& outer_temp_dir() const  { return outer_temp_dir_; }
         const std::string& string() const                 { return rule_; }
         bool rw() const             { return rw_; }
         bool dev() const            { return dev_; }
@@ -338,17 +337,11 @@ namespace config
         bool norec() const          { return norec_; }
         bool allow_newdir() const   { return allow_newdir_; }
         
-        void set_outer_temp_dir(const fs::path& path)
-        {
-            outer_temp_dir_ = path;
-        }
-
     private:
         static constexpr auto rule_regex_ = "([^=:]+)(=([^:]+))?(:(.+))?";
         std::string rule_;
         fs::path inner_;
         fs::path outer_;
-        std::optional<fs::path> outer_temp_dir_;
 
         bool rw_            = false;
         bool dev_           = false;
@@ -429,7 +422,6 @@ namespace config
             if(env_node[config_options::env::USE_DEFAULT_DIR_RULES]) use_defaults_ = env_node[config_options::env::USE_DEFAULT_DIR_RULES].as<bool>();
             add_default_rules();
             parse_rules(env_node[config_options::env::DIRECTORY_RULES]);
-            check_escape_points();
         }
 
         const auto& rules() const
@@ -479,42 +471,6 @@ namespace config
             //default_rules_.emplace_back(dir_rule("tmp:tmp"));
             default_rules_.emplace_back(dir_rule("usr", box_root())); 
         }
-        
-        void check_escape_points()
-        {
-            std::vector<std::tuple<fs::path,fs::path>> mount_points;
-            if(use_default_rules())
-            {
-                for(auto&& rule : default_rules())
-                {
-
-
-                    for(auto&& [inner, outer] : mount_points)
-                    {
-
-                    }                    
-                    // if(!(rule.fs() || rule.dev())) { mount_points.emplace_back(std::tuple(in, out)); }
-                }
-            }
-
-            for(auto&& rule : default_rules())
-            {
-                   
-            }
-        }
-        
-        static bool path_escapes_box(const std::vector<fs::path>& mount_points, const fs::path& path)
-        {
-            for(auto&& ep : mount_points)
-            {
-            }
-            return false;
-        }
-
-        std::optional<fs::path> find_outside_temp_dir(const fs::path& escape_point, const fs::path& , const fs::path& path)
-        {
-            fs::path rel = path.lexically_relative(escape_point);
-        } 
     };
 
     class credentials_config

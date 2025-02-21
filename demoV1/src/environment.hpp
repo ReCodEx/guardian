@@ -59,6 +59,105 @@ namespace env
         }
     };
     
+    class dir_rule_supervisor
+    {
+    public:
+        dir_rule_supervisor(const config::dir_rule& rule, const credentials::proxy_credentials_manager& creds) : rule_(&rule), credentials_(&creds)
+        {}
+
+        void apply()
+        {
+            auto& in = rule_->in_dir();
+            auto& out = rule_->out_dir();
+            auto flags = default_flags();
+
+            if(rule_->fs())
+            {
+                if(mount("none", in.c_str(), out.c_str() + 1, flags, "") < 0)
+                    { terminate("Mount failed for directory rule: {}, errno: {}", rule_->string(), errno); }
+                
+                // If we are mounting procfs, add hidepid=2, so that only the processes
+	            // of the same user are visible. This has to be done as a remount.
+                if(in.c_str() == "proc")
+                {
+                    if (mount("none", in.c_str(), out.c_str() + 1, MS_REMOUNT | flags , "hidepid=2") < 0)
+		                { terminate("Cannot re-mount proc with hidepid option."); }
+                }
+            }
+            else
+            {
+                flags |= MS_BIND | MS_NOSUID;
+                if(!rule_->norec()) { flags |= MS_REC; }
+                logs::debug("Mounting {} to {}", out.string(), in.string());
+                if( mount(out.c_str(), in.c_str(), "none", flags, "") < 0 ||
+                    mount(out.c_str(), in.c_str(), "none", MS_REMOUNT | flags, "") < 0)
+                    { terminate("Mount failed for directory rule: {}, errno: {}", rule_->string(), errno); }
+            }
+        }
+        
+        void create_directories()
+        {
+            create_inner_dir();
+            if(rule_->tmp()) { create_outer_temp_dir(); }
+            if(dummy_dir_) { create_dummy_dir(); }
+        }
+        
+        void add_dummy_dir(const fs::path& dir)
+        {
+            dummy_dir_ = dir;
+        }
+
+    private:
+        const config::dir_rule* rule_;
+        const credentials::proxy_credentials_manager* credentials_;
+        
+        std::optional<fs::path> dummy_dir_;
+        
+        void create_inner_dir()
+        {
+            logs::debug("Checking for inner dir {}", rule_->in_dir().string());
+            create_dir(rule_->in_dir());
+        }
+    
+        void create_outer_temp_dir()
+        {
+            create_dir(rule_->out_dir());
+        }
+
+        void create_dummy_dir()
+        {
+            logs::debug("Checking for dummy dir: {}", dummy_dir_.value().string());
+            create_dir(dummy_dir_.value());
+        }
+        
+        void create_dir(const fs::path& dir)
+        {
+            if(!fs::is_directory(dir))
+            { 
+                logs::debug("Creating directory: {}",dir.string());
+
+                if(!fs::create_directory(dir))
+                    { terminate("Failed to create outside directory ({})", dir.string()); } 
+            } 
+            
+            if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
+                { terminate("chown() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
+            
+            if(chmod(dir.c_str(), 0777) < 0)
+                { terminate("chmod() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
+        }
+
+        unsigned long default_flags()
+        {
+            unsigned long flags = 0;
+            if(!rule_->rw())      { flags |= MS_RDONLY; }
+            if(rule_->noexec())   { flags |= MS_NOEXEC; }            
+            if(!rule_->dev())     { flags |= MS_NODEV; }            
+            
+            return flags;
+        }
+    };
+    
     class box_fs_manager
     {
     public:
@@ -83,121 +182,80 @@ namespace env
         
         void apply_rules()
         {
-            auto& rules = fs_config_->rules();
-            auto& box_root = fs_config_->box_root();
-
             if(fs_config_->use_default_rules())
             {
                 for(auto&& rule : fs_config_->default_rules())
                 {
-                    apply_rule(rule);
+                    dir_rule_supervisor drs(rule, *credentials_);
+                    drs.apply();
                 }
             } 
 
-            for(auto&& rule : rules)
+            for(auto&& rule : fs_config_->rules())
             {
-                apply_rule(rule);
+                dir_rule_supervisor drs(rule, *credentials_);
+                drs.apply();
             }
         }
         
         void create_mount_points()
         {
+            std::vector<std::tuple<fs::path,fs::path>> mount_points;
             if(fs_config_->use_default_rules())
             {
                 for(auto&& rule : fs_config_->default_rules())
                 {
-                    create_mount_points_for_rule(rule);
+                    create_directories_for_rule(mount_points, rule);
                 }
             }
 
             for(auto&& rule : fs_config_->rules())
             {
-                create_mount_points_for_rule(rule);
+                create_directories_for_rule(mount_points, rule);
             }
         }
-        
-        void create_mount_points_for_rule(const config::dir_rule& rule)
+
+        void create_directories_for_rule(std::vector<std::tuple<fs::path, fs::path>>& mount_points, const config::dir_rule& rule)
         {
-            create_inner_dir(rule.in_dir());
-            create_outer_dir(rule.out_dir(), rule);
+            dir_rule_supervisor drs(rule, *credentials_);
+            if(rule_escapes_box(rule))
+            {
+                auto dummy_dir = potential_dummy_dir(mount_points, rule.in_dir());
+                if(dummy_dir) 
+                {
+                    logs::debug("Potential dummy dir: {}", dummy_dir.value().string()); 
+                    drs.add_dummy_dir(dummy_dir.value()); 
+                }
+                mount_points.emplace_back(std::tuple(rule.in_dir(), rule.out_dir()));
+            }
+            
+            drs.create_directories();
         }
 
-        void apply_rule(const config::dir_rule& rule)
+        static std::optional<fs::path> potential_dummy_dir(const std::vector<std::tuple<fs::path, fs::path>>& mount_points, const fs::path& new_path)
         {
-            auto& in = rule.in_dir();
-            auto& out = rule.out_dir();
-            auto flags = default_flags(rule);
+            fs::path longest_prefix;
+            fs::path underlying_dir;
 
-            if(rule.fs())
+            for(auto&& [inner, outer] : mount_points)
             {
-                if(mount("none", in.c_str(), out.c_str() + 1, flags, "") < 0)
-                    { terminate("Mount failed for directory rule: {}, errno: {}", rule.string(), errno); }
-                
-                // If we are mounting procfs, add hidepid=2, so that only the processes
-	            // of the same user are visible. This has to be done as a remount.
-                if(in.c_str() == "proc")
-                {
-                    if (mount("none", in.c_str(), out.c_str() + 1, MS_REMOUNT | flags , "hidepid=2") < 0)
-		                { terminate("Cannot re-mount proc with hidepid option."); }
+                if(file_utils::is_prefix(inner, new_path) && inner.string().length() > longest_prefix.string().length())
+                { 
+                    longest_prefix = inner;
+                    underlying_dir = outer; 
                 }
             }
-            else
-            {
-                flags |= MS_BIND | MS_NOSUID;
-                if(!rule.norec()) { flags |= MS_REC; }
-                logs::debug("Mounting {} to {}", out.string(), in.string());
-                if( mount(out.c_str(), in.c_str(), "none", flags, "") < 0 ||
-                    mount(out.c_str(), in.c_str(), "none", MS_REMOUNT | flags, "") < 0)
-                    { terminate("Mount failed for directory rule: {}, errno: {}", rule.string(), errno); }
-            }
+            auto dummy_dir = underlying_dir / new_path.lexically_relative(longest_prefix);
+            std::optional<fs::path> res;
+            if(dummy_dir.string() != "") res = dummy_dir;
+            return res;           
         }
         
-        void create_inner_dir(const fs::path& dir)
+        static bool rule_escapes_box(const config::dir_rule& rule)
         {
-            if(!fs::is_directory(dir))
-            { 
-                std::cout << "creating directory: " << dir.string() << std::endl;
-                if(!fs::create_directory(dir))
-                    { terminate("Failed to create inner directory ({})", dir.string()); }
-            }
-            
-            if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
-                { terminate("chown() on directory ({}) inside box failed, errno: {}", dir.string(), errno); }
-
-            if(chmod(dir.c_str(), 0777) < 0)
-                { terminate("chmod() on directory ({}) inside box failed, errno: {}", dir.string(), errno); }
-        }
-    
-        void create_outer_dir(const fs::path& dir, const config::dir_rule& rule)
-        {
-            if(!fs::is_directory(dir))
-            { 
-                std::cout << "creating directory: " << dir.string() << std::endl;
-                if(!rule.allow_newdir())
-                    { terminate("Directory rule ({}) would create a new directory ({}) outside box, but isn't allowed to.", rule.string(), dir.string()); }
-
-                if(!fs::create_directory(dir))
-                    { terminate("Failed to create outside directory ({})", dir.string()); } 
-            } 
-            
-            if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
-                { terminate("chown() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
-            
-            if(chmod(dir.c_str(), 0777) < 0)
-                { terminate("chmod() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
-        }
-
-        static unsigned long default_flags(const config::dir_rule& rule)
-        {
-            unsigned long flags = 0;
-            if(!rule.rw())      { flags |= MS_RDONLY; }
-            if(rule.noexec())   { flags |= MS_NOEXEC; }            
-            if(!rule.dev())     { flags |= MS_NODEV; }            
-            
-            return flags;
+            return !(rule.dev() || rule.fs()); 
         }
     };
 }
-
 
 #endif

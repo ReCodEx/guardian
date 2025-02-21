@@ -47,6 +47,12 @@ namespace file_utils
 {
     namespace fs = std::filesystem;
     
+    bool is_prefix(const fs::path& prefix, const fs::path& path) 
+    {
+        fs::path rel = path.lexically_relative(prefix);
+        return !rel.empty() && rel.string()[0] != '.';
+    }
+
     bool is_valid_path(const fs::path& p) 
     {
         try 

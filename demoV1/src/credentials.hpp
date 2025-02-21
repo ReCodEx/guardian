@@ -76,12 +76,12 @@ namespace credentials
 
         }
         
-        uid_t box_uid()
+        uid_t box_uid() const
         {
             return credentials_root_->box_uid();
         }
 
-        uid_t box_gid()
+        uid_t box_gid() const
         {
             return credentials_root_->box_gid();
         }
