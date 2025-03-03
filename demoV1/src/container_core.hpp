@@ -66,8 +66,17 @@ namespace container_core
         
         void pivot_root()
         {
-            auto box_root = proxy_config_->box_root();
-            process_utils::pivot_root(box_root, box_root / fs::path("old_root"));
+            auto& box_root = proxy_config_->box_root();
+            auto put_old = box_root / fs::path("old_root");
+
+            if(!fs::is_directory(put_old))
+            { 
+                logs::debug("Creating directory: {}", put_old.string());
+
+                if(!fs::create_directories(put_old))
+                    { terminate("Failed to create put_old directory for pivot_root"); } 
+            } 
+            process_utils::pivot_root(box_root, put_old);
         } 
     };
 

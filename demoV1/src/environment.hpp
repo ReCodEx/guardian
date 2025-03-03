@@ -31,7 +31,6 @@ namespace env
         void mount_pivot_dir()
         {
             //the directory that we pivot_root to has to be a mount point
-
             auto& box_root = proxy_config_->box_root();
             if(mount(box_root.c_str(), box_root.c_str(), nullptr, MS_REC | MS_BIND, nullptr))
                 { terminate("failed to bind mount the pivot directory, errno: {}", errno); }
@@ -47,18 +46,25 @@ namespace env
 
         void mount_cgroup()
         {
-            //remount cgroup filesystem into the box, questionable for security but simplifies delegation
-            // of responsibilities
+            //remount cgroup filesystem into the box
+            auto box_cg_root = proxy_config_->box_root() /  cgroup::ROOT_CG_PATH().relative_path();
+
+            if(!fs::is_directory(box_cg_root))
+            { 
+                logs::debug("Creating directory: {}",box_cg_root.string());
+
+                if(!fs::create_directories(box_cg_root))
+                    { terminate("Failed to create directory for the cgroup fs ({})", box_cg_root.string()); } 
+            } 
 
             if(umount(cgroup::ROOT_CG_PATH().c_str()))
                 { terminate("failed to unmount cgroup filesystem, errno: {}", errno); }
             
-            auto& box_root = proxy_config_->box_root();
-            if(mount("none", (box_root / cgroup::ROOT_CG_PATH().relative_path()).c_str(), "cgroup2", 0, nullptr))
+            if(mount("none", (box_cg_root).c_str(), "cgroup2", 0, nullptr))
                 { terminate("failed to remount cgroup2 filesystem, errno: {}", errno); }
         }
     };
-    
+
     class dir_rule_supervisor
     {
     public:
@@ -157,7 +163,7 @@ namespace env
             return flags;
         }
     };
-    
+
     class box_fs_manager
     {
     public:
