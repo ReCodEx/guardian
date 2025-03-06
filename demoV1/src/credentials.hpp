@@ -13,12 +13,15 @@ namespace credentials
     public:
         root_credentials_manager() {}
         root_credentials_manager(const config::credentials_config& config) : config_(&config)
+        {}
+        
+        void run()
         {
             orig_uid_ = getuid();
             orig_gid_ = getgid();
             box_id_ = assign_box_id();
         }
-        
+            
         uid_t orig_uid() const
         {
             return orig_uid_;
@@ -71,10 +74,8 @@ namespace credentials
     {
     public:
         proxy_credentials_manager() {}
-        proxy_credentials_manager(const config::credentials_config& config, const root_credentials_manager& root_manager) : config_(&config), credentials_root_(&root_manager)
-        {
-
-        }
+        proxy_credentials_manager(const root_credentials_manager& root_manager) : credentials_root_(&root_manager)
+        {}
         
         uid_t box_uid() const
         {
@@ -115,7 +116,6 @@ namespace credentials
         }
 
     private:
-        const config::credentials_config* config_;
         const root_credentials_manager* credentials_root_;
     };
 }

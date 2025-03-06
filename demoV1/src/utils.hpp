@@ -148,7 +148,7 @@ namespace file_utils
         {
             ss >> word;
         }
-        return std::move(word);
+        return word;
     }
     
 }

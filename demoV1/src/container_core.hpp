@@ -19,11 +19,12 @@ namespace container_core
     class proxy_core
     {
     public:
-        proxy_core(const config::proxy_config& config) :  proxy_config_(&config),
-                                                    credentials_mngr_(),
+        proxy_core(const config::proxy_config& config, credentials::root_credentials_manager& root_creds) :  proxy_config_(&config),
+                                                    credentials_mngr_(root_creds),
                                                     mount_mngr_(&config), 
-                                                    task_runner_(config.get_tasks_config(), credentials_mngr_),
-                                                    fs_manager_(config.fs_config(), credentials_mngr_)
+                                                    fs_manager_(config.fs_config(), credentials_mngr_),
+                                                    cg_mngr_(),
+                                                    task_runner_(config.get_tasks_config(), credentials_mngr_)
         {
             logs::info("Hello world from the proxy!");
             init_proxy_logger();
@@ -83,7 +84,7 @@ namespace container_core
     class root_core
     {
     public:
-        root_core(int argc, char** argv) : root_intfc_(argc, argv)
+        root_core(int argc, char** argv) : root_intfc_(argc, argv), credentials_(), cg_mngr_()
         {
             logs::init_default_logger();
             logs::info("Hello world from container!");
@@ -99,10 +100,12 @@ namespace container_core
 
     private:
         config::root_interface root_intfc_;
+        credentials::root_credentials_manager credentials_;
         cgroup::root_cgroup_manager cg_mngr_;
         
         void setup()
         {
+            credentials_.run();
             cg_mngr_.run();
         }
 
@@ -119,7 +122,7 @@ namespace container_core
             {
                 //we are in the proxy process
                 cg_mngr_.close_proxy_fd();
-                proxy_core proxy(proxy_conf);
+                proxy_core proxy(proxy_conf, credentials_);
                 proxy.run();
 
                 // We will never get here

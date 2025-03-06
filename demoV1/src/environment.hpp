@@ -84,7 +84,7 @@ namespace env
                 
                 // If we are mounting procfs, add hidepid=2, so that only the processes
 	            // of the same user are visible. This has to be done as a remount.
-                if(in.c_str() == "proc")
+                if(in.string() == "proc")
                 {
                     if (mount("none", in.c_str(), out.c_str() + 1, MS_REMOUNT | flags , "hidepid=2") < 0)
 		                { terminate("Cannot re-mount proc with hidepid option."); }
