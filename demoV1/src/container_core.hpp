@@ -105,6 +105,7 @@ namespace container_core
         
         void setup()
         {
+            create_box_dir();
             credentials_.run();
             cg_mngr_.run();
         }
@@ -146,6 +147,16 @@ namespace container_core
         void generate_results()
         {
             root_intfc_.generate_results();
+        }
+        
+        void create_box_dir()
+        {
+            auto dir = root_intfc_.get_proxy_config().box_root();
+            if(fs::is_directory(dir))
+                { terminate("Directory intended for box already exists!"); }
+            
+            if(!fs::create_directories(dir))
+                { terminate("Failed to create box directory"); }
         }
     };
 
