@@ -1,0 +1,5 @@
+
+box-root: "/box"
+tasks:
+    - task-id: "echo"
+      path: "/bin/echo"

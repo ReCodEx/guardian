@@ -2,6 +2,3 @@ box-root: "/box"
 tasks:
     - task-id: "helloworld"
       path: "/tests/build/helloworld"
-env:
-  dir-rules:
-    - "tests=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests"
