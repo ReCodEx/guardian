@@ -101,11 +101,6 @@ namespace tasks
 
         pid_t launch_task()
         {
-            return run_task_in_cgroup();
-        }
-
-        pid_t run_task_in_cgroup()
-        {
             logs::debug("Calling clone3 for \"{}\"", task_config_->exec_path().string());
             auto fd = task_cgrp_.open_fd();
 
