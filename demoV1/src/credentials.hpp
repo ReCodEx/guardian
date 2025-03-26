@@ -1,10 +1,13 @@
 #ifndef CREDENTIALS
 #define CREDENTIALS
 
+#include <random>
+
 #include <sys/types.h>
 #include <grp.h>
 #include <unistd.h>
 #include "config.hpp"
+
 
 namespace credentials
 {
@@ -19,7 +22,7 @@ namespace credentials
         {
             orig_uid_ = getuid();
             orig_gid_ = getgid();
-            box_id_ = assign_box_id();
+            assign_box_ids();
         }
             
         uid_t orig_uid() const
@@ -39,34 +42,36 @@ namespace credentials
         
         uid_t box_uid() const
         {
-            return box_uid_range_start_ + box_id_;
+            return box_uid_;
         }
 
         uid_t box_gid() const
         {
-            return box_gid_range_start_ + box_id_;
+            return box_gid_;
         }
 
     private:
         const config::credentials_config* config_;
 
         uid_t box_id_;        
+        uid_t box_uid_;        
+        uid_t box_gid_;        
 
         uid_t orig_uid_;
         gid_t orig_gid_;
         
-        uid_t box_uid_range_start_ = 60000;
-        gid_t box_gid_range_start_ = 400000;
-        size_t box_id_range_ = 1000;
+        static constexpr uid_t box_uid_range_start_ = 60000;
+        static constexpr gid_t box_gid_range_start_ = 60000;
         
-        uid_t assign_box_id()
+        void assign_box_ids()
         {
-            uid_t box_id = 1;
-            
-            if(box_id > box_id_range_)
-                { terminate("Generated box_id is out of range"); }
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<uid_t> dist(1,5000);
 
-            return box_id;
+            box_id_ = dist(gen);
+            box_uid_ = box_uid_range_start_ + box_id_;
+            box_gid_ = box_uid_;
         }
     };
 

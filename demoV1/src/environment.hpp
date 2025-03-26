@@ -68,7 +68,7 @@ namespace env
     class dir_rule_supervisor
     {
     public:
-        dir_rule_supervisor(const config::dir_rule& rule, const credentials::proxy_credentials_manager& creds) : rule_(&rule), credentials_(&creds)
+        dir_rule_supervisor(const config::dir_rule_config& rule, const credentials::proxy_credentials_manager& creds) : rule_(&rule), credentials_(&creds)
         {}
 
         void apply()
@@ -114,7 +114,7 @@ namespace env
         }
 
     private:
-        const config::dir_rule* rule_;
+        const config::dir_rule_config* rule_;
         const credentials::proxy_credentials_manager* credentials_;
         
         std::optional<fs::path> dummy_dir_;
@@ -221,7 +221,7 @@ namespace env
             }
         }
 
-        void create_directories_for_rule(std::vector<std::tuple<fs::path, fs::path>>& mount_points, const config::dir_rule& rule)
+        void create_directories_for_rule(std::vector<std::tuple<fs::path, fs::path>>& mount_points, const config::dir_rule_config& rule)
         {
             dir_rule_supervisor drs(rule, *credentials_);
             if(rule_escapes_box(rule))
@@ -257,7 +257,7 @@ namespace env
             return res;           
         }
         
-        static bool rule_escapes_box(const config::dir_rule& rule)
+        static bool rule_escapes_box(const config::dir_rule_config& rule)
         {
             return !(rule.dev() || rule.fs()); 
         }

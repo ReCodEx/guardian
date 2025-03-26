@@ -23,12 +23,17 @@
 
 namespace config
 {
-    namespace cgrp = cgroup;
+    // namespace cgrp = cgroup;
     namespace fs = std::filesystem;
     namespace options = boost::program_options;
 
     struct task_config;
 
+    namespace defaults
+    {
+        constexpr auto BOXES_DIR = "/isolate_boxes";
+        constexpr auto BOXES_CGROUP = "isolate_boxes";
+    }
 
     constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWCGROUP | CLONE_NEWUTS;  //user namespaces might not always be supported
 
@@ -346,10 +351,10 @@ namespace config
         }
     };
 
-    class dir_rule
+    class dir_rule_config
     {
     public:
-        dir_rule(const std::string& rule, const fs::path& box_root) : rule_(rule)
+        dir_rule_config(const std::string& rule, const fs::path& box_root) : rule_(rule)
         {
             construct_rule(rule, box_root);
         }
@@ -480,30 +485,30 @@ namespace config
               
     private:
         fs::path box_root_;
-        std::vector<dir_rule>   rules_;
+        std::vector<dir_rule_config>   rules_;
         
 
         bool use_defaults_ = true;
-        std::vector<dir_rule>   default_rules_;
+        std::vector<dir_rule_config>   default_rules_;
 
         void add_rules(const YAML::Node& rules_list)
         {
             for(auto i = 0; i < rules_list.size(); i++)
             {
-                rules_.emplace_back(dir_rule(rules_list[i].as<std::string>(), box_root_));
+                rules_.emplace_back(dir_rule_config(rules_list[i].as<std::string>(), box_root_));
             }
         }
         
         void add_default_rules()
         {
             //default_rules_.emplace_back(dir_rule("box=./box:rw"));
-            default_rules_.emplace_back(dir_rule("bin", box_root()));
-            default_rules_.emplace_back(dir_rule("dev:dev", box_root()));
-            default_rules_.emplace_back(dir_rule("lib", box_root()));
-            default_rules_.emplace_back(dir_rule("lib64:maybe,rw", box_root()));
-            default_rules_.emplace_back(dir_rule("proc=proc:fs", box_root()));
+            default_rules_.emplace_back(dir_rule_config("bin", box_root()));
+            default_rules_.emplace_back(dir_rule_config("dev:dev", box_root()));
+            default_rules_.emplace_back(dir_rule_config("lib", box_root()));
+            default_rules_.emplace_back(dir_rule_config("lib64:maybe,rw", box_root()));
+            default_rules_.emplace_back(dir_rule_config("proc=proc:fs", box_root()));
             //default_rules_.emplace_back(dir_rule("tmp:tmp"));
-            default_rules_.emplace_back(dir_rule("usr", box_root())); 
+            default_rules_.emplace_back(dir_rule_config("usr", box_root())); 
         }
         
         void _default()
@@ -570,7 +575,7 @@ namespace config
         
         static const fs::path& default_box_root()
         {
-            static const auto def = fs::path("/box");
+            static const auto def = fs::path("default_box");
             return def;
         }
         
@@ -589,30 +594,36 @@ namespace config
             parse_options(argc, argv);
         }
 
-        bool ready_tasks() const
-        {
-            return tasks_.size();
-        }
-
-        auto& tasks() const
-        {
-            return tasks_;
-        }
-        
         auto& get_proxy_config() const
         {
             return proxy_config_;
         }
         
-        void generate_results()
+        fs::path get_box_dir(fs::path rel) const
         {
-
+            return boxes_dir() / rel;
         }
 
+        fs::path get_box_cgroup(fs::path rel) const
+        {
+            return boxes_cgroup() / rel;
+        }
     private:
         proxy_config proxy_config_;
         std::vector<std::unique_ptr<task_config>> tasks_;
         
+        static const fs::path& boxes_dir()
+        {
+            static fs::path p(defaults::BOXES_DIR);
+            return p;
+        } 
+
+        static const fs::path& boxes_cgroup()
+        {
+            static fs::path p(defaults::BOXES_CGROUP);
+            return p;
+        } 
+
         void parse_options(int argc, char** argv)
         {
             options::options_description general("General options");

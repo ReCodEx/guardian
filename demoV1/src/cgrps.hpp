@@ -13,6 +13,7 @@
 
 #include "utils.hpp"
 #include "terminate.hpp"
+#include "credentials.hpp"
 
 namespace cgroup 
 {
@@ -411,6 +412,11 @@ namespace cgroup
         root_cgroup_manager()
         {}
         
+        root_cgroup_manager(const config::root_interface& config, credentials::root_credentials_manager& credentials) : 
+        config_(&config), 
+        credentials_(&credentials)
+        {}
+
         ~root_cgroup_manager()
         {
             cleanup();
@@ -418,9 +424,10 @@ namespace cgroup
 
         void run()
         {
-            root_cgrp_ = std::move(std::make_unique<cgroupv2_t>("container_instance"));
-            leaf_cgrp_ = std::move(std::make_unique<cgroupv2_t>("container_instance/leaf"));
-            proxy_cgrp_ = std::move(std::make_unique<cgroupv2_t>("container_instance/proxy"));
+            fs::path root_cg = config_->get_box_cgroup(fs::path(std::to_string(credentials_->box_id()))) ;
+            root_cgrp_ = std::move(std::make_unique<cgroupv2_t>(root_cg));
+            leaf_cgrp_ = std::move(std::make_unique<cgroupv2_t>(root_cg / fs::path("leaf")));
+            proxy_cgrp_ = std::move(std::make_unique<cgroupv2_t>(root_cg / fs::path("proxy")));
             leaf_cgrp_->add_me();
             root_cgrp_->enable_all_cntrlrs();
         }
@@ -435,6 +442,8 @@ namespace cgroup
             proxy_cgrp_->close_fd();
         }
     private:
+        const config::root_interface* config_;
+        const credentials::root_credentials_manager* credentials_;
         std::unique_ptr<cgroup::cgroupv2_t> root_cgrp_;
         std::unique_ptr<cgroup::cgroupv2_t> proxy_cgrp_;
         std::unique_ptr<cgroup::cgroupv2_t> leaf_cgrp_;

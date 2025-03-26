@@ -77,14 +77,19 @@ namespace container_core
                 if(!fs::create_directories(put_old))
                     { terminate("Failed to create put_old directory for pivot_root"); } 
             } 
-            process_utils::pivot_root(box_root, put_old);
+
+            if(syscall(SYS_pivot_root, box_root.c_str(), put_old.c_str()))
+                { terminate("pivot_root failed, errno: {}", errno); }
+            chdir("/");
+            if(umount2("/old_root", MNT_DETACH))
+                { logs::error("umount on old root failed, errno: {}", errno); }
         } 
     };
 
     class root_core
     {
     public:
-        root_core(int argc, char** argv) : root_intfc_(argc, argv), credentials_(), cg_mngr_()
+        root_core(int argc, char** argv) : root_intfc_(argc, argv), credentials_(), cg_mngr_(root_intfc_, credentials_)
         {
             logs::init_default_logger();
             logs::info("Hello world from container!");
@@ -105,8 +110,8 @@ namespace container_core
         
         void setup()
         {
-            create_box_dir();
             credentials_.run();
+            create_box_dir();
             cg_mngr_.run();
         }
 
@@ -146,12 +151,11 @@ namespace container_core
         
         void generate_results()
         {
-            root_intfc_.generate_results();
         }
         
         void create_box_dir()
         {
-            auto dir = root_intfc_.get_proxy_config().box_root();
+            auto dir = root_intfc_.get_box_dir(fs::path(std::to_string(credentials_.box_id())));
             if(fs::is_directory(dir))
                 { terminate("Directory intended for box already exists!"); }
             
