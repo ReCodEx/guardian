@@ -11,13 +11,28 @@
 
 namespace credentials
 {
+    /**
+     * @class root_credentials_manager
+     * @brief Responsible for assigning credentials (box_id, UID/GID) used by the box.
+     * 
+     * @details
+     */
     class root_credentials_manager
     {
     public:
         root_credentials_manager() {}
+        
+        /**
+         * @brief Constructor
+         * @param config Reference to the config class.
+         * @see root_interface
+         */
         root_credentials_manager(const config::credentials_config& config) : config_(&config)
         {}
         
+        /**
+         * @brief Assign box_id, UID and GID that will be later used by the box.
+         */
         void run()
         {
             orig_uid_ = getuid();
@@ -25,44 +40,71 @@ namespace credentials
             assign_box_ids();
         }
             
+        /**
+         * @brief Getter for the original UID.
+         */
         uid_t orig_uid() const
         {
             return orig_uid_;
         }
 
+        /**
+         * @brief Getter for the original GID.
+         */
         gid_t orig_gid() const
         {
             return orig_gid_;
         }
         
+        /**
+         * @brief Getter for the assigned box_id.
+         */
         uid_t box_id() const
         {
             return box_id_;
         }
         
+        /**
+         * @brief Getter for the assigned box_uid.
+         */
         uid_t box_uid() const
         {
             return box_uid_;
         }
 
+        /**
+         * @brief Getter for the assigned box_gid.
+         */
         uid_t box_gid() const
         {
             return box_gid_;
         }
 
     private:
+        /// @brief  Pointer to the config class
         const config::credentials_config* config_;
 
+        /// @brief See section Credentials in the readme.
         uid_t box_id_;        
+
+        /// @brief See section Credentials in the readme.
         uid_t box_uid_;        
+        
+        /// @brief See section Credentials in the readme.
         uid_t box_gid_;        
 
+        /// @brief The original UID as which the container was launched.
         uid_t orig_uid_;
+
+        /// @brief The original GID as which the container was launched.
         gid_t orig_gid_;
         
         static constexpr uid_t box_uid_range_start_ = 60000;
-        static constexpr gid_t box_gid_range_start_ = 60000;
         
+        /**
+         * @brief Reserves a box_id and assigns UID/GID.
+         * @details Currently randomly assigned, a daemon keeper process that assigns IDs is planned.
+         */
         void assign_box_ids()
         {
             std::random_device rd;
@@ -79,19 +121,35 @@ namespace credentials
     {
     public:
         proxy_credentials_manager() {}
+        
+        /**
+         * @brief Constructor
+         * @param root_manager Reference to the root class storing assigned credentials.
+         */
         proxy_credentials_manager(const root_credentials_manager& root_manager) : credentials_root_(&root_manager)
         {}
         
+        /**
+         * @brief Getter for the assigned box_uid.
+         */
         uid_t box_uid() const
         {
             return credentials_root_->box_uid();
         }
 
+        /**
+         * @brief Getter for the assigned box_gid.
+         */
         uid_t box_gid() const
         {
             return credentials_root_->box_gid();
         }
 
+        /**
+         * @brief Switch back to the original UID/GID.
+         * 
+         * @details Switches real, effective, and saved-set UID and GID. 
+         */
         void switch_to_user()
         {
             auto orig_gid = credentials_root_->orig_gid();
@@ -106,12 +164,18 @@ namespace credentials
                 { terminate("Couldn't switch to original UID, errno: {}", errno); }
         }
 
+        /**
+         * @brief Switch credentials to the assigned values for the box.
+         * 
+         * @details Switches real, effective, and saved-set UID and GID. 
+         */
         void switch_to_box()
         {
             auto box_gid = credentials_root_->box_gid();
             if(setresgid(box_gid, box_gid, box_gid) < 0)
                 { terminate("Couldn't switch to box GID, errno: {}", errno); }
 
+            /// TODO: Find out why setgroups is necessary.
             if(setgroups(0, NULL) < 0)
                 { terminate("Setgroups failed, errno: {}", errno); }
 
@@ -121,6 +185,7 @@ namespace credentials
         }
 
     private:
+        /// @brief Pointer to the root class storing assigned credentials.
         const root_credentials_manager* credentials_root_;
     };
 }

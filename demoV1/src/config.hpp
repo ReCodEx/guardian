@@ -519,18 +519,6 @@ namespace config
 
     class credentials_config
     {
-    public:
-        credentials_config()
-        {
-
-        }
-
-
-
-    private:
-        int box_id;
-        uid_t box_uid_range_start;
-        gid_t box_gid_range_start;
     };
     
     class proxy_config
@@ -586,6 +574,9 @@ namespace config
         }
     };
 
+    /**
+     * @class root_interface
+     */
     class root_interface
     {
     public:
