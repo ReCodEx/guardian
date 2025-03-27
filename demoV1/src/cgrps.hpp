@@ -261,8 +261,6 @@ namespace cgroup
                                                     mem_(cgrp_path_),
                                                     pid_(cgrp_path_)
         {
-            /// TODO: see if I can remove the resetting of the path, looks like I can. 
-            // reset_path();
             init_path();
         }
 
@@ -384,6 +382,7 @@ namespace cgroup
 
     };
 
+    /// @brief Interface for the root cgroup (/sys/fs/cgroup).
     class root_cgroupv2_t
     {
     public:
@@ -393,70 +392,28 @@ namespace cgroup
                         pid_(ROOT_CG_PATH())
         {}
 
-        bool enable_all_cntrlrs()
+        /// @brief Enable all relevant controllers (cpu, memory, pids) for child cgroups.
+        void enable_all_cntrlrs()
         {
-            return cpu_.enable() && mem_.enable() && pid_.enable();
+            if(!(cpu_.enable() && mem_.enable() && pid_.enable()))
+                { terminate("Failed to enable cgroup controllers"); }
         }
         
-        bool add_me()
-        {
-            auto mypid = getpid();
-            auto cgroup_procs(cgrp_path_ / CGROUP_PROCS());
-            return file_utils::write_formatted(cgroup_procs, "{}", mypid);
-        }
-
-        size_t cpu_usage_usec() const
-        {
-            return cpu_usage_usec_abs(cgrp_path_);
-        }
-
-        size_t memory_usage_bytes() const
-        {
-            return memory_usage_bytes_abs(cgrp_path_);
-        }
-
-        bool set_strict_memory_limit(size_t bytes)
-        {
-            return mem_.set_memory_max(bytes) && mem_.set_memory_min_to_max();
-        }
-
-        void list_procs() const
-        {
-            auto cgroup_procs(cgrp_path_ / CGROUP_PROCS());
-            file_utils::print_lines(cgroup_procs);
-        }
     private:
+        /// @brief Absolute path of the cgroup (including path to the cgroup filesystem).
         const fs::path cgrp_path_;
 
+        /// @brief Cpu controller
         cpu_cntrlr cpu_;
+        
+        /// @brief Memory controller
         memory_cntrlr mem_;
+        
+        /// @brief PIDS controller
         pid_cntrlr pid_;
-        std::optional<int> fd_;
-
-        void init_path()
-        {
-            if(!fs::is_directory(cgrp_path_))
-            {
-                if(!fs::create_directory(cgrp_path_))
-                {
-                    throw std::runtime_error("Creating the cgroup failed");
-                }
-            }
-        }
-
-        void reset_path()
-        {
-            if(fs::is_directory(cgrp_path_))
-            {
-                fs::remove(cgrp_path_);
-            }
-            if(!fs::create_directory(cgrp_path_))
-            {
-                throw std::runtime_error("Creating the cgroup failed");
-            }
-        }
     };
 
+    /// @brief Manager class for the proxy level of the cgroup hierarchy.
     class proxy_cgroup_manager
     {
     public:
@@ -472,6 +429,7 @@ namespace cgroup
         std::unique_ptr<cgroupv2_t> leaf_cgrp_;
     };
 
+    /// @brief Manager class for the root level of the cgroup hierarchy.
     class root_cgroup_manager
     {
     public:
