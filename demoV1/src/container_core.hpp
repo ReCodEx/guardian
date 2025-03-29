@@ -104,7 +104,7 @@ namespace container_core
         }
 
     private:
-        config::root_interface root_intfc_;
+        config::root_configuration root_intfc_;
         credentials::root_credentials_manager credentials_;
         cgroup::root_cgroup_manager cg_mngr_;
         

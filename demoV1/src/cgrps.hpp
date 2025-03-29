@@ -155,6 +155,9 @@ namespace cgroup
         virtual const std::string& cntrlr_type() const = 0;
 
     public:
+        controller()
+        {}
+        
         /// @brief 
         /// @param path reference to the cgroup path (stored as a member in cgroupv2_t) 
         controller(const fs::path& path) : cgrp_path_(&path) {}
@@ -254,6 +257,9 @@ namespace cgroup
     class cgroupv2_t
     {
     public:
+        cgroupv2_t()
+        {}
+        
         /// @brief 
         /// @param rel_cgrp_path Relative path of the cgroup (excluding the path to the cgroup filesystem).
         cgroupv2_t(const fs::path& rel_cgrp_path) : cgrp_path_(ROOT_CG_PATH() / rel_cgrp_path),
@@ -291,7 +297,7 @@ namespace cgroup
         void enable_all_cntrlrs()
         {
             if(!(cpu_.enable() && mem_.enable() && pid_.enable()))
-                { terminate("Failed to enable cgroup controllers"); }
+                { terminate("Failed to enable cgroup controllers in {}", cgrp_path_.string()); }
         }
 
         /// @brief Add the current process to this cgroup ( the current PID to the cgroup.procs file).
@@ -392,11 +398,11 @@ namespace cgroup
                         pid_(ROOT_CG_PATH())
         {}
 
-        /// @brief Enable all relevant controllers (cpu, memory, pids) for child cgroups.
+        /// @brief Enable relevant controllers (cpu, memory, pids) for child cgroups.
         void enable_all_cntrlrs()
         {
             if(!(cpu_.enable() && mem_.enable() && pid_.enable()))
-                { terminate("Failed to enable cgroup controllers"); }
+                { terminate("Failed to enable cgroup controllers in the root cgroup"); }
         }
         
     private:
@@ -417,15 +423,20 @@ namespace cgroup
     class proxy_cgroup_manager
     {
     public:
+        /// @brief Prepare the proxy cgroup hierarchy. Has to be run AFTER proxy_mount_manager::run().
+        /// @details The task_supervisor class is responsible for the task cgroup, so this effectively only enables controllers.
         void run()
         {
             leaf_cgrp_ = std::make_unique<cgroupv2_t>("proxy_leaf");
-            leaf_cgrp_->add_me();
-            root_cgrp_ = std::make_unique<root_cgroupv2_t>();
-            root_cgrp_->enable_all_cntrlrs();
+            if(!leaf_cgrp_->add_me())
+                { terminate("Failed to move the proxy process to its cgroup"); }
+            root_cgrp_.enable_all_cntrlrs();
         }
     private:
-        std::unique_ptr<root_cgroupv2_t> root_cgrp_;
+        /// @brief Interface for the root cgroup (/sys/fs/cgroup).
+        root_cgroupv2_t root_cgrp_;
+        
+        /// @brief The proxy process is placed here because we cant enable controllers in a populated cgroup.
         std::unique_ptr<cgroupv2_t> leaf_cgrp_;
     };
 
@@ -436,7 +447,10 @@ namespace cgroup
         root_cgroup_manager()
         {}
         
-        root_cgroup_manager(const config::root_interface& config, credentials::root_credentials_manager& credentials) : 
+        /// @brief 
+        /// @param config
+        /// @param credentials
+        root_cgroup_manager(const config::root_configuration& config, credentials::root_credentials_manager& credentials) : 
         config_(&config), 
         credentials_(&credentials)
         {}
@@ -446,37 +460,50 @@ namespace cgroup
             cleanup();
         }
 
+        /// @brief Setup the box and proxy cgroup.
         void run()
         {
-            fs::path root_cg = config_->get_box_cgroup(fs::path(std::to_string(credentials_->box_id()))) ;
-            root_cgrp_ = std::move(std::make_unique<cgroupv2_t>(root_cg));
-            leaf_cgrp_ = std::move(std::make_unique<cgroupv2_t>(root_cg / fs::path("leaf")));
-            proxy_cgrp_ = std::move(std::make_unique<cgroupv2_t>(root_cg / fs::path("proxy")));
+            fs::path box_cg = config_->get_box_cgroup(fs::path(std::to_string(credentials_->box_id()))) ;
+            box_cgrp_   = std::make_unique<cgroupv2_t>(box_cg);
+            leaf_cgrp_  = std::make_unique<cgroupv2_t>(box_cg / fs::path("leaf"));
+            proxy_cgrp_ = std::make_unique<cgroupv2_t>(box_cg / fs::path("proxy"));
+
+            root_cgrp_.enable_all_cntrlrs();
             leaf_cgrp_->add_me();
-            root_cgrp_->enable_all_cntrlrs();
+            box_cgrp_->enable_all_cntrlrs();
         }
 
+        /// @brief Open a file descriptor pointing to the proxy cgroup directory (used in clone3() with the CLONE_INTO_CGROUP flag).
+        /// @return open() return value.
         int open_proxy_fd()
         {
             return proxy_cgrp_->open_fd();
         }
 
+        /// @brief Close the fd pointing to the proxy cgroup directory (won't fail if it isn't open).
         void close_proxy_fd()
         {
             proxy_cgrp_->close_fd();
         }
     private:
-        const config::root_interface* config_;
+        /// @brief 
+        const config::root_configuration* config_;
+        
+        /// @brief 
         const credentials::root_credentials_manager* credentials_;
-        std::unique_ptr<cgroup::cgroupv2_t> root_cgrp_;
+        
+        /// @brief Interface for the root cgroup (/sys/fs/cgroup).
+        root_cgroupv2_t root_cgrp_;
+        
+        /// @brief The root cgroup of this box.
+        std::unique_ptr<cgroup::cgroupv2_t> box_cgrp_;
+        
+        /// @brief The cgroup for the proxy and the root of the cgroup namespace that the proxy runs in.
         std::unique_ptr<cgroup::cgroupv2_t> proxy_cgrp_;
+        
+        /// @brief The root process is placed here because we cant enable controllers in a populated cgroup.
         std::unique_ptr<cgroup::cgroupv2_t> leaf_cgrp_;
 
-        void setup_proxy_cgroup()
-        {
-            //proxy_cgrp_.enable_all_cntrlrs();
-        }
-        
         void cleanup()
         {
             proxy_cgrp_->close_fd();

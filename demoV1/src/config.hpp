@@ -575,12 +575,12 @@ namespace config
     };
 
     /**
-     * @class root_interface
+     * @class root_configuration
      */
-    class root_interface
+    class root_configuration
     {
     public:
-        root_interface(int argc, char** argv) 
+        root_configuration(int argc, char** argv) 
         {
             parse_options(argc, argv);
         }
@@ -699,7 +699,6 @@ namespace config
             YAML::Node config = YAML::LoadFile(f);
             proxy_config_ = proxy_config(config);          
         }
-        
     };
 }
 
