@@ -151,7 +151,7 @@ namespace container_core
         {
             auto& proxy_conf = root_intfc_.get_proxy_config();
             logs::debug("Calling clone3 for the proxy process");
-            pid_t outside_pid = clone3_proxy(proxy_conf, nullptr, cg_mngr_.open_proxy_fd());
+            pid_t outside_pid = clone3_proxy(proxy_conf, cg_mngr_.open_proxy_fd());
 
             if (outside_pid < 0)
                 { terminate("Cannot run the proxy process, clone3 failed. Errno: {}", errno); }
@@ -182,6 +182,20 @@ namespace container_core
             
             logs::debug("Proxy exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
         }
+
+        /// @brief Generate clone_args struct for cloning the proxy process.
+        /// @param proxy_conf Proxy configuration node.
+        /// @param cgrp_fd FD of cgroup to launch proxy in.
+        /// @return 
+        clone_args proxy_clone_args(const config::proxy_config& proxy_conf, uint64_t cgrp_fd)
+        {
+            clone_args args{0};
+            args.exit_signal = SIGCHLD;
+            args.flags = config::DEFAULT_CLONE_FLAGS | CLONE_INTO_CGROUP;
+
+            args.cgroup = cgrp_fd;
+            return args; 
+        }
         
         void generate_results()
         {
@@ -197,6 +211,16 @@ namespace container_core
             
             if(!fs::create_directories(dir))
                 { terminate("Failed to create box directory"); }
+        }
+
+        /// @brief Launch the proxy process with clone3().
+        /// @param config Proxy configuration node.
+        /// @param cgrp_fd FD of the cgroup to launch proxy in.
+        /// @return PID of the proxy process.
+        pid_t clone3_proxy(const config::proxy_config& config, uint64_t cgrp_fd)
+        {
+            auto args = proxy_clone_args(config, cgrp_fd);
+            return syscall(SYS_clone3, &args, sizeof(clone_args));
         }
     };
 

@@ -45,6 +45,7 @@ namespace tasks
         {
             auto r_usage = get_children_rusage();
 
+
             return config::task_stats   {
                                 .exited_normally = WIFEXITED(stat),
                                 .signalled = WIFSIGNALED(stat),
@@ -61,7 +62,7 @@ namespace tasks
                                 };
         }
 
-        config::task_stats wait_for_task(pid_t pid)
+        config::task_stats wait_for_task(pid_t task_pid)
         {
             int stat{};
             pid_t p;
@@ -70,7 +71,7 @@ namespace tasks
 
             while(true)
             {
-                p = waitpid(pid, &stat, WNOHANG);
+                p = waitpid(task_pid, &stat, WNOHANG);
 
                 if (p < 0)
                 {
@@ -87,8 +88,8 @@ namespace tasks
                     else
                     {
                         logs::debug("task killed for exceeding wall time limit");
-                        kill(pid, SIGKILL);
-                        p = waitpid(pid, &stat, 0);
+                        kill(task_pid, SIGKILL);
+                        p = waitpid(task_pid, &stat, 0);
                         break;
                     }
                     
@@ -104,7 +105,7 @@ namespace tasks
             logs::debug("Calling clone3 for \"{}\"", task_config_->exec_path().string());
             auto fd = task_cgrp_.open_fd();
 
-            pid_t outside_pid = clone3_task(*task_config_, stack_, fd);
+            pid_t outside_pid = clone3_task(stack_, fd);
 
             if (outside_pid < 0)
             {
@@ -115,12 +116,45 @@ namespace tasks
             {
                 set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use cgroup freezer.
                 credentials_->switch_to_box();
-                cpp_execve(task_config_->exec_path(), task_config_->exec_args());
+                execve_wrapper(task_config_->exec_path(), task_config_->exec_args());
 
                 // We should never get here
                 terminate("Execve failed. Errno: {}", errno);
             }
             return outside_pid;
+        }
+
+        pid_t clone3_task(void* stack, uint64_t cgrp_fd)
+        {
+            auto args = task_clone_args(*task_config_, stack, cgrp_fd);
+            return syscall(SYS_clone3, &args, sizeof(clone_args));
+        }
+
+        /// @brief 
+        /// @param task_conf 
+        /// @param stack 
+        /// @param cgrp_fd 
+        /// @return 
+        clone_args task_clone_args(const config::task_config& task_conf, void* stack, uint64_t cgrp_fd)
+        {
+            clone_args args{0};
+            args.exit_signal = SIGCHLD;
+            args.flags = CLONE_INTO_CGROUP;
+
+            args.cgroup = cgrp_fd;
+            return args;
+        }
+
+        /// @brief 
+        /// @param exec Path to executable.
+        /// @param args Vector of arguments.
+        /// @return execve() return value.
+        int execve_wrapper(const fs::path& exec, std::vector<std::string>& args)
+        {
+            auto cargs = convert_to_argv(args);
+            static char *environ[] = { NULL };
+            
+            return execve(exec.c_str(), cargs.data(), environ);
         }
 
         int get_cgrp_fd()
@@ -198,6 +232,21 @@ namespace tasks
             return std::chrono::milliseconds(1000);
         }
 
+        rusage get_children_rusage()
+        {
+            rusage r_usage;
+            if(getrusage(RUSAGE_CHILDREN, &r_usage))
+                { logs::error("getrusage() failed"); }
+            return r_usage;
+        }
+
+        /// @brief Get total CPU time used by the process from rusage structure.
+        /// @param r_usage 
+        /// @return CPU time in microseconds.
+        long rusage_total_time_usec(const rusage& r_usage)
+        {
+            return (r_usage.ru_utime.tv_sec + r_usage.ru_stime.tv_sec)*1000000 + r_usage.ru_utime.tv_usec + r_usage.ru_utime.tv_usec;
+        }
     };
     
     class task_manager

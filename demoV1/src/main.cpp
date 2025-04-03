@@ -22,5 +22,5 @@ int main(int argc, char ** argv)
     container_core::root_core core(argc, argv);
     core.run();
     
-    std::cout << "finished!" << std::endl;
+    logs::info("Finished!");
 }

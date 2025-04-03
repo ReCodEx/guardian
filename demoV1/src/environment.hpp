@@ -301,6 +301,9 @@ namespace env
             return res;           
         }
         
+        /// @brief Check if a rule escapes outside the box.
+        /// @param rule 
+        /// @return True, unless the rule is a device or filesystem.
         static bool rule_escapes_box(const config::dir_rule_config& rule)
         {
             return !(rule.dev() || rule.fs()); 
