@@ -24,7 +24,7 @@ namespace tasks
     public:
         task_supervisor(config::task_config& conf, credentials::proxy_credentials_manager& credentials) :   task_config_(&conf),
                                                                                                             credentials_(&credentials),
-                                                                                                            task_cgrp_(conf.cg_rel_path())
+                                                                                                            task_cgrp_(conf.name())
         {}
 
         config::task_stats run_task()
@@ -125,7 +125,7 @@ namespace tasks
 
         int get_cgrp_fd()
         {
-            fs::path cg_path(cgroup::cg_abs_path(task_config_->cg_rel_path()));
+            fs::path cg_path(cgroup::cg_abs_path(task_config_->name()));
             return open(cg_path.c_str(), O_DIRECTORY | O_RDONLY);
         }
 

@@ -22,11 +22,8 @@ namespace credentials
     public:
         root_credentials_manager() {}
         
-        /**
-         * @brief Constructor
-         * @param config Reference to the config class.
-         * @see root_interface
-         */
+        /// @brief
+        /// @param config
         root_credentials_manager(const config::credentials_config& config) : config_(&config)
         {}
         

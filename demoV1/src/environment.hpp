@@ -13,21 +13,27 @@ namespace env
 {
     namespace fs = std::filesystem;
 
+    /// @brief Manager class for the mount namespace of the proxy and box.
     class proxy_mount_manager
     {
     public:
-        proxy_mount_manager(const config::proxy_config* proxy_config) : proxy_config_(proxy_config)
+        /// @brief 
+        /// @param proxy_config Reference to proxy configuration node.
+        proxy_mount_manager(const config::proxy_config& proxy_config) : proxy_config_(&proxy_config)
         {}
 
         void run()
         {
+            /// First rslave the box root so that mounts don't propagate.
             make_root_rslave();
             mount_pivot_dir();
             mount_cgroup();
         }
     private:
+        /// @brief Proxy configuration node.
         const config::proxy_config* proxy_config_;
 
+        /// @brief Create a mount point at the box root directory.
         void mount_pivot_dir()
         {
             //the directory that we pivot_root to has to be a mount point
@@ -36,6 +42,7 @@ namespace env
                 { terminate("failed to bind mount the pivot directory, errno: {}", errno); }
         }
         
+        /// @brief Don't propagate mount events under box root to other namespaces.
         void make_root_rslave()
         {
             //don't propagate mount events to other namespaces
@@ -44,6 +51,7 @@ namespace env
                 { terminate("failed to change propagation type of root mount, errno: {}", errno); }
         }
 
+        /// @brief Mount cgroup filesystem into the box.
         void mount_cgroup()
         {
             //remount cgroup filesystem into the box
@@ -65,12 +73,17 @@ namespace env
         }
     };
 
+    /// @brief Supervisor class implementing a single directory rule (TODO: link to documentation)
     class dir_rule_supervisor
     {
     public:
+        /// @brief 
+        /// @param rule Reference to the rule configuration.
+        /// @param creds Reference to credentials manager (to chown() box directories to box UID/GID).
         dir_rule_supervisor(const config::dir_rule_config& rule, const credentials::proxy_credentials_manager& creds) : rule_(&rule), credentials_(&creds)
         {}
 
+        /// @brief Apply the rule - mount an outside/temporary directory or filesystem into the box.
         void apply()
         {
             auto& in = rule_->in_dir();
@@ -101,6 +114,7 @@ namespace env
             }
         }
         
+        /// @brief Create necessary directories for the rule.
         void create_directories()
         {
             create_inner_dir();
@@ -108,34 +122,45 @@ namespace env
             if(dummy_dir_) { create_dummy_dir(); }
         }
         
+        /// @brief Remember a dummy directory created for this rule to clean it up later.
+        /// @param dir Path to the directory.
         void add_dummy_dir(const fs::path& dir)
         {
             dummy_dir_ = dir;
         }
 
     private:
+        /// @brief The rule configuration.
         const config::dir_rule_config* rule_;
+        
+        /// @brief Credentials manager to get box UID/GID.
         const credentials::proxy_credentials_manager* credentials_;
         
+        /// @brief Remember a dummy directory if it was created, to clean it up later.
         std::optional<fs::path> dummy_dir_;
         
+        /// @brief Create the inner directory of the rule.
         void create_inner_dir()
         {
             logs::debug("Checking for inner dir {}", rule_->in_dir().string());
             create_dir(rule_->in_dir());
         }
     
+        /// @brief Create an outer directory for a temp rule.
         void create_outer_temp_dir()
         {
             create_dir(rule_->out_dir());
         }
 
+        /// @brief Create a dummy directory for a nested mount.(TODO: link to documentation)
         void create_dummy_dir()
         {
             logs::debug("Checking for dummy dir: {}", dummy_dir_.value().string());
             create_dir(dummy_dir_.value());
         }
         
+        /// @brief Create a directory and chmod + chown it to the box credentials.
+        /// @param dir Path of the directory.
         void create_dir(const fs::path& dir)
         {
             if(!fs::is_directory(dir))
@@ -153,6 +178,8 @@ namespace env
                 { terminate("chmod() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
         }
 
+        /// @brief Get default mount() flags common for all types of rules.
+        /// @return Flags parameter for mount() syscall.
         unsigned long default_flags()
         {
             unsigned long flags = 0;
@@ -164,9 +191,13 @@ namespace env
         }
     };
 
+    /// @brief Manager class for the box directory tree.
     class box_fs_manager
     {
     public:
+        /// @brief 
+        /// @param fs_config Reference to box fs node of configuration.
+        /// @param credentials Reference to credentials manager to get box UID/GID for chown().
         box_fs_manager(const config::box_fs_config& fs_config, credentials::proxy_credentials_manager& credentials) :   fs_config_(&fs_config),
                                                                                                                         credentials_(&credentials)
         {}
@@ -177,15 +208,20 @@ namespace env
         }
 
     private:
+        /// @brief Pointer to box fs node of configuration.
         const config::box_fs_config* fs_config_;
+        
+        /// @brief Pointer to credentials manager to get box UID/GID for chown().
         credentials::proxy_credentials_manager* credentials_;
 
         void construct_box_fs()
         {
+            /// We create mount points for all rules first (TODO: security trick from Isolate)
             create_mount_points();
             apply_rules();
         }
         
+        /// @brief Apply all rules. Assumes all needed directories exist.
         void apply_rules()
         {
             if(fs_config_->use_default_rules())
@@ -204,6 +240,7 @@ namespace env
             }
         }
         
+        /// @brief Create the directories for all rules first, detects and remembers created dummy directories.
         void create_mount_points()
         {
             std::vector<std::tuple<fs::path,fs::path>> mount_points;
@@ -221,6 +258,9 @@ namespace env
             }
         }
 
+        /// @brief Create directories of a single rule. Detects and remembers created dummy directories.
+        /// @param mount_points Previous mount points inside the box that escape to the outside.
+        /// @param rule Config of the rule.
         void create_directories_for_rule(std::vector<std::tuple<fs::path, fs::path>>& mount_points, const config::dir_rule_config& rule)
         {
             dir_rule_supervisor drs(rule, *credentials_);
@@ -238,6 +278,10 @@ namespace env
             drs.create_directories();
         }
 
+        /// @brief Detect if a new mount inside the box needs a dummy directory and return the path.
+        /// @param mount_points Previous mount points inside the box that escape to the outside.
+        /// @param new_path The inner path of the current rule.
+        /// @return Outside path of the dummy directory, if it needs to be created. No value otherwise.
         static std::optional<fs::path> potential_dummy_dir(const std::vector<std::tuple<fs::path, fs::path>>& mount_points, const fs::path& new_path)
         {
             fs::path longest_prefix;

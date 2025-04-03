@@ -15,6 +15,10 @@ namespace devices
 {
     namespace fs = std::filesystem;
 
+    /// @brief Find the device (filesystem) where a directory resides.
+    /// @note Needed for setting up disk quota.
+    /// @param p Path to the directory.
+    /// @return Name of the device.
     inline std::string find_device_for_dir(const fs::path& p)
     {
         struct stat st;
