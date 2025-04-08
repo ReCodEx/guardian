@@ -56,32 +56,32 @@ namespace process_utils
 
     //     //we will skip trying to allocate a stack for now.
 
-    //     //args.stack = ptr_to_u64(stack);
-    //     //args.stack_size = task_conf.stack_size;
+//     //args.stack = ptr_to_u64(stack);
+//     //args.stack_size = task_conf.stack_size;
 
-    //     args.cgroup = cgrp_fd;
-    //     return args;
-    // }
-    
-    
-    // inline clone_args proxy_clone_args(const config::proxy_config& proxy_conf, void* stack, uint64_t cgrp_fd)
-    // {
-    //     clone_args args{0};
-    //     args.exit_signal = SIGCHLD;
-    //     args.flags = config::DEFAULT_CLONE_FLAGS | CLONE_INTO_CGROUP;
+//     args.cgroup = cgrp_fd;
+//     return args;
+// }
 
-    //     args.cgroup = cgrp_fd;
-    //     return args; 
-    // }
 
-    /// @brief Convert an std::vector<std::string> to nullptr terminated std::vector<char*>.
-    /// @param args 
-    /// @return 
-    auto convert_to_argv(std::vector<std::string>& args)
-    {
-        std::vector<char*> cstrings{};
+// inline clone_args proxy_clone_args(const config::proxy_config& proxy_conf, void* stack, uint64_t cgrp_fd)
+// {
+//     clone_args args{0};
+//     args.exit_signal = SIGCHLD;
+//     args.flags = config::DEFAULT_CLONE_FLAGS | CLONE_INTO_CGROUP;
 
-        for(auto&& string : args)
+//     args.cgroup = cgrp_fd;
+//     return args; 
+// }
+
+/// @brief Convert an std::vector<std::string> to nullptr terminated std::vector<char*>.
+/// @param args 
+/// @return 
+auto convert_to_argv(std::vector<std::string>& args)
+{
+    std::vector<char*> cstrings{};
+
+    for(auto&& string : args)
         {
             cstrings.emplace_back(string.data());
         }

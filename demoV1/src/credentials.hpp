@@ -2,6 +2,7 @@
 #define CREDENTIALS
 
 #include <random>
+#include <filesystem>
 
 #include <sys/types.h>
 #include <grp.h>
@@ -11,6 +12,8 @@
 
 namespace credentials
 {
+    namespace fs = std::filesystem;
+
     /**
      * @class root_credentials_manager
      * @brief Responsible for assigning credentials (box_id, UID/GID) used by the box.
@@ -35,6 +38,8 @@ namespace credentials
             orig_uid_ = getuid();
             orig_gid_ = getgid();
             assign_box_ids();
+            box_root_ = assign_box_root(box_id_);
+            box_cgroup_ = assign_box_cgroup(box_id_);
         }
             
         /**
@@ -76,7 +81,18 @@ namespace credentials
         {
             return box_gid_;
         }
+        
+        /// @brief Getter for the assigned box root cgroup.
+        const fs::path& box_cgroup() const
+        {
+            return box_cgroup_;
+        }
 
+        /// @brief Getter for the assigned box root directory.
+        const fs::path& box_root() const
+        {
+            return box_root_;
+        }
     private:
         /// @brief  Pointer to the config class
         const config::credentials_config* config_;
@@ -95,7 +111,13 @@ namespace credentials
 
         /// @brief The original GID as which the container was launched.
         gid_t orig_gid_;
+
+        /// @brief Root directory for the tree visible by the box.
+        fs::path box_root_;
         
+        /// @brief Root directory for the tree visible by the box.
+        fs::path box_cgroup_;
+
         static constexpr uid_t box_uid_range_start_ = 60000;
         
         /**
@@ -111,6 +133,16 @@ namespace credentials
             box_id_ = dist(gen);
             box_uid_ = box_uid_range_start_ + box_id_;
             box_gid_ = box_uid_;
+        }
+        
+        fs::path assign_box_root(uid_t box_id)
+        {
+            return config_->boxes_dir() / fs::path(std::to_string(box_id));
+        }
+        
+        fs::path assign_box_cgroup(uid_t box_id)
+        {
+            return fs::path(std::to_string(box_id));
         }
     };
 
@@ -179,6 +211,19 @@ namespace credentials
             auto box_uid = credentials_root_->box_uid();
             if(setresuid(box_uid, box_uid, box_uid) < 0)
                 { terminate("Couldn't switch to box UID, errno: {}", errno); }
+        }
+        
+        /// @brief Getter for box root directory assigned by root_credentials_manager().
+        const fs::path& box_root() const
+        {
+            return credentials_root_->box_root();
+        }
+
+        /// @brief Getter for box root cgroup assigned by root_credentials_manager().
+        const fs::path& box_cgroup() const
+        {
+            logs::debug("box cgroup test: {}", credentials_root_->box_cgroup().string());
+            return credentials_root_->box_cgroup();
         }
 
     private:

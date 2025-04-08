@@ -32,7 +32,7 @@ namespace config
     namespace defaults
     {
         constexpr auto BOXES_DIR = "/isolate_boxes";
-        constexpr auto BOXES_CGROUP = "isolate_boxes";
+        constexpr auto BOXES_CGROUP = "/sys/fs/cgroup/isolate_boxes";
     }
 
     constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWCGROUP | CLONE_NEWUTS;  //user namespaces might not always be supported
@@ -384,9 +384,9 @@ namespace config
     class dir_rule_config
     {
     public:
-        dir_rule_config(const std::string& rule, const fs::path& box_root) : rule_(rule)
+        dir_rule_config(const std::string& rule) : rule_(rule)
         {
-            construct_rule(rule, box_root);
+            construct_rule(rule);
         }
          
         const fs::path& in_dir() const      { return inner_; }
@@ -425,7 +425,7 @@ namespace config
         /// @brief 
         /// @param rule 
         /// @param box_root 
-        void construct_rule(const std::string& rule, const fs::path& box_root)
+        void construct_rule(const std::string& rule)
         {
             std::regex rule_regex(rule_regex_);
             std::smatch m;
@@ -451,7 +451,7 @@ namespace config
                 { terminate("Invalid options in fs-rule: {}", options_token.str()); }
 
             parse_options(options);
-            inner_ = box_root / inner;
+            inner_ = inner;
             outer_ = fs::path("/") / (outer ? outer.value() : inner);
         }
         
@@ -506,9 +506,8 @@ namespace config
         /// @brief 
         /// @param box_root 
         /// @param env_node 
-        box_fs_config(const fs::path& box_root, const YAML::Node& env_node)
+        box_fs_config(const YAML::Node& env_node)
         {
-            box_root_ = box_root;
             if(!env_node) { _default(); }
             else
             {
@@ -522,11 +521,6 @@ namespace config
         {
             return rules_;
         }
-
-        const auto& box_root() const
-        {
-            return box_root_;
-        }
         
         bool use_default_rules() const
         {
@@ -539,8 +533,6 @@ namespace config
         }
               
     private:
-        fs::path box_root_;
-        
         /// @brief User defined directory rules.
         std::vector<dir_rule_config>   rules_;
         
@@ -554,20 +546,20 @@ namespace config
         {
             for(std::size_t i = 0; i < rules_list.size(); i++)
             {
-                rules_.emplace_back(dir_rule_config(rules_list[i].as<std::string>(), box_root_));
+                rules_.emplace_back(dir_rule_config(rules_list[i].as<std::string>()));
             }
         }
         
         void add_default_rules()
         {
             //default_rules_.emplace_back(dir_rule("box=./box:rw"));
-            default_rules_.emplace_back(dir_rule_config("bin", box_root()));
-            default_rules_.emplace_back(dir_rule_config("dev:dev", box_root()));
-            default_rules_.emplace_back(dir_rule_config("lib", box_root()));
-            default_rules_.emplace_back(dir_rule_config("lib64:maybe,rw", box_root()));
-            default_rules_.emplace_back(dir_rule_config("proc=proc:fs", box_root()));
+            default_rules_.emplace_back(dir_rule_config("bin"));
+            default_rules_.emplace_back(dir_rule_config("dev:dev"));
+            default_rules_.emplace_back(dir_rule_config("lib"));
+            default_rules_.emplace_back(dir_rule_config("lib64:maybe,rw"));
+            default_rules_.emplace_back(dir_rule_config("proc=proc:fs"));
             //default_rules_.emplace_back(dir_rule("tmp:tmp"));
-            default_rules_.emplace_back(dir_rule_config("usr", box_root())); 
+            default_rules_.emplace_back(dir_rule_config("usr")); 
         }
         
         void _default()
@@ -578,6 +570,18 @@ namespace config
 
     class credentials_config
     {
+    public:
+        static const fs::path& boxes_dir()
+        {
+            static fs::path p(defaults::BOXES_DIR);
+            return p;
+        } 
+
+        static const fs::path& boxes_cgroup()
+        {
+            static fs::path p(defaults::BOXES_CGROUP);
+            return p;
+        } 
     };
     
     /// @brief Configuration class for the proxy process.
@@ -593,12 +597,8 @@ namespace config
             }
             else
             {
-                if(proxy_node[config_options::env::BOX_ROOT]) { box_root_ =  fs::path(proxy_node[config_options::env::BOX_ROOT].as<std::string>()); }
-                else { box_root_ = default_box_root(); }
-                
                 tasks_ = tasks_config(proxy_node[config_options::TASKS]);
-                
-                box_fs_ = box_fs_config(box_root_, proxy_node[config_options::ENVIRONMENT]);
+                box_fs_ = box_fs_config(proxy_node[config_options::ENVIRONMENT]);
             }
         }
         
@@ -650,7 +650,7 @@ namespace config
             return proxy_config_;
         }
         
-        fs::path get_box_dir(fs::path rel) const
+        fs::path get_box_root(fs::path rel) const
         {
             return boxes_dir() / rel;
         }

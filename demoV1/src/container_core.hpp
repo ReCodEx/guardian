@@ -22,7 +22,7 @@ namespace container_core
     public:
         proxy_core(const config::proxy_config& config, credentials::root_credentials_manager& root_creds) :  proxy_config_(&config),
                                                     credentials_mngr_(root_creds),
-                                                    mount_mngr_(config), 
+                                                    mount_mngr_(config, credentials_mngr_), 
                                                     fs_manager_(config.fs_config(), credentials_mngr_),
                                                     cg_mngr_(),
                                                     task_runner_(config.get_tasks_config(), credentials_mngr_)
@@ -86,7 +86,7 @@ namespace container_core
         /// @brief Change root to the root of box directory tree.
         void pivot_root()
         {
-            auto& box_root = proxy_config_->box_root();
+            auto& box_root = credentials_mngr_.box_root();
             auto put_old = box_root / fs::path("old_root");
 
             if(!fs::is_directory(put_old))
@@ -112,7 +112,7 @@ namespace container_core
     class root_core
     {
     public:
-        root_core(int argc, char** argv) : root_intfc_(argc, argv), credentials_(), cg_mngr_(root_intfc_, credentials_)
+        root_core(int argc, char** argv) : root_config_(argc, argv), credentials_(), cg_mngr_(root_config_, credentials_)
         {
             logs::init_default_logger();
             logs::info("Hello world from container!");
@@ -129,7 +129,7 @@ namespace container_core
 
     private:
         /// @brief Internal representation of container configuration.
-        config::root_configuration root_intfc_;
+        config::root_configuration root_config_;
 
         /// @brief Responsible for assigning credentials (box_id, UID/GID) used by the box.
         credentials::root_credentials_manager credentials_;
@@ -146,10 +146,10 @@ namespace container_core
         }
 
         /// @brief Clone the proxy process in new namespaces and assigned cgroup. 
-        /// @return PID of the proxy (returned by clone())
+        /// @return PID of the proxy returned by clone()
         pid_t spawn_proxy()
         {
-            auto& proxy_conf = root_intfc_.get_proxy_config();
+            auto& proxy_conf = root_config_.get_proxy_config();
             logs::debug("Calling clone3 for the proxy process");
             pid_t outside_pid = clone3_proxy(proxy_conf, cg_mngr_.open_proxy_fd());
 
@@ -205,7 +205,7 @@ namespace container_core
         /// @note Terminates if the directory already exists.
         void create_box_dir()
         {
-            auto dir = root_intfc_.get_box_dir(fs::path(std::to_string(credentials_.box_id())));
+            auto dir = credentials_.box_root();
             if(fs::is_directory(dir))
                 { terminate("Directory intended for box already exists!"); }
             

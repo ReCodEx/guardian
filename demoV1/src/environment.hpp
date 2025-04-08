@@ -19,7 +19,8 @@ namespace env
     public:
         /// @brief 
         /// @param proxy_config Reference to proxy configuration node.
-        proxy_mount_manager(const config::proxy_config& proxy_config) : proxy_config_(&proxy_config)
+        proxy_mount_manager(const config::proxy_config& proxy_config, const credentials::proxy_credentials_manager& credentials) :  proxy_config_(&proxy_config),
+                                                                                                                                    credentials_(&credentials)
         {}
 
         void run()
@@ -32,12 +33,13 @@ namespace env
     private:
         /// @brief Proxy configuration node.
         const config::proxy_config* proxy_config_;
+        const credentials::proxy_credentials_manager* credentials_;
 
         /// @brief Create a mount point at the box root directory.
         void mount_pivot_dir()
         {
             //the directory that we pivot_root to has to be a mount point
-            auto& box_root = proxy_config_->box_root();
+            auto& box_root = credentials_->box_root();
             if(mount(box_root.c_str(), box_root.c_str(), nullptr, MS_REC | MS_BIND, nullptr))
                 { terminate("failed to bind mount the pivot directory, errno: {}", errno); }
         }
@@ -55,15 +57,12 @@ namespace env
         void mount_cgroup()
         {
             //remount cgroup filesystem into the box
-            auto box_cg_root = proxy_config_->box_root() /  cgroup::ROOT_CG_PATH().relative_path();
+            auto box_cg_root = credentials_->box_root() / fs::path("sys/fs/cgroup");
 
-            if(!fs::is_directory(box_cg_root))
-            { 
-                logs::debug("Creating directory: {}",box_cg_root.string());
+            logs::debug("Creating directory: {}",box_cg_root.string());
 
-                if(!fs::create_directories(box_cg_root))
-                    { terminate("Failed to create directory for the cgroup fs ({})", box_cg_root.string()); } 
-            } 
+            if(!fs::create_directories(box_cg_root))
+                { terminate("Failed to create directory for the cgroup fs ({})", box_cg_root.string()); } 
 
             if(umount(cgroup::ROOT_CG_PATH().c_str()))
                 { terminate("failed to unmount cgroup filesystem, errno: {}", errno); }
@@ -86,7 +85,7 @@ namespace env
         /// @brief Apply the rule - mount an outside/temporary directory or filesystem into the box.
         void apply()
         {
-            auto& in = rule_->in_dir();
+            auto in = credentials_->box_root() / rule_->in_dir();
             auto& out = rule_->out_dir();
             auto flags = default_flags();
 
@@ -143,7 +142,7 @@ namespace env
         void create_inner_dir()
         {
             logs::debug("Checking for inner dir {}", rule_->in_dir().string());
-            create_dir(rule_->in_dir());
+            create_dir(credentials_->box_root() / rule_->in_dir());
         }
     
         /// @brief Create an outer directory for a temp rule.
@@ -266,13 +265,14 @@ namespace env
             dir_rule_supervisor drs(rule, *credentials_);
             if(rule_escapes_box(rule))
             {
-                auto dummy_dir = potential_dummy_dir(mount_points, rule.in_dir());
+                auto inner = credentials_->box_root() / rule.in_dir();
+                auto dummy_dir = potential_dummy_dir(mount_points, inner);
                 if(dummy_dir) 
                 {
                     logs::debug("Potential dummy dir: {}", dummy_dir.value().string()); 
                     drs.add_dummy_dir(dummy_dir.value()); 
                 }
-                mount_points.emplace_back(std::tuple(rule.in_dir(), rule.out_dir()));
+                mount_points.emplace_back(std::tuple(inner, rule.out_dir()));
             }
             
             drs.create_directories();
