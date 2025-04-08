@@ -1,0 +1,6 @@
+tasks:
+    - task-id: "helloworld"
+      path: "/tests/helloworld"
+env:
+  dir-rules:
+    - "tests=/home/kurzs/rcdx_cntnr/demoV1/build/tests"
