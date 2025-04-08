@@ -64,7 +64,7 @@ namespace env
             if(!fs::create_directories(box_cg_root))
                 { terminate("Failed to create directory for the cgroup fs ({})", box_cg_root.string()); } 
 
-            if(umount(cgroup::ROOT_CG_PATH().c_str()))
+            if(umount(cgroup::CGROUP_FS_PATH().c_str()))
                 { terminate("failed to unmount cgroup filesystem, errno: {}", errno); }
             
             if(mount("none", (box_cg_root).c_str(), "cgroup2", 0, nullptr))

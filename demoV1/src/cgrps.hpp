@@ -20,126 +20,10 @@ namespace cgroup
     namespace fs = std::filesystem;
 
     /// @brief The default path to the cgroup virtual filesystem.
-    inline auto const& ROOT_CG_PATH()
+    inline auto const& CGROUP_FS_PATH()
     {
         static fs::path path("/sys/fs/cgroup");
         return path;
-    }
-
-    /// @brief Name of the cgroup.controllers file.
-    /// @return 
-    inline auto const& CGROUP_CONTROLLERS()
-    {
-        static fs::path fname("cgroup.controllers");
-        return fname;
-    }
-
-    /// @brief Name of the cgroup.subtree_control file.
-    /// @return 
-    inline auto const& CGROUP_SUBTREE_CONTROL()
-    {
-        static fs::path fname("cgroup.subtree_control");
-        return fname;
-    }
-
-    /// @brief Name of the cgroup.procs file.
-    /// @return 
-    inline auto const& CGROUP_PROCS()
-    {
-        static fs::path fname("cgroup.procs");
-        return fname;
-    }
-
-    /// @brief Name of the cgroup cpu.max file.
-    /// @return 
-    inline auto const& CPU_MAX()
-    {
-        static fs::path fname("cpu.max");
-        return fname;
-    }
-
-    /// @brief Name of the cgroup cpu.stat file.
-    /// @return 
-    inline auto const& CPU_STAT()
-    {
-        static fs::path fname("cpu.stat");
-        return fname;
-    }
-
-    /// @brief Name of the cgroup memory.max file.
-    /// @return 
-    inline auto const& MEMORY_MAX()
-    {
-        static fs::path fname("memory.max");
-        return fname;
-    }
-
-    /// @brief Name of the cgroup memory.peak file.
-    /// @return 
-    inline auto const& MEMORY_PEAK()
-    {
-        static fs::path fname("memory.peak");
-        return fname;
-    }
-    
-    /// @brief Name of the cgroup memory.min file.
-    /// @return 
-    inline auto const& MEMORY_MIN()
-    {
-        static fs::path fname("memory.min");
-        return fname;
-    }
-
-    /// @brief Name of the cgroup pids.max file.
-    /// @return 
-    inline auto const& PIDS_MAX()
-    {
-        static fs::path fname("pids.max");
-        return fname;
-    }
-
-    /// @brief Prepends the path to the cgroup filesystem to a relative cgroup path.
-    /// @param cg_rel_path
-    /// @return 
-    inline fs::path cg_abs_path(const fs::path& cg_rel_path)
-    {
-        return fs::path(ROOT_CG_PATH() / cg_rel_path);
-    }
-
-    /// @brief Extractor for the cpu time of a cgroup from the cpu.stat file.
-    /// @param cg_rel_path Relative path of the cgroup.
-    /// @return cpu time in microseconds
-    inline size_t cpu_usage_usec_rel(const fs::path& cg_rel_path)
-    {
-        std::ifstream cpu_stat(ROOT_CG_PATH() / cg_rel_path / CPU_STAT());
-        return std::stoi(file_utils::read_row_col(cpu_stat,0,0));
-    }
-
-    /// @brief Extractor for the cpu time of a cgroup from the cpu.stat file.
-    /// @param cg_path Absolute path of the cgroup (including path to the cgroup filesystem).
-    /// @return cpu time in microseconds
-    inline size_t cpu_usage_usec_abs(const fs::path& cg_path)
-    {
-        std::ifstream cpu_stat(cg_path / CPU_STAT());
-        return std::stoi(file_utils::read_row_col(cpu_stat,0,0));
-    }
-
-    /// @brief Extractor for the memory usage of a cgroup from the memory.peak file.
-    /// @param cg_rel_path Relative path of the cgroup (exluding path to the cgroup filesystem). 
-    /// @return memory usage in bytes
-    inline size_t memory_usage_bytes_rel(const fs::path& cg_rel_path)
-    {
-        std::ifstream memory_peak(ROOT_CG_PATH() / cg_rel_path / MEMORY_PEAK());
-        return std::stoi(file_utils::read_row_col(memory_peak,0,0));
-    }
-
-    /// @brief Extractor for the memory usage of a cgroup from the memory.peak file.
-    /// @param cg_path Absolute path of the cgroup (including path to the cgroup filesystem). 
-    /// @return memory usage in bytes
-    inline size_t memory_usage_bytes_abs(const fs::path& cg_path)
-    {
-        std::ifstream memory_peak(cg_path / MEMORY_PEAK());
-        return std::stoi(file_utils::read_row_col(memory_peak,0,0));
     }
 
     /**
@@ -173,6 +57,13 @@ namespace cgroup
             return success;
         }
     private:
+        /// @brief Name of the cgroup.subtree_control file.
+        /// @return 
+        static const fs::path& CGROUP_SUBTREE_CONTROL()
+        {
+            static fs::path fname("cgroup.subtree_control");
+            return fname;
+        }
     };
 
     /// @brief Interface for the cgroup cpu controller.
@@ -182,10 +73,34 @@ namespace cgroup
     public:
         using controller::controller;
 
+        /// @brief Extractor for the total cpu usage of a cgroup from the cpu.stat file.
+        /// @return cpu time in microseconds
+        size_t cpu_usage_usec() const
+        {
+            std::ifstream cpu_stat(*cgrp_path_ / CPU_STAT());
+            return std::stoi(file_utils::read_row_col(cpu_stat,0,0));
+        }
     protected:
+        /// @brief Override the cntrlr_type() with "cpu".
+        /// @return "cpu"
         const std::string& cntrlr_type() const override
         {
             return type;
+        }
+
+    private:
+        /// @brief Name of the cgroup cpu.max file.
+        static const fs::path& CPU_MAX()
+        {
+            static fs::path fname("cpu.max");
+            return fname;
+        }
+
+        /// @brief Name of the cgroup cpu.stat file.
+        static const fs::path& CPU_STAT()
+        {
+            static fs::path fname("cpu.stat");
+            return fname;
         }
     };
 
@@ -221,10 +136,42 @@ namespace cgroup
             
             return success;
         }
+
+        /// @brief Extractor for the memory usage of a cgroup from the memory.peak file.
+        /// @return memory usage in bytes
+        size_t memory_usage_bytes() const
+        {
+            std::ifstream memory_peak(*cgrp_path_ / MEMORY_PEAK());
+            return std::stoi(file_utils::read_row_col(memory_peak,0,0));
+        }
     protected:
         const std::string& cntrlr_type() const override
         {
             return type;
+        }
+    private:
+        /// @brief Name of the cgroup memory.max file.
+        /// @return 
+        static const fs::path& MEMORY_MAX()
+        {
+            static fs::path fname("memory.max");
+            return fname;
+        }
+
+        /// @brief Name of the cgroup memory.peak file.
+        /// @return 
+        static const fs::path& MEMORY_PEAK()
+        {
+            static fs::path fname("memory.peak");
+            return fname;
+        }
+        
+        /// @brief Name of the cgroup memory.min file.
+        /// @return 
+        static const fs::path& MEMORY_MIN()
+        {
+            static fs::path fname("memory.min");
+            return fname;
         }
     };
 
@@ -251,6 +198,13 @@ namespace cgroup
         {
             return type;
         }
+    private:
+        /// @brief Name of the cgroup pids.max file.
+        static const fs::path& PIDS_MAX()
+        {
+            static fs::path fname("pids.max");
+            return fname;
+        }
     };
 
     /// @brief Interface for using a cgroup and its controllers.
@@ -262,7 +216,7 @@ namespace cgroup
         
         /// @brief 
         /// @param rel_cgrp_path Relative path of the cgroup (excluding the path to the cgroup filesystem).
-        cgroupv2_t(const fs::path& rel_cgrp_path) : cgrp_path_(ROOT_CG_PATH() / rel_cgrp_path),
+        cgroupv2_t(const fs::path& rel_cgrp_path) : cgrp_path_(CGROUP_FS_PATH() / rel_cgrp_path),
                                                     cpu_(cgrp_path_),
                                                     mem_(cgrp_path_),
                                                     pid_(cgrp_path_)
@@ -313,14 +267,14 @@ namespace cgroup
         /// @return Cpu time in microseconds.
         size_t cpu_usage_usec() const
         {
-            return cpu_usage_usec_abs(cgrp_path_);
+            return cpu_.cpu_usage_usec();
         }
 
         /// @brief Getter for the amount of memory used by this cgroup.
         /// @return Memory usage in bytes.
         size_t memory_usage_bytes() const
         {
-            return memory_usage_bytes_abs(cgrp_path_);
+            return mem_.memory_usage_bytes();
         }
 
         /// @brief Setup the memory controller so that processes are killed upon exceeding the memory limit.
@@ -345,6 +299,7 @@ namespace cgroup
             auto cgroup_procs(cgrp_path_ / CGROUP_PROCS());
             file_utils::print_lines(cgroup_procs);
         }
+
     private:
         /// @brief Absolute path of the cgroup (including path to the cgroup filesystem).
         const fs::path cgrp_path_;
@@ -360,6 +315,14 @@ namespace cgroup
         
         /// @brief Optional file descriptor used in clone3() with CLONE_INTO_CGROUP.
         std::optional<int> fd_;
+
+        /// @brief Name of the cgroup.procs file.
+        /// @return 
+        static const fs::path& CGROUP_PROCS()
+        {
+            static fs::path fname("cgroup.procs");
+            return fname;
+        }
 
         /// @brief Create the cgroup.
         void init_path()
@@ -392,10 +355,10 @@ namespace cgroup
     class root_cgroupv2_t
     {
     public:
-        root_cgroupv2_t() :  cgrp_path_(ROOT_CG_PATH()),
-                        cpu_(ROOT_CG_PATH()),
-                        mem_(ROOT_CG_PATH()),
-                        pid_(ROOT_CG_PATH())
+        root_cgroupv2_t() :  cgrp_path_(CGROUP_FS_PATH()),
+                        cpu_(CGROUP_FS_PATH()),
+                        mem_(CGROUP_FS_PATH()),
+                        pid_(CGROUP_FS_PATH())
         {}
 
         /// @brief Enable relevant controllers (cpu, memory, pids) for child cgroups.

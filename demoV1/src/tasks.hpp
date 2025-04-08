@@ -157,12 +157,6 @@ namespace tasks
             return execve(exec.c_str(), cargs.data(), environ);
         }
 
-        int get_cgrp_fd()
-        {
-            fs::path cg_path(cgroup::cg_abs_path(task_config_->name()));
-            return open(cg_path.c_str(), O_DIRECTORY | O_RDONLY);
-        }
-
         void set_resource_limits()
         {
             auto& limits = task_config_->rlimits();
