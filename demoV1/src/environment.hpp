@@ -141,13 +141,14 @@ namespace env
         /// @brief Create the inner directory of the rule.
         void create_inner_dir()
         {
-            logs::debug("Checking for inner dir {}", rule_->in_dir().string());
+            logs::debug("Checking for inner directory: {}", rule_->in_dir().string());
             create_dir(credentials_->box_root() / rule_->in_dir());
         }
     
         /// @brief Create an outer directory for a temp rule.
         void create_outer_temp_dir()
         {
+            logs::debug("Creating outer temporary directory: {}", rule_->out_dir().string());
             create_dir(rule_->out_dir());
         }
 
@@ -162,13 +163,13 @@ namespace env
         /// @param dir Path of the directory.
         void create_dir(const fs::path& dir)
         {
-            if(!fs::is_directory(dir))
-            { 
-                logs::debug("Creating directory: {}",dir.string());
+            if(fs::is_directory(dir))
+                { terminate("Directory ({}) to be created already exists!", dir.string()); } 
 
-                if(!fs::create_directory(dir))
-                    { terminate("Failed to create outside directory ({})", dir.string()); } 
-            } 
+            logs::debug("Creating directory: {}",dir.string());
+
+            if(!fs::create_directory(dir))
+                { terminate("Failed to create outside directory ({})", dir.string()); } 
             
             if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
                 { terminate("chown() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
@@ -177,8 +178,7 @@ namespace env
                 { terminate("chmod() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
         }
 
-        /// @brief Get default mount() flags common for all types of rules.
-        /// @return Flags parameter for mount() syscall.
+        /// @brief Get default mount() flags parameter common for all types of rules.
         unsigned long default_flags()
         {
             unsigned long flags = 0;

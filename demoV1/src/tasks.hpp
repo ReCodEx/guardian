@@ -116,6 +116,8 @@ namespace tasks
             {
                 set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use cgroup freezer.
                 credentials_->switch_to_box();
+                optional_chdir();
+                redirect_descriptors();
                 execve_wrapper(task_config_->exec_path(), task_config_->exec_args());
 
                 // We should never get here
@@ -156,7 +158,50 @@ namespace tasks
             
             return execve(exec.c_str(), cargs.data(), environ);
         }
-
+        
+        /// @brief Redirect stdin, stderr, stdout from/to files if specified in the config.
+        void redirect_descriptors()
+        {
+            auto& stdin_f = task_config_->stdin_file(); 
+            if(stdin_f)
+            {
+                if(!std::freopen(stdin_f.value().c_str(), "r", stdin))
+                    { terminate("Couldn't redirect \"{}\" to stdin for task {}", stdin_f.value().string(), task_config_->name()); }
+            }
+            
+            auto& stderr_f = task_config_->stderr_file(); 
+            if(stderr_f)
+            {
+                if(!std::freopen(stderr_f.value().c_str(), "w", stderr))
+                    { terminate("Couldn't redirect stderr to {} for task {}", stderr_f.value().string(), task_config_->name()); }
+            }
+            
+            auto& stdout_f = task_config_->stdout_file(); 
+            if(stdout_f)
+            {
+                if(!std::freopen(stdout_f.value().c_str(), "w", stdout))
+                    { terminate("Couldn't redirect \"{}\" to stdin for task {}", stdout_f.value().string(), task_config_->name()); }
+            }
+            
+            if(task_config_->stderr_to_stdout())
+            {
+                if(dup2(1, 2) < 0)
+                    { terminate("dup2() failed while redirecting stderr to stdout."); }
+            }
+        }
+        
+        /// @brief Change directory before execve() if specified in the config.
+        void optional_chdir()
+        {
+            if(task_config_->chdir())
+            { 
+                auto dir = task_config_->chdir().value(); 
+                logs::debug("Changing directory to {}", dir.string());
+                if(chdir(dir.c_str()))
+                    { terminate("chdir() to {} inside box failed.", dir.string()); }
+            }
+        }
+        
         void set_resource_limits()
         {
             auto& limits = task_config_->rlimits();
