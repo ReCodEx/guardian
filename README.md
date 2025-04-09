@@ -20,12 +20,10 @@ After installing everything required, run the script ```demoV1/scripts/initializ
 
 Build with ```demoV1/scripts/build.sh```
 
-Right now, the program should be launched as follows: ```demoV1/scripts/run.sh --yaml=\<path_to_yaml_configuration_file\>```. The script cleans up and recompiles before running again (aside from the root directory for the box. If it is the same, you have to delete it yourself.) 
+Right now, the program should be launched as follows: ```demoV1/scripts/run.sh --yaml=\<path_to_yaml_configuration_file\>```. The script cleans up and recompiles before running again.
 
 An example configuration file can look like this:
 ```
-box-root: "/box"      #path to the directory that will be the root for the isolated tasks. It is required that it doesn't yet exist, for security purposes. 
-
 env:
   dir-rules:                                 # optional user specified list of directory rules declaring the directories that will exist
                                                             inside the box, the syntax is described [here]()

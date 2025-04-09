@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(TESTING OFF)
 include(FetchContent)
 
-FIND_PACKAGE( Boost 1.78 COMPONENTS program_options REQUIRED )
+FIND_PACKAGE( Boost 1.75 COMPONENTS program_options REQUIRED )
 
 # Fetch spdlog logging library
 FetchContent_Declare(
