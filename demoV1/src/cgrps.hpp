@@ -254,7 +254,7 @@ namespace cgroup
                 { terminate("Failed to enable cgroup controllers in {}", cgrp_path_.string()); }
         }
 
-        /// @brief Add the current process to this cgroup ( the current PID to the cgroup.procs file).
+        /// @brief Add the current process to this cgroup (the current PID to the cgroup.procs file).
         /// @return True if the write succeeded.
         bool add_me()
         {
@@ -278,10 +278,11 @@ namespace cgroup
         }
 
         /// @brief Setup the memory controller so that processes are killed upon exceeding the memory limit.
-        /// @param bytes 
+        /// @param bytes Memory limit in bytes.
         /// @note Swap has to disabled in order for this to work properly.
         void set_strict_memory_limit(size_t bytes)
         {
+            /// TODO: explain memory_min and memory_max.
             mem_.set_memory_max(bytes);
             mem_.set_memory_min_to_max();
         }

@@ -40,6 +40,9 @@ namespace config
     /// @brief Option keywords for the configuration file 
     namespace config_options
     {
+        constexpr auto STATS_YAML = "stats-yaml";
+        constexpr auto CONFIG_YAML = "yaml";
+
         constexpr auto TASKS = "tasks";
         namespace task 
         {
@@ -78,9 +81,6 @@ namespace config
             constexpr auto BOX_ROOT = "box-root";
         }
 
-        constexpr auto TASK_CG = "task-cg";
-        constexpr auto STATS_YAML = "stats-yaml";
-        constexpr auto CONFIG_YAML = "yaml";
     }
 
     /// @brief Keywords for the results file.
@@ -108,7 +108,7 @@ namespace config
             {
                 v.emplace_back(seq[i].as<T>());
             }
-            return std::move(v);
+            return v;
         }
     }
 
@@ -430,10 +430,10 @@ namespace config
     };
 
     /// @brief Internal representation of a directory rule. TODO: link to the documentation.
-    class dir_rule_config
+    class dir_rule
     {
     public:
-        dir_rule_config(const std::string& rule) : rule_(rule)
+        dir_rule(const std::string& rule) : rule_(rule)
         {
             construct_rule(rule);
         }
@@ -557,11 +557,12 @@ namespace config
         /// @param env_node 
         box_fs_config(const YAML::Node& env_node)
         {
+            define_default_rules();
+
             if(!env_node) { _default(); }
             else
             {
                 if(env_node[config_options::box_fs::USE_DEFAULT_DIR_RULES]) use_defaults_ = env_node[config_options::box_fs::USE_DEFAULT_DIR_RULES].as<bool>();
-                add_default_rules();
                 if(env_node[config_options::box_fs::DIRECTORY_RULES]) add_rules(env_node[config_options::box_fs::DIRECTORY_RULES]);
             }
         }
@@ -583,37 +584,34 @@ namespace config
               
     private:
         /// @brief User defined directory rules.
-        std::vector<dir_rule_config>   rules_;
+        std::vector<dir_rule>   rules_;
         
         /// @brief Apply default_rules_ before user defined ones.
         bool use_defaults_ = true;
         
         /// @brief Default directory rules, defined in add_default_rules().
-        std::vector<dir_rule_config>   default_rules_;
+        std::vector<dir_rule>   default_rules_;
 
         void add_rules(const YAML::Node& rules_list)
         {
             for(std::size_t i = 0; i < rules_list.size(); i++)
             {
-                rules_.emplace_back(dir_rule_config(rules_list[i].as<std::string>()));
+                rules_.emplace_back(dir_rule(rules_list[i].as<std::string>()));
             }
         }
         
-        void add_default_rules()
+        void define_default_rules()
         {
-            //default_rules_.emplace_back(dir_rule("box=./box:rw"));
-            default_rules_.emplace_back(dir_rule_config("bin"));
-            default_rules_.emplace_back(dir_rule_config("dev:dev"));
-            default_rules_.emplace_back(dir_rule_config("lib"));
-            default_rules_.emplace_back(dir_rule_config("lib64:maybe,rw"));
-            default_rules_.emplace_back(dir_rule_config("proc=proc:fs"));
-            //default_rules_.emplace_back(dir_rule("tmp:tmp"));
-            default_rules_.emplace_back(dir_rule_config("usr")); 
+            default_rules_.emplace_back(dir_rule("bin"));
+            default_rules_.emplace_back(dir_rule("dev:dev"));
+            default_rules_.emplace_back(dir_rule("lib"));
+            default_rules_.emplace_back(dir_rule("lib64:maybe"));
+            default_rules_.emplace_back(dir_rule("proc=proc:fs"));
+            default_rules_.emplace_back(dir_rule("usr")); 
         }
         
         void _default()
         {
-            add_default_rules();
         }
     };
     
@@ -766,15 +764,8 @@ namespace config
         env_config env_;
         box_fs_config box_fs_;
         
-        static const fs::path& default_box_root()
-        {
-            static const auto def = fs::path("default_box");
-            return def;
-        }
-        
         void _default()
         {
-            box_root_ = default_box_root();
             tasks_ = tasks_config(YAML::Node());
         }
     };
@@ -850,15 +841,10 @@ namespace config
                 (config_options::STATS_YAML, options::value<std::string>(), "path to yaml file with task results")
                 ;
 
-            options::options_description cgroups("Options for cgroup configuration");
-            cgroups.add_options()
-                (config_options::TASK_CG, options::value<std::string>(), "relative path to cgroup from the default that will be created for the task")
-                ;
-                
             // Declare an options description instance which will include
             // all the options
             options::options_description all("Allowed options");
-            all.add(general).add(rsrcs).add(exec).add(results).add(cgroups);
+            all.add(general).add(rsrcs).add(exec).add(results);
 
             options::variables_map options_map;
             options::store(options::parse_command_line(argc, argv, all), options_map);

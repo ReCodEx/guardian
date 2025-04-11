@@ -17,12 +17,12 @@ konzultace:
 
 ISOLATE OPTIONS vs NEW ISOLATE
 
- *-b, --box-id=*'id':: CONSULT, RESIL BYCH AUTOMATICKY
+ *-b, --box-id=*'id':: CONSULT
 	When you run multiple sandboxes in parallel, you have to assign unique
 	IDs to them by this option. See the discussion on UIDs in the INSTALLATION
 	section. The ID defaults to 0.
 
-*-M, --meta=*'file':: TODO
+*-M, --meta=*'file':: CONSULT SYNTAX
 	Output meta-data on the execution of the program to a given file.
 	See below for syntax of the meta-files.
 
@@ -52,11 +52,11 @@ ISOLATE OPTIONS vs NEW ISOLATE
 	Change directory to 'dir' before executing the program. This path must be
 	relative to the root of the sandbox.
 
-*-v, --verbose*:: TODO
+*-v, --verbose*:: CONSULT
 	Tell the sandbox manager to be verbose and report on what is going on.
 	Using *-v* multiple times produces even more jabber.
 
-*-s, --silent*:: TODO
+*-s, --silent*:: 
 	Tell the sandbox manager to keep silence. No status messages are printed
 	to stderr except for fatal errors of the sandbox itself. The combination of
 	*--verbose* and *--silent* has an undefined effect. 
@@ -96,7 +96,7 @@ The following options can limit system resources consumed by the program.
 	If this limit is exceeded, the program is killed.
 
     
-*-x, --extra-time=*'time':: TODO.
+*-x, --extra-time=*'time':: CONSULT.
 	When the *--time* limit is exceeded, do not kill the program immediately,
 	but wait until *--extra-time* seconds elapse since the start of the program.
 	This allows to report the real execution time, even if it exceeds the limit
@@ -173,7 +173,8 @@ requested by directory rules:
 	If there already was a directory rule for 'in', it is replaced.
 
 *-d, --dir=*'dir'[*:*'options']:: DONE
-	Bind the directory +/+'dir' to 'dir' inside the sandbox.
+	Bind the dir        constexpr auto STATS_YAML = "stats-yaml";
+        constexpr auto CONFIG_YAML = "yaml";ectory +/+'dir' to 'dir' inside the sandbox.
 	If there already was a directory rule for 'in', it is replaced.
 
 *-d, --dir=*'in'*=*:: CONSULT
@@ -232,7 +233,7 @@ to constrain programs consisting of multiple processes. Please note
 that this feature needs special system setup described in the INSTALLATION
 section.
 
-*--cg*:: DONE, implicitly
+*--cg*:: DONE
 	Enable use of control groups. This should be specified with *--init*,
 	*--run* and *--cleanup*.
 
@@ -306,3 +307,11 @@ TEMATA + PROBLEMY DO BAKALARKY:
 - redirectovani stdin a stderr - pomoci freopen, nejdrive err, err to out pomoci dup2()
 
 -directory rules - syntax, bezpecnost, ...
+
+-proc zrovna waitpid pri cekani na task
+
+-klonovani tasku, execve, pracovani s PID.
+
+-pripraveni tasku "zvenku" s pouzitim prlimit a cgroup freezer? asi je to nesmysl.
+
+-system setup - napriklad swap musi byt vypnuty aby fungoval memory limit.

@@ -84,7 +84,7 @@ namespace env
         /// @brief 
         /// @param rule Reference to the rule configuration.
         /// @param creds Reference to credentials manager (to chown() box directories to box UID/GID).
-        dir_rule_supervisor(const config::dir_rule_config& rule, const credentials::proxy_credentials_manager& creds) : rule_(&rule), credentials_(&creds)
+        dir_rule_supervisor(const config::dir_rule& rule, const credentials::proxy_credentials_manager& creds) : rule_(&rule), credentials_(&creds)
         {}
 
         /// @brief Apply the rule - mount an outside/temporary directory or filesystem into the box.
@@ -150,7 +150,7 @@ namespace env
         }
     private:
         /// @brief The rule configuration.
-        const config::dir_rule_config* rule_;
+        const config::dir_rule* rule_;
         
         /// @brief Credentials manager to get box UID/GID.
         const credentials::proxy_credentials_manager* credentials_;
@@ -373,7 +373,7 @@ namespace env
         /// @brief Create directories of a single rule. Detects and remembers created dummy directories.
         /// @param mount_points Previous mount points inside the box that escape to the outside.
         /// @param rule Config of the rule.
-        void create_directories_for_rule(std::vector<std::tuple<fs::path, fs::path>>& mount_points, const config::dir_rule_config& rule)
+        void create_directories_for_rule(std::vector<std::tuple<fs::path, fs::path>>& mount_points, const config::dir_rule& rule)
         {
             dir_rule_supervisor drs(rule, *credentials_);
             if(rule_escapes_box(rule))
@@ -417,7 +417,7 @@ namespace env
         /// @brief Check if a rule escapes outside the box.
         /// @param rule 
         /// @return True, unless the rule is a mount of a filesystem.
-        static bool rule_escapes_box(const config::dir_rule_config& rule)
+        static bool rule_escapes_box(const config::dir_rule& rule)
         {
             return !rule.fs(); 
         }

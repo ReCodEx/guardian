@@ -20,9 +20,15 @@ namespace tasks
     using namespace process_utils;
     namespace fs = std::filesystem;
 
+    /// @brief Responsible for the execution of a single task.
     class task_supervisor
     {
     public:
+        
+        /// @brief 
+        /// @param conf Configuration node of this task. 
+        /// @param credentials Is called to set up credentials of the task process.
+        /// @param env_manager Is called to set up environment variables of the task process.
         task_supervisor(config::task_config& conf, credentials::proxy_credentials_manager& credentials, env::env_manager& env_manager) :   
         task_config_(&conf),
         credentials_(&credentials),
@@ -30,6 +36,7 @@ namespace tasks
         task_cgrp_(conf.name())
         {}
 
+        /// @brief Prepare and execute the task and return metadata about the execution.
         config::task_stats run_task()
         {
             pid_t pid = launch_task();
@@ -39,16 +46,27 @@ namespace tasks
         }
 
     private:
+        /// @brief Unused.
         void* stack_ = nullptr;
+        
+        /// @brief Configuration node of this task.
         config::task_config* const task_config_;
+        
+        /// @brief Is called to set up credentials of the task process.
         credentials::proxy_credentials_manager* credentials_;
+        
+        /// @brief Is called to set up environment variables of the task process.
         env::env_manager* env_manager_;
+        
+        /// @brief Handler of the cgroup created for this task. 
         cgroup::cgroupv2_t task_cgrp_;
 
-        config::task_stats generate_task_stats(int stat)
+        /// @brief Generate metadata about the execution of this task.
+        /// @param stat stat_loc output parameter of waitpid() 
+        /// @return task_stats struct as defined in the config source file.
+        config::task_stats generate_task_stats(const cgroup::cgroupv2_t& task_cgroup, int stat)
         {
             auto r_usage = get_children_rusage();
-
 
             return config::task_stats   {
                                 .exited_normally = WIFEXITED(stat),
@@ -57,8 +75,8 @@ namespace tasks
                                 .err_no = errno,
                                 .signal = WTERMSIG(stat),
 
-                                .cg_total_mem_bytes = task_cgrp_.memory_usage_bytes(),
-                                .cg_total_time_usec = task_cgrp_.cpu_usage_usec(),
+                                .cg_total_mem_bytes = task_cgroup.memory_usage_bytes(),
+                                .cg_total_time_usec = task_cgroup.cpu_usage_usec(),
 
                                 .rusage_total_mem_bytes = r_usage.ru_maxrss*1000,
                                 .rusage_total_time_usec = rusage_total_time_usec(r_usage),
@@ -66,6 +84,9 @@ namespace tasks
                                 };
         }
 
+        /// @brief Wait for a task process to terminate and return metadata about the execution.
+        /// @param task_pid PID of the task process (Returned by clone3()).
+        /// @return task_stats struct as defined in the config source file.
         config::task_stats wait_for_task(pid_t task_pid)
         {
             int stat{};
@@ -73,61 +94,67 @@ namespace tasks
             auto stime = std::chrono::system_clock::now();
             auto wall_limit = std::chrono::seconds(task_config_->rlimits().wall_time());
 
+            /// Periodically check if the task has terminated and kill() if it exceeds wall time limit.
             while(true)
             {
+                /// WNOHANG flag so that we don't block here.
                 p = waitpid(task_pid, &stat, WNOHANG);
 
                 if (p < 0)
-                {
-                    terminate("waitpid() for task \"{}\" failed. Stat: {}, Errno: {}", task_config_->name(), stat, errno);
-                }
+                    { terminate("waitpid() for task \"{}\" failed. Stat: {}, Errno: {}", task_config_->name(), stat, errno); }
                 else if (p == 0) 
                 {
                     auto ctime = std::chrono::system_clock::now();
                     if(ctime - stime < wall_limit)
                     {
-                        logs::debug("task still running after {} s", std::chrono::duration_cast<std::chrono::seconds>(ctime - stime).count());
+                        logs::debug("Task \"{}\" still running after {}s", task_config_->name(), std::chrono::duration_cast<std::chrono::seconds>(ctime - stime).count());
                         std::this_thread::sleep_for(waiting_time());
                     }
                     else
                     {
-                        logs::debug("task killed for exceeding wall time limit");
+                        logs::debug("Task \"{}\" killed for exceeding wall time limit", task_config_->name());
                         kill(task_pid, SIGKILL);
                         p = waitpid(task_pid, &stat, 0);
-                        break;
+                        return generate_task_stats(task_cgrp_, stat);
                     }
                     
                 }
-                else break;
+                else
+                {
+                    logs::debug("Task process exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
+                    return generate_task_stats(task_cgrp_, stat);
+                }
             }
-            logs::debug("Task process exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
-            return generate_task_stats(stat);
         }
 
+        /// @brief Clone() the task process, prepare the task-specific part of the environment (like resource limits) and call execve().
+        /// @return PID of the task to use in wait_for_task(). Doesn't return in the task process. 
         pid_t launch_task()
         {
-            logs::debug("Calling clone3 for \"{}\"", task_config_->exec_path().string());
+            logs::debug("Launching the task process for task \"{}\"", task_config_->name());
+
+            /// TODO: remove usage of FD to get into the cgroup, use add_me() instead.
             auto fd = task_cgrp_.open_fd();
+            pid_t clone_rv = clone3_task(stack_, fd);
 
-            pid_t outside_pid = clone3_task(stack_, fd);
+            if (clone_rv < 0)
+                { terminate("clone3() failed for task \"{}\". Errno: {}", task_config_->name(), errno); }
+            else if (!clone_rv)
+            {
+                /// We are in the task process. 
+                ///
+                /// The steps before call_execve() don't depend on each other, so the order doesn't matter here.
 
-            if (outside_pid < 0)
-            {
-                terminate("Cannot run the task process, clone3 failed. Errno: {}", errno);
-            }
-                
-            else if (!outside_pid)
-            {
-                set_resource_limits(); //Possible alternative is to set these from the parent process with prlimit() and use cgroup freezer.
+                set_resource_limits(); //Possible (probably stupid) alternative is to set these from the parent process with prlimit() and use cgroup freezer.
                 credentials_->switch_to_box();
                 optional_chdir();
                 redirect_descriptors();
                 call_execve();
 
-                // We should never get here
-                terminate("Execve failed. Errno: {}", errno);
+                /// execve() doesn't return on success.
+                terminate("execve() failed for task \"{}\" (executable path: \"{}\"). Errno: {}", task_config_->name(), task_config_->exec_path().string(), errno);
             }
-            return outside_pid;
+            return clone_rv;
         }
 
         pid_t clone3_task(void* stack, uint64_t cgrp_fd)
@@ -205,6 +232,7 @@ namespace tasks
             }
         }
         
+        /// @brief Set resource limits for the task process, as specified in the task config node.
         void set_resource_limits()
         {
             auto& limits = task_config_->rlimits();
@@ -220,14 +248,18 @@ namespace tasks
             if(limits.disk_usage()) set_disk_quota_quotactl(limits.disk_usage().value());
         }
 
+        /// @brief Set the limit on memory utilization for the task.
         void set_mem_limit(size_t bytes)
         {
             task_cgrp_.set_strict_memory_limit(bytes);
         }
 
-        // Will work only on filesystems supporting quotactl() (i.e. not btrfs).
+        /// @brief Set the limit on total disk utilization. Will work only on filesystems supporting quotactl() (i.e. not btrfs).
+        /// @param bytes The limit in bytes.
+        /// TODO: add inodes limit?
         void set_disk_quota_quotactl(size_t bytes)
         {
+            /// TODO: comments
             std::string device = devices::find_device_for_dir(fs::path("."));
             uid_t box_uid = credentials_->box_uid();
             std::cout << device << std::endl;
@@ -255,18 +287,14 @@ namespace tasks
         {
             rlimit as{bytes,bytes};
             if(setrlimit(RLIMIT_AS, &as) == -1)
-            {
-                std::cerr << std::format("Failed to set address space limit for the child process. Arg: {} Errno: {}", bytes, errno);
-            }
+                { terminate("Failed to set address space limit for the child process. Arg: {} Errno: {}", bytes, errno); }
         }
 
-        static void set_cpu_limit(size_t s)
+        void set_cpu_limit(size_t s)
         {
             rlimit cpu_time{s,s};
             if(setrlimit(RLIMIT_CPU, &cpu_time) == -1)
-            {
-                std::cerr << std::format("Failed to set cpu_time limit for the child process. Errno: {}", errno);
-            }
+                { terminate("setrlimit() failed when setting cpu_time limit for task {}. Errno: {}", task_config_->name(), errno); }
         }
 
         std::chrono::milliseconds waiting_time()
