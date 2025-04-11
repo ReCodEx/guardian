@@ -207,7 +207,7 @@ namespace cgroup
         }
     };
 
-    /// @brief Interface for using a cgroup and its controllers.
+    /// @brief Supervisor class for using a cgroup and its controllers.
     class cgroupv2_t
     {
     public:
@@ -352,7 +352,7 @@ namespace cgroup
 
     };
 
-    /// @brief Interface for the root cgroup (/sys/fs/cgroup).
+    /// @brief Supervisor class for setting up the root cgroup (/sys/fs/cgroup).
     class root_cgroupv2_t
     {
     public:

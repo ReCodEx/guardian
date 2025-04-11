@@ -16,10 +16,13 @@ namespace container_core
     using namespace tasks;
     namespace fs = std::filesystem;
 
-    /// @brief Implementation of responsibilities of the proxy process, see TODO: link
+    /// @brief Core class implementing responsibilities of the proxy process, see TODO: link
     class proxy_core
     {
     public:
+        /// @brief 
+        /// @param config Proxy node of the configuration.
+        /// @param root_creds Called to retrieve assigned credentials.
         proxy_core(const config::proxy_config& config, credentials::root_credentials_manager& root_creds) :  proxy_config_(&config),
                                                     credentials_mngr_(root_creds),
                                                     mount_mngr_(config, credentials_mngr_), 
@@ -73,12 +76,12 @@ namespace container_core
         {
             init_proxy_logger();
             
-            /// Run the mount manager first, both the fs_manager and cg_manager are dependent.
+            /// Run the mount manager first, both the fs_manager and cg_manager are dependent on correct setup.
             mount_mngr_.run();
-            fs_manager_.run();
 
+            fs_manager_.run();
             pivot_root();
-            /// The cgroup manager is implemented to run in the new cgroup namespace and after changing root.
+            /// The cgroup manager is intended to run after changing root.
             cg_mngr_.run();
         }
 
@@ -112,7 +115,7 @@ namespace container_core
         } 
     };
 
-    /// @brief Implements the responsibilities of the root process. 
+    /// @brief Core class implementing responsibilities of the root process. TODO: link
     class root_core
     {
     public:
@@ -122,7 +125,7 @@ namespace container_core
             logs::info("Hello world from container!");
         }
 
-        /// @brief The "main" function.
+        /// @brief The "main" function of a container run.
         void run()
         {
             setup();
@@ -149,8 +152,8 @@ namespace container_core
             cg_mngr_.run();
         }
 
-        /// @brief Clone the proxy process in new namespaces and assigned cgroup. 
-        /// @return PID of the proxy returned by clone()
+        /// @brief Run the proxy process. 
+        /// @return PID of the proxy as returned by clone3().
         pid_t spawn_proxy()
         {
             auto& proxy_conf = root_config_.get_proxy_config();
@@ -175,7 +178,7 @@ namespace container_core
         }
         
         /// @brief Wait for the proxy using waitpid().
-        /// @param proxy_pid PID of the proxy.
+        /// @param proxy_pid PID of the proxy as returned by spawn_proxy().
         void wait_for_proxy(pid_t proxy_pid)
         {
             int stat{};
@@ -195,7 +198,9 @@ namespace container_core
         {
             clone_args args{0};
             args.exit_signal = SIGCHLD;
-            args.flags = config::DEFAULT_CLONE_FLAGS | CLONE_INTO_CGROUP;
+
+            args.flags =    CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | //user namespaces might not always be supported
+                            CLONE_NEWPID | CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_INTO_CGROUP;
 
             args.cgroup = cgrp_fd;
             return args; 
@@ -227,9 +232,6 @@ namespace container_core
             return syscall(SYS_clone3, &args, sizeof(clone_args));
         }
     };
-
-
-
 }
 
 #endif

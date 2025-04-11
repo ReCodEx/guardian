@@ -15,7 +15,7 @@ namespace env
 {
     namespace fs = std::filesystem;
 
-    /// @brief Responsible for setting up the mount namespace of the proxy and box.
+    /// @brief Manager class responsible for setting up the mount namespace of the proxy and tasks.
     class proxy_mount_manager
     {
     public:
@@ -211,6 +211,7 @@ namespace env
         }
     };
     
+    /// @brief Manager class for handling environment variables passed to the tasks.
     class env_manager
     {
     public:

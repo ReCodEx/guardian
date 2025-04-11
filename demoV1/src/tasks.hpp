@@ -20,7 +20,7 @@ namespace tasks
     using namespace process_utils;
     namespace fs = std::filesystem;
 
-    /// @brief Responsible for the execution of a single task.
+    /// @brief Supervisor class responsible for the execution of a single task.
     class task_supervisor
     {
     public:
@@ -94,10 +94,10 @@ namespace tasks
             auto stime = std::chrono::system_clock::now();
             auto wall_limit = std::chrono::seconds(task_config_->rlimits().wall_time());
 
-            /// Periodically check if the task has terminated and kill() if it exceeds wall time limit.
+            // Periodically check if the task has terminated and kill() if it exceeds wall time limit.
             while(true)
             {
-                /// WNOHANG flag so that we don't block here.
+                // WNOHANG flag so that we don't block here.
                 p = waitpid(task_pid, &stat, WNOHANG);
 
                 if (p < 0)
@@ -324,6 +324,7 @@ namespace tasks
         }
     };
     
+    /// @brief Manager class responsible for running tasks.
     class task_manager
     {
     public:

@@ -34,8 +34,6 @@ namespace config
         constexpr auto BOXES_CGROUP = "/sys/fs/cgroup/isolate_boxes";
     }
 
-    constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWCGROUP | CLONE_NEWUTS;  //user namespaces might not always be supported
-
     /// @brief Keywords for the configuration file 
     namespace config_options
     {
@@ -111,7 +109,7 @@ namespace config
         }
     }
 
-    /// @brief Configuration class for resource limits.
+    /// @brief Internal representation of resource limits (used by task_supervisor).
     class resource_limits
     {
     public:
@@ -201,17 +199,13 @@ namespace config
         }
     };
 
-    struct root_stats
-    {
-        
-    };
-    
+    /// @brief Internal representation of metadata about the run of the proxy.
     struct proxy_stats
     {
 
     };
 
-    /// @brief Internal representation of task results.
+    /// @brief Internal representation of metadata about the run of a single task.
     struct task_stats
     {
         bool exited_normally;
@@ -233,6 +227,7 @@ namespace config
         long rusage_total_time_usec;
     };
     
+    /// @brief not implemented.
     class task_report
     {
     public:
@@ -545,7 +540,7 @@ namespace config
         }
     };
 
-    /// @brief Configuration of the box directory tree.
+    /// @brief Configuration node for box_fs_manager.
     class box_fs_config
     {
     public:
@@ -614,7 +609,7 @@ namespace config
         }
     };
     
-    /// @brief Internal representation of an environment rule.
+    /// @brief Internal representation of an environment rule (used by env_manager).
     class env_rule
     {
     public:
@@ -656,6 +651,7 @@ namespace config
         std::optional<std::tuple<std::string, std::string>> name_value_pair_;
     };
     
+    /// @brief Configuration node for env_manager.
     class env_config
     {
     public:
@@ -703,6 +699,7 @@ namespace config
         }
     };
 
+    /// @brief Configuration node for the credential_manager classes.
     class credentials_config
     {
     public:
@@ -719,7 +716,7 @@ namespace config
         } 
     };
     
-    /// @brief Configuration class for the proxy process.
+    /// @brief Configuration node for the proxy_core.
     class proxy_config
     {
     public:
@@ -769,9 +766,7 @@ namespace config
         }
     };
 
-    /**
-     * @class root_configuration
-     */
+    /// @brief Root node storing the configuration hierarchy.
     class root_configuration
     {
     public:

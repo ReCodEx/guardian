@@ -14,12 +14,9 @@ namespace credentials
 {
     namespace fs = std::filesystem;
 
-    /**
-     * @class root_credentials_manager
-     * @brief Responsible for assigning credentials (box_id, UID/GID) used by the box.
-     * 
-     * @details
-     */
+    ///  @class root_credentials_manager
+    ///  @brief Manager class responsible for assigning credentials (box_id, UID/GID) used by the box.
+    ///  @details
     class root_credentials_manager
     {
     public:
@@ -30,9 +27,7 @@ namespace credentials
         root_credentials_manager(const config::credentials_config& config) : config_(&config)
         {}
         
-        /**
-         * @brief Assign box_id, UID and GID that will be later used by the box.
-         */
+        /// @brief Assign box_id, UID and GID that will be later used by the box.
         void run()
         {
             orig_uid_ = getuid();
@@ -42,41 +37,31 @@ namespace credentials
             box_cgroup_ = assign_box_cgroup(box_id_);
         }
             
-        /**
-         * @brief Getter for the original UID.
-         */
+        /// @brief Getter for the original UID.
         uid_t orig_uid() const
         {
             return orig_uid_;
         }
 
-        /**
-         * @brief Getter for the original GID.
-         */
+        /// @brief Getter for the original GID.
         gid_t orig_gid() const
         {
             return orig_gid_;
         }
         
-        /**
-         * @brief Getter for the assigned box_id.
-         */
+        /// @brief Getter for the assigned box_id.
         uid_t box_id() const
         {
             return box_id_;
         }
         
-        /**
-         * @brief Getter for the assigned box_uid.
-         */
+        /// @brief Getter for the assigned box_uid.
         uid_t box_uid() const
         {
             return box_uid_;
         }
 
-        /**
-         * @brief Getter for the assigned box_gid.
-         */
+        /// @brief Getter for the assigned box_gid.
         uid_t box_gid() const
         {
             return box_gid_;
@@ -94,7 +79,7 @@ namespace credentials
             return box_root_;
         }
     private:
-        /// @brief  Pointer to the config class
+        /// @brief Credentials configuration node.
         const config::credentials_config* config_;
 
         /// @brief See section Credentials in the readme.
@@ -146,6 +131,7 @@ namespace credentials
         }
     };
 
+    /// @brief Manager class responsible for accessing and switching credentials (UID/GID).
     class proxy_credentials_manager
     {
     public:
