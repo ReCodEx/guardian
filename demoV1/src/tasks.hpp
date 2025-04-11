@@ -13,6 +13,7 @@
 #include "cgrps.hpp"
 #include "credentials.hpp"
 #include "devices.hpp"
+#include "environment.hpp"
 
 namespace tasks
 {
@@ -22,9 +23,11 @@ namespace tasks
     class task_supervisor
     {
     public:
-        task_supervisor(config::task_config& conf, credentials::proxy_credentials_manager& credentials) :   task_config_(&conf),
-                                                                                                            credentials_(&credentials),
-                                                                                                            task_cgrp_(conf.name())
+        task_supervisor(config::task_config& conf, credentials::proxy_credentials_manager& credentials, env::env_manager& env_manager) :   
+        task_config_(&conf),
+        credentials_(&credentials),
+        env_manager_(&env_manager),
+        task_cgrp_(conf.name())
         {}
 
         config::task_stats run_task()
@@ -39,6 +42,7 @@ namespace tasks
         void* stack_ = nullptr;
         config::task_config* const task_config_;
         credentials::proxy_credentials_manager* credentials_;
+        env::env_manager* env_manager_;
         cgroup::cgroupv2_t task_cgrp_;
 
         config::task_stats generate_task_stats(int stat)
@@ -118,7 +122,7 @@ namespace tasks
                 credentials_->switch_to_box();
                 optional_chdir();
                 redirect_descriptors();
-                execve_wrapper(task_config_->exec_path(), task_config_->exec_args());
+                call_execve();
 
                 // We should never get here
                 terminate("Execve failed. Errno: {}", errno);
@@ -147,14 +151,13 @@ namespace tasks
             return args;
         }
 
-        /// @brief 
-        /// @param exec Path to executable.
-        /// @param args Vector of arguments.
+        /// @brief Prepares args and envp arrays and calls execve() on task executable. 
         /// @return execve() return value.
-        int execve_wrapper(const fs::path& exec, std::vector<std::string>& args)
+        int call_execve()
         {
-            auto cargs = convert_to_argv(args);
-            static char *environ[] = { NULL };
+            auto& exec = task_config_->exec_path();
+            auto cargs = convert_to_argv(task_config_->exec_args());
+            char** environ = env_manager_->get_envp().data();
             
             return execve(exec.c_str(), cargs.data(), environ);
         }
@@ -291,8 +294,10 @@ namespace tasks
     class task_manager
     {
     public:
-        task_manager(const config::tasks_config& tasks, credentials::proxy_credentials_manager& credentials) :  tasks_config(&tasks),
-                                                                                                                credentials_(&credentials)
+        task_manager(const config::tasks_config& tasks, credentials::proxy_credentials_manager& credentials, env::env_manager& env) :  
+        tasks_config(&tasks),
+        credentials_manager_(&credentials),
+        env_manager_(&env)
         {}
 
         config::task_report run_all_tasks()
@@ -301,7 +306,7 @@ namespace tasks
 
             for(auto&& task_config : tasks_config->get_tasks())
             {
-                tasks::task_supervisor task_(*task_config, *credentials_);
+                tasks::task_supervisor task_(*task_config, *credentials_manager_, *env_manager_);
                 auto stats = task_.run_task();
                 report.insert(stats);
                 logs::debug("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.cg_total_time_usec, stats.cg_total_mem_bytes);
@@ -309,8 +314,14 @@ namespace tasks
             return report;
         }
     private:
+        /// @brief Configuration node for tasks. 
         const config::tasks_config* tasks_config;
-        credentials::proxy_credentials_manager* credentials_;
+        
+        /// @brief Credentials manager class to switch credentials to box values.
+        credentials::proxy_credentials_manager* credentials_manager_;
+        
+        /// @brief Environment manager class which generates envp parameter for execve().
+        env::env_manager* env_manager_; 
     };
 }
 

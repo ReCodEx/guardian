@@ -1,0 +1,3 @@
+Printing lines from stdin to stdout:
+Hello World!
+Done

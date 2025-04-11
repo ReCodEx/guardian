@@ -1,0 +1,5 @@
+Printing environment variables to stdout:
+The value of "HELLO" is "hello".
+The value of "WORLD" is "world".
+The value of "PATH" is "".
+Done

@@ -24,8 +24,9 @@ namespace container_core
                                                     credentials_mngr_(root_creds),
                                                     mount_mngr_(config, credentials_mngr_), 
                                                     fs_manager_(config.fs_config(), credentials_mngr_),
+                                                    env_manager_(config.get_env_config()),
                                                     cg_mngr_(),
-                                                    task_runner_(config.get_tasks_config(), credentials_mngr_)
+                                                    task_runner_(config.get_tasks_config(), credentials_mngr_, env_manager_)
         {
             logs::info("Hello world from the proxy!");
             init_proxy_logger();
@@ -53,6 +54,9 @@ namespace container_core
         /// @brief Responsible for creating the box directory tree.
         env::box_fs_manager fs_manager_;
         
+        /// @brief Responsible for generating a set of environment variables for the task processes.
+        env::env_manager env_manager_;
+
         /// @brief Responsible for setting up the cgroup tree.
         cgroup::proxy_cgroup_manager cg_mngr_;
         

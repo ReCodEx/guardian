@@ -1,0 +1,17 @@
+env: 
+  inherit-all: true
+  vars:
+    - "PATH="
+    - "HELLO=hello"
+    - "WORLD=world"
+box-fs:
+  dir-rules:
+    - "build=/home/simonkurz/mff/rcdx_cntnr/demoV1/build"
+    - "tests=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests"
+    - "outputs=/home/simonkurz/mff/rcdx_cntnr/demoV1/temp/test_outputs/env_vars:rw,tmp"
+tasks:
+    - task-id: "env_vars"
+      stats-yaml: "/result.yaml"
+      path: "/build/tests/env_vars"
+      stdout: "/outputs/stdout.txt"
+      stderr-to-stdout: true

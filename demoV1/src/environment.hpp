@@ -189,6 +189,97 @@ namespace env
             return flags;
         }
     };
+    
+    class env_manager
+    {
+    public:
+        env_manager()
+        {}
+
+        env_manager(const config::env_config& config) : config_(&config)
+        {}
+        
+        /// @brief Prepares if necessary and returns the envp vector for execve() 
+        std::vector<char*>& get_envp()
+        {
+            if(!env_ || !envp_) 
+            {
+                env_ = prepare_env();
+                envp_ = to_envp(env_.value());
+            }
+            return envp_.value();
+        }
+
+    private:
+        /// @brief Pointer to the env_config configuration node.
+        const config::env_config* config_;
+        
+        /// @brief Vector storing the environment so that we can safely convert it
+        /// to vector<char*>.
+        std::optional<std::vector<std::string>> env_;
+
+        /// @brief Vector storing the envp vector of char* to be passed to execve().
+        std::optional<std::vector<char*>> envp_;
+
+        /// @brief Parse the environment rules into a vector of "name=value" environment variables.
+        std::vector<std::string> prepare_env()
+        {
+            std::unordered_map<std::string, std::string> env_map;
+            
+            /// First copy whole environment if specified in the config.
+            /// Then values can be added/overwritten by other rules.
+            if(config_->inherit_all())
+            {
+                for (char **env = environ; *env; ++env)
+                {
+                    std::string entry(*env);
+                    auto eq = entry.find('=');
+                    if (eq != std::string::npos) 
+                    {
+                        auto name = entry.substr(0, eq);
+                        auto value = entry.substr(eq + 1); 
+                        env_map[name] = value; 
+                    }
+                } 
+            }
+            
+            for(auto&& r : config_->rules())
+            {
+                if(r.inherited_var())
+                {
+                    auto& name = r.inherited_var().value();
+                    auto value = std::getenv(name.c_str());
+                    env_map[name] = value;
+                }
+                else if (r.name_value_pair())
+                {
+                    auto& [name, value] = r.name_value_pair().value();
+                    env_map[name] = value;
+                }  
+            }
+
+            std::vector<std::string> env;
+            for(const auto& [name, value] : env_map)
+            {
+                env.emplace_back(name + "=" + value);
+            }
+                
+            return env;
+        }
+        
+        /// @brief Convert a vector<string> to null terminated vector<char*>
+        /// @return We pass RV.data() to execve() as the envp parameter.
+        std::vector<char*> to_envp(std::vector<std::string>& strings)
+        {
+            std::vector<char*> envp;
+            for(auto&& str : strings)
+            {
+                envp.emplace_back(str.data());
+            }
+            envp.emplace_back(nullptr);
+            return envp;
+        }
+    };
 
     /// @brief Manager class for the box directory tree.
     class box_fs_manager
@@ -201,19 +292,21 @@ namespace env
                                                                                                                         credentials_(&credentials)
         {}
         
+        /// @brief Create the box directory tree.
         void run()
         {
-            construct_box_fs();
+            construct_box_tree();
         }
 
     private:
-        /// @brief Pointer to box fs node of configuration.
+        /// @brief Box fs node of configuration.
         const config::box_fs_config* fs_config_;
         
-        /// @brief Pointer to credentials manager to get box UID/GID for chown().
+        /// @brief Credentials manager to get box UID/GID for chown().
         credentials::proxy_credentials_manager* credentials_;
 
-        void construct_box_fs()
+        /// @brief Create the box directory tree.
+        void construct_box_tree()
         {
             /// We create mount points for all rules first (TODO: security trick from Isolate)
             create_mount_points();
@@ -303,10 +396,10 @@ namespace env
         
         /// @brief Check if a rule escapes outside the box.
         /// @param rule 
-        /// @return True, unless the rule is a device or filesystem.
+        /// @return True, unless the rule is a mount of a filesystem.
         static bool rule_escapes_box(const config::dir_rule_config& rule)
         {
-            return !(rule.dev() || rule.fs()); 
+            return !rule.fs(); 
         }
     };
 }

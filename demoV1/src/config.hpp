@@ -63,8 +63,15 @@ namespace config
             constexpr auto DISK_USAGE = "disk-usage";
         }
 
-        constexpr auto ENVIRONMENT = "env";
+        constexpr auto ENV = "env";
         namespace env
+        {
+            constexpr auto ENV_VARS = "vars";
+            constexpr auto INHERIT_ALL = "inherit-all";
+        }
+
+        constexpr auto BOX_FS = "box-fs";
+        namespace box_fs
         {
             constexpr auto DIRECTORY_RULES = "dir-rules";
             constexpr auto USE_DEFAULT_DIR_RULES = "use-defaults";
@@ -553,9 +560,9 @@ namespace config
             if(!env_node) { _default(); }
             else
             {
-                if(env_node[config_options::env::USE_DEFAULT_DIR_RULES]) use_defaults_ = env_node[config_options::env::USE_DEFAULT_DIR_RULES].as<bool>();
+                if(env_node[config_options::box_fs::USE_DEFAULT_DIR_RULES]) use_defaults_ = env_node[config_options::box_fs::USE_DEFAULT_DIR_RULES].as<bool>();
                 add_default_rules();
-                if(env_node[config_options::env::DIRECTORY_RULES]) add_rules(env_node[config_options::env::DIRECTORY_RULES]);
+                if(env_node[config_options::box_fs::DIRECTORY_RULES]) add_rules(env_node[config_options::box_fs::DIRECTORY_RULES]);
             }
         }
 
@@ -609,6 +616,95 @@ namespace config
             add_default_rules();
         }
     };
+    
+    /// @brief Internal representation of an environment rule.
+    class env_rule
+    {
+    public:
+        env_rule(const std::string& rule)
+        {
+            if (rule.substr(0,9) == "full-env=") {
+                std::string val = rule.substr(9);
+                if(val == "true") { full_env_ = true; }
+                else if(val != "false") { terminate("Invalid value in environment rule ({})", rule); }
+            } else {
+                auto eq = rule.find('=');
+                if (eq == std::string::npos) {
+                    inherit_ = rule;
+                } else {
+                    std::string name = rule.substr(0, eq);
+                    std::string value = rule.substr(eq + 1);
+                    name_value_pair_ = std::tuple(name,value);
+                }
+            }
+        }
+        
+        const auto& inherited_var() const
+        {
+            return inherit_;
+        }
+        
+        const auto& name_value_pair() const
+        {
+            return name_value_pair_;
+        }
+        
+        bool full_env() const
+        {
+            return full_env_;
+        }
+    private:
+        bool full_env_ = false;
+        std::optional<std::string> inherit_;
+        std::optional<std::tuple<std::string, std::string>> name_value_pair_;
+    };
+    
+    class env_config
+    {
+    public:
+        env_config()
+        {}
+
+        env_config(const YAML::Node& env_node)
+        {
+            if(!env_node) { _default();}
+            else 
+            {
+                auto rules_list = env_node[config_options::env::ENV_VARS];
+                rules_ = parse_rules(rules_list); 
+            }
+        }
+        
+        void _default()
+        {
+
+        }
+
+        const auto& rules() const
+        {
+            return rules_;
+        } 
+        
+        const auto& inherit_all() const
+        {
+            return inherit_all_;
+        }
+    private:
+        std::vector<env_rule> rules_;
+        bool inherit_all_ = false;
+        
+        std::vector<env_rule> parse_rules(const YAML::Node& rules_list)
+        {
+            std::vector<env_rule> rules;
+            for(std::size_t i = 0; i < rules_list.size(); i++)
+            {
+                auto rule = env_rule(rules_list[i].as<std::string>());
+                if(rule.full_env()) { inherit_all_ = true; }
+                else                { rules.emplace_back(rule); } 
+            }
+            return rules;
+        }
+    };
 
     class credentials_config
     {
@@ -640,7 +736,8 @@ namespace config
             else
             {
                 tasks_ = tasks_config(proxy_node[config_options::TASKS]);
-                box_fs_ = box_fs_config(proxy_node[config_options::ENVIRONMENT]);
+                env_    = env_config(proxy_node[config_options::ENV]);
+                box_fs_ = box_fs_config(proxy_node[config_options::BOX_FS]);
             }
         }
         
@@ -654,6 +751,11 @@ namespace config
             return box_fs_;
         }
 
+        const auto& get_env_config() const
+        {
+            return env_;
+        }
+
         const auto& box_root() const
         {
             return box_root_;
@@ -661,6 +763,7 @@ namespace config
     private:
         fs::path box_root_;
         tasks_config tasks_;
+        env_config env_;
         box_fs_config box_fs_;
         
         static const fs::path& default_box_root()

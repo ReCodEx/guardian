@@ -1,8 +1,8 @@
-env: 
+box-fs:
   dir-rules:
     - "build=/home/simonkurz/mff/rcdx_cntnr/demoV1/build"
     - "tests=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests"
-    - "outputs=/home/simonkurz/mff/rcdx_cntnr/demoV1/temp/container_outputs:rw,tmp"
+    - "outputs=/home/simonkurz/mff/rcdx_cntnr/demoV1/temp/test_outputs/stderr:rw,tmp"
 tasks:
     - task-id: "stderr"
       stats-yaml: "/result.yaml"

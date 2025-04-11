@@ -185,7 +185,7 @@ no setuid binaries). This behavior can be modified using the 'options':
 *rw*:: DONE
 	Allow read-write access. 
 
-*dev*:: TODO
+*dev*:: DONE
 	Allow access to character and block devices.
 
 *noexec*:: CHECK
@@ -198,7 +198,7 @@ no setuid binaries). This behavior can be modified using the 'options':
 	Instead of binding a directory, mount a device-less filesystem called 'in'.
 	For example, this can be 'proc' or 'sysfs'. 
 
-*tmp*:: TODO
+*tmp*:: TODO: implicit rw
 	Bind a freshly created temporary directory writeable for the sandbox user.
 	Accepts no 'out', implies *rw*.
 
@@ -245,7 +245,7 @@ section.
 	If it happens when handling a page fault, the whole process is killed
 	by the OOM killer with the SIGSEGV signal.
 
-*--print-cg-root*:: NOT NEEDED
+*--print-cg-root*:: CONSIDER
 	Print the root of the control group hierarchy in */sys/* and exit.
 	This is used by the *isolate-check-environment* script.
 

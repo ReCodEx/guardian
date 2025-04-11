@@ -1,3 +1,10 @@
+env:
+    env-vars:
+        - "TEST_VAR=1234"
+        - "full-env=false"
+        - "full-env=true"
+        - "PATH"
+
 tasks:
     - task-id: "bsearch"
       cpu-time: 2
