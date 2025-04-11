@@ -194,6 +194,7 @@ namespace env
             if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
                 { terminate("chown() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
             
+            /// TODO: set proper permissions.
             if(chmod(dir.c_str(), 0777) < 0)
                 { terminate("chmod() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
         }
@@ -216,18 +217,20 @@ namespace env
         env_manager()
         {}
 
+        /// @brief 
+        /// @param config Environment node of the config.
         env_manager(const config::env_config& config) : config_(&config)
         {}
         
-        /// @brief Prepares if necessary and returns the envp vector for execve() 
-        std::vector<char*>& get_envp()
+        /// @brief Prepares if necessary and returns the envp array for execve() 
+        char** get_envp()
         {
             if(!env_ || !envp_) 
             {
                 env_ = prepare_env();
                 envp_ = to_envp(env_.value());
             }
-            return envp_.value();
+            return envp_.value().data();
         }
 
     private:
@@ -241,13 +244,13 @@ namespace env
         /// @brief Vector storing the envp vector of char* to be passed to execve().
         std::optional<std::vector<char*>> envp_;
 
-        /// @brief Parse the environment rules into a vector of "name=value" environment variables.
+        /// @brief Parse the environment rules into a vector of "name=value" environment variable assignments.
         std::vector<std::string> prepare_env()
         {
             std::unordered_map<std::string, std::string> env_map;
             
             /// First copy whole environment if specified in the config.
-            /// Then values can be added/overwritten by other rules.
+            /// Then, values can be added/overwritten by other rules.
             if(config_->inherit_all())
             {
                 for (char **env = environ; *env; ++env)
@@ -269,7 +272,7 @@ namespace env
                 {
                     auto& name = r.inherited_var().value();
                     auto value = std::getenv(name.c_str());
-                    env_map[name] = value;
+                    if(value) { env_map[name] = value; }
                 }
                 else if (r.name_value_pair())
                 {

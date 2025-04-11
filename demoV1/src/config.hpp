@@ -9,7 +9,6 @@
 #include <tuple>
 
 #include "cgrps.hpp"
-#include "namespaces.hpp"
 #include "utils.hpp"
 #include "terminate.hpp"
 
@@ -37,7 +36,7 @@ namespace config
 
     constexpr int DEFAULT_CLONE_FLAGS = CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID | CLONE_NEWCGROUP | CLONE_NEWUTS;  //user namespaces might not always be supported
 
-    /// @brief Option keywords for the configuration file 
+    /// @brief Keywords for the configuration file 
     namespace config_options
     {
         constexpr auto STATS_YAML = "stats-yaml";

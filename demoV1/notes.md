@@ -314,4 +314,6 @@ TEMATA + PROBLEMY DO BAKALARKY:
 
 -pripraveni tasku "zvenku" s pouzitim prlimit a cgroup freezer? asi je to nesmysl.
 
--system setup - napriklad swap musi byt vypnuty aby fungoval memory limit.
+- DETACH flag pri unmountovani rootu.
+
+-system settings - napriklad swap musi byt vypnuty aby fungoval memory limit.

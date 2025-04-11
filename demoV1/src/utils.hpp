@@ -16,14 +16,10 @@ namespace type_utils
     template<typename T>
     inline constexpr auto to_std_optional(boost::optional<T> opt) 
     {
-        if (opt.has_value()) 
-        {
-            return std::make_optional(std::forward<decltype(opt)>(opt).value());
-        }
+        if (opt.has_value())
+            { return std::make_optional(std::forward<decltype(opt)>(opt).value()); }
         else 
-        {
-            return std::optional<T>();
-        }
+            { return std::optional<T>(); }
     };
 }
 
@@ -94,13 +90,13 @@ namespace file_utils
     }
 
     template<typename ... Args>
-    bool write_formatted(const fs::path& path, const std::format_string<Args...> fmt, Args&&... args)
+    bool write_formatted(const fs::path& path, const std::format_string<Args...>& fmt, Args&&... args)
     {
         return write_text(path, std::vformat(fmt.get(), std::make_format_args(args...)));
     }
 
     template<typename ... Args>
-    bool append_formatted(const fs::path& path, const std::format_string<Args...> fmt, Args&&... args)
+    bool append_formatted(const fs::path& path, const std::format_string<Args...>& fmt, Args&&... args)
     {
         return append_text(path, std::vformat(fmt.get(), std::make_format_args(args...)));
     }
@@ -135,7 +131,7 @@ namespace file_utils
         return is;
     }
 
-    std::string read_row_col(std::ifstream& f, unsigned int row, unsigned int col)
+    std::string read_row_col(std::ifstream& f, size_t row, unsigned int col)
     {
         auto& s = skip_lines(f, row);
 

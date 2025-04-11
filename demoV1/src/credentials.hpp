@@ -194,7 +194,7 @@ namespace credentials
         }
 
         /**
-         * @brief Switch credentials to the assigned values for the box.
+         * @brief Switch credentials (UID and GID) to values assigned to the box.
          * 
          * @details Switches real, effective, and saved-set UID and GID. 
          */

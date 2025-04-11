@@ -3,7 +3,7 @@
 
 #include "logs.hpp"
 
-/// @brief Log a critical error and terminate the container.
+/// @brief Log a critical error and terminate the current process.
 /// @tparam ...Args 
 /// @param fmt Formatted string with the message.
 /// @param ...args Args for the formatted string.

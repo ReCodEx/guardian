@@ -157,17 +157,21 @@ namespace tasks
             return clone_rv;
         }
 
+        /// @brief Prepare clone_args argument for clone3(), based on the task configuration, and call clone3().
+        /// @param stack Currently unused and nullptr is passed.
+        /// @param cgrp_fd FD of the directory of this task's cgroup.
+        /// @return PID of the task process.
         pid_t clone3_task(void* stack, uint64_t cgrp_fd)
         {
             auto args = task_clone_args(*task_config_, stack, cgrp_fd);
             return syscall(SYS_clone3, &args, sizeof(clone_args));
         }
 
-        /// @brief 
-        /// @param task_conf 
-        /// @param stack 
-        /// @param cgrp_fd 
-        /// @return 
+        /// @brief Setup the clone_args struct based on the task configuration.
+        /// @param task_conf Task configuration node.
+        /// @param stack Currently unused.
+        /// @param cgrp_fd FD of the directory of this task's cgroup.
+        /// @return struct clone_args to pass to clone3.
         clone_args task_clone_args(const config::task_config& task_conf, void* stack, uint64_t cgrp_fd)
         {
             clone_args args{0};
@@ -178,13 +182,13 @@ namespace tasks
             return args;
         }
 
-        /// @brief Prepares args and envp arrays and calls execve() on task executable. 
-        /// @return execve() return value.
+        /// @brief Prepare argv[] and envp[] arguments with args and env variables specified in the config, and call execve() for this task. 
+        /// @return Doesn't return unless execve() fails.
         int call_execve()
         {
             auto& exec = task_config_->exec_path();
             auto cargs = convert_to_argv(task_config_->exec_args());
-            char** environ = env_manager_->get_envp().data();
+            char** environ = env_manager_->get_envp();
             
             return execve(exec.c_str(), cargs.data(), environ);
         }
@@ -235,17 +239,13 @@ namespace tasks
         /// @brief Set resource limits for the task process, as specified in the task config node.
         void set_resource_limits()
         {
-            auto& limits = task_config_->rlimits();
+            auto& rlimits = task_config_->rlimits();
 
-            if(limits.memory()) set_mem_limit(limits.memory().value());
-
-            if(limits.cpu_time()) set_cpu_limit(limits.cpu_time().value());
-
-            if(limits.as_size()) set_as_size_limit(limits.as_size().value());
-
-            if(limits.processes()) set_processes_limit(limits.processes().value());
-
-            if(limits.disk_usage()) set_disk_quota_quotactl(limits.disk_usage().value());
+            if(rlimits.memory())    set_mem_limit(rlimits.memory().value());
+            if(rlimits.cpu_time())  set_cpu_limit(rlimits.cpu_time().value());
+            if(rlimits.as_size())   set_as_size_limit(rlimits.as_size().value());
+            if(rlimits.processes()) set_processes_limit(rlimits.processes().value());
+            if(rlimits.disk_usage()) set_disk_quota_quotactl(rlimits.disk_usage().value());
         }
 
         /// @brief Set the limit on memory utilization for the task.
@@ -254,7 +254,7 @@ namespace tasks
             task_cgrp_.set_strict_memory_limit(bytes);
         }
 
-        /// @brief Set the limit on total disk utilization. Will work only on filesystems supporting quotactl() (i.e. not btrfs).
+        /// @brief Set the limit on disk usage (sum of file sizes owned by box_uid). Works only on filesystems supporting quotactl() (i.e. not btrfs).
         /// @param bytes The limit in bytes.
         /// TODO: add inodes limit?
         void set_disk_quota_quotactl(size_t bytes)
@@ -277,24 +277,28 @@ namespace tasks
                 { terminate("quotactl() failed, errno: {}", errno); }
         }
 
-        
+        /// @brief Set the limit on the total number of processes the task launches to 'n'. (e.g. using fork() or commands in a bash script)
         void set_processes_limit(size_t n)
         {
             task_cgrp_.set_processes_limit(n);
         }
 
-        static void set_as_size_limit(size_t bytes)
+        /// @brief Set the limit on address space size of the task. Applies to each process launched (e.g. using fork() or a command in a bash script). 
+        /// @param bytes 
+        void set_as_size_limit(size_t bytes)
         {
             rlimit as{bytes,bytes};
             if(setrlimit(RLIMIT_AS, &as) == -1)
-                { terminate("Failed to set address space limit for the child process. Arg: {} Errno: {}", bytes, errno); }
+                { terminate("setrlimit() failed when setting address space size limit for task \"{}\". Errno: {}", task_config_->name(), errno); }
         }
 
+        /// @brief Set the limit on CPU time consumed by the task. Applies to each process launched (e.g. using fork() or a command in a bash script). 
+        /// @param bytes 
         void set_cpu_limit(size_t s)
         {
             rlimit cpu_time{s,s};
             if(setrlimit(RLIMIT_CPU, &cpu_time) == -1)
-                { terminate("setrlimit() failed when setting cpu_time limit for task {}. Errno: {}", task_config_->name(), errno); }
+                { terminate("setrlimit() failed when setting cpu_time limit for task \"{}\". Errno: {}", task_config_->name(), errno); }
         }
 
         std::chrono::milliseconds waiting_time()
@@ -302,6 +306,7 @@ namespace tasks
             return std::chrono::milliseconds(1000);
         }
 
+        /// @brief Get the rusage struct with total accounting for all tasks (all child processes of the proxy process). 
         rusage get_children_rusage()
         {
             rusage r_usage;
@@ -322,12 +327,18 @@ namespace tasks
     class task_manager
     {
     public:
+        /// @brief 
+        /// @param tasks Configuration node for tasks.
+        /// @param credentials Called to switch credentials to box values.
+        /// @param env Called to generate environment variables for a task.
         task_manager(const config::tasks_config& tasks, credentials::proxy_credentials_manager& credentials, env::env_manager& env) :  
         tasks_config(&tasks),
         credentials_manager_(&credentials),
         env_manager_(&env)
         {}
 
+        /// @brief Run all tasks and return metadata about their execution.
+        /// @return task_report struct as defined in the configuration source file.
         config::task_report run_all_tasks()
         {
             config::task_report report;
@@ -337,7 +348,7 @@ namespace tasks
                 tasks::task_supervisor task_(*task_config, *credentials_manager_, *env_manager_);
                 auto stats = task_.run_task();
                 report.insert(stats);
-                logs::debug("Task finished with exit code: {}, in {} ms and {} bytes of used memory", stats.exit_code, stats.cg_total_time_usec, stats.cg_total_mem_bytes);
+                logs::debug("Task finished with exit code: {}, in {} us and {} bytes of used memory", stats.exit_code, stats.cg_total_time_usec, stats.cg_total_mem_bytes);
             }
             return report;
         }
@@ -345,10 +356,10 @@ namespace tasks
         /// @brief Configuration node for tasks. 
         const config::tasks_config* tasks_config;
         
-        /// @brief Credentials manager class to switch credentials to box values.
+        /// @brief Called to switch credentials to box values.
         credentials::proxy_credentials_manager* credentials_manager_;
         
-        /// @brief Environment manager class which generates envp parameter for execve().
+        /// @brief Called to generate environment variables for a task.
         env::env_manager* env_manager_; 
     };
 }
