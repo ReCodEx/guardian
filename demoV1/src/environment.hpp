@@ -2,8 +2,10 @@
 #define CONTAINER_ENV
 
 #include <filesystem>
+
 #include <sys/mount.h>
 #include <errno.h>
+
 #include "config.hpp"
 #include "terminate.hpp"
 #include "cgrps.hpp"
@@ -13,12 +15,13 @@ namespace env
 {
     namespace fs = std::filesystem;
 
-    /// @brief Manager class for the mount namespace of the proxy and box.
+    /// @brief Responsible for setting up the mount namespace of the proxy and box.
     class proxy_mount_manager
     {
     public:
         /// @brief 
-        /// @param proxy_config Reference to proxy configuration node.
+        /// @param proxy_config Proxy node of the configuration.
+        /// @param credentials Credentials manager stores the box root path. 
         proxy_mount_manager(const config::proxy_config& proxy_config, const credentials::proxy_credentials_manager& credentials) :  proxy_config_(&proxy_config),
                                                                                                                                     credentials_(&credentials)
         {}
@@ -33,6 +36,8 @@ namespace env
     private:
         /// @brief Proxy configuration node.
         const config::proxy_config* proxy_config_;
+        
+        /// @brief Stores the box root path.
         const credentials::proxy_credentials_manager* credentials_;
 
         /// @brief Create a mount point at the box root directory.
@@ -85,6 +90,14 @@ namespace env
         /// @brief Apply the rule - mount an outside/temporary directory or filesystem into the box.
         void apply()
         {
+            /// Skip the rule if it has the maybe() flag and the outside directory
+            /// doesn't exist.
+            if(rule_->maybe() && !fs::is_directory(rule_->out_dir()))
+            { 
+                logs::debug("Skipping the mount of maybe() rule: \"{}\".", rule_->string()); 
+                return;
+            } 
+
             auto in = credentials_->box_root() / rule_->in_dir();
             auto& out = rule_->out_dir();
             auto flags = default_flags();
@@ -116,18 +129,25 @@ namespace env
         /// @brief Create necessary directories for the rule.
         void create_directories()
         {
+            /// Skip the rule if it has the maybe() flag and the outside directory
+            /// doesn't exist.
+            if(rule_->maybe() && !fs::is_directory(rule_->out_dir())) 
+            {
+                logs::debug("Skipping creation of directories for maybe() rule: \"{}\".", rule_->string());
+                return; 
+            } 
+
             create_inner_dir();
             if(rule_->tmp()) { create_outer_temp_dir(); }
             if(dummy_dir_) { create_dummy_dir(); }
         }
         
         /// @brief Remember a dummy directory created for this rule to clean it up later.
-        /// @param dir Path to the directory.
+        /// @param dir Path of the directory.
         void add_dummy_dir(const fs::path& dir)
         {
             dummy_dir_ = dir;
         }
-
     private:
         /// @brief The rule configuration.
         const config::dir_rule_config* rule_;
@@ -145,14 +165,14 @@ namespace env
             create_dir(credentials_->box_root() / rule_->in_dir());
         }
     
-        /// @brief Create an outer directory for a temp rule.
+        /// @brief Create an outer directory for a rule with the temp() flag.
         void create_outer_temp_dir()
         {
             logs::debug("Creating outer temporary directory: {}", rule_->out_dir().string());
             create_dir(rule_->out_dir());
         }
 
-        /// @brief Create a dummy directory for a nested mount.(TODO: link to documentation)
+        /// @brief Create a dummy directory possibly required for a nested mount.(TODO: link to documentation)
         void create_dummy_dir()
         {
             logs::debug("Checking for dummy dir: {}", dummy_dir_.value().string());
@@ -313,7 +333,7 @@ namespace env
             apply_rules();
         }
         
-        /// @brief Apply all rules. Assumes all needed directories exist.
+        /// @brief Apply all rules. Assumes all needed directories were created by create_mount_points().
         void apply_rules()
         {
             if(fs_config_->use_default_rules())

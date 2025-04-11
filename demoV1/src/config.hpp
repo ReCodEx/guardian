@@ -515,7 +515,7 @@ namespace config
                 if(o == "noexec")   { noexec_ = true; }
                 if(o == "maybe")    { maybe_ = true; }
                 if(o == "fs")       { fs_ = true; }
-                if(o == "tmp")      { tmp_ = true; }
+                if(o == "tmp")      { tmp_ = true; rw_ = true; }
                 if(o == "norec")    { norec_ = true; }
                 if(o == "allow_newdir")    { allow_newdir_ = true; }
             }

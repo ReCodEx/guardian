@@ -148,14 +148,14 @@ UNIX processes normally inherit all environment variables from their parent. The
 sandbox however passes only those variables which are explicitly requested by
 environment rules:
 
-*-E, --env=*'var':: TODO
+*-E, --env=*'var':: DONE
 	Inherit the variable 'var' from the parent.
 
-*-E, --env=*'var'*=*'value':: TODO
+*-E, --env=*'var'*=*'value':: DONE
 	Set the variable 'var' to 'value'. When the 'value' is empty, the
 	variable is removed from the environment.
 
-*-e, --full-env*:: TODO
+*-e, --full-env*:: DONE
 	Inherit all variables from the parent.
 
 The rules are applied in the order in which they were given, except for
@@ -188,21 +188,21 @@ no setuid binaries). This behavior can be modified using the 'options':
 *dev*:: DONE
 	Allow access to character and block devices.
 
-*noexec*:: CHECK
+*noexec*:: DONE
 	Disallow execution of binaries.
 
-*maybe*:: CHECK 
+*maybe*:: DONE 
 	Silently ignore the rule if the directory to be bound does not exist.
 
 *fs*:: DONE
 	Instead of binding a directory, mount a device-less filesystem called 'in'.
 	For example, this can be 'proc' or 'sysfs'. 
 
-*tmp*:: TODO: implicit rw
+*tmp*:: DONE
 	Bind a freshly created temporary directory writeable for the sandbox user.
 	Accepts no 'out', implies *rw*.
 
-*norec*:: CHECK
+*norec*:: DONE
 	Do not bind recursively. Without this option, mount points in the outside
 	directory tree are automatically propagated to the sandbox.
 
@@ -304,3 +304,5 @@ TEMATA + PROBLEMY DO BAKALARKY:
 - MOUNT_DETACH a busy chyba pri umount() 
 
 - redirectovani stdin a stderr - pomoci freopen, nejdrive err, err to out pomoci dup2()
+
+-directory rules - syntax, bezpecnost, ...
