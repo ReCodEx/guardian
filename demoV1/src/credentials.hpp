@@ -67,13 +67,13 @@ namespace credentials
             return box_gid_;
         }
         
-        /// @brief Getter for the assigned box root cgroup.
+        /// @brief Getter for the path of the root cgroup of this instance.
         const fs::path& box_cgroup() const
         {
             return box_cgroup_;
         }
 
-        /// @brief Getter for the assigned box root directory.
+        /// @brief Getter for the root directory of this instance.
         const fs::path& box_root() const
         {
             return box_root_;
@@ -85,30 +85,29 @@ namespace credentials
         /// @brief See section Credentials in the readme.
         uid_t box_id_;        
 
-        /// @brief See section Credentials in the readme.
+        /// @brief UID that the box will use (Used for example for file ownership).
         uid_t box_uid_;        
         
-        /// @brief See section Credentials in the readme.
+        /// @brief GID that the box will use (Used for example for file ownership).
         uid_t box_gid_;        
 
-        /// @brief The original UID as which the container was launched.
+        /// @brief The original UID as which this instance was launched.
         uid_t orig_uid_;
 
-        /// @brief The original GID as which the container was launched.
+        /// @brief The original GID as which this instance was launched.
         gid_t orig_gid_;
 
-        /// @brief Root directory for the tree visible by the box.
+        /// @brief Root directory for the filesystem of this instance.
         fs::path box_root_;
         
-        /// @brief Root directory for the tree visible by the box.
+        /// @brief Root cgroup for this instance.
         fs::path box_cgroup_;
 
+        /// @brief Start of the range from which box UID and GID are assigned.
         static constexpr uid_t box_uid_range_start_ = 60000;
         
-        /**
-         * @brief Reserves a box_id and assigns UID/GID.
-         * @details Currently randomly assigned, a daemon keeper process that assigns IDs is planned.
-         */
+        /// @brief Reserves a box_id and assigns UID/GID by adding the id and box_uid_range_start_.
+        /// @details Currently the box_id is randomly assigned, a daemon keeper process that assigns IDs is planned.
         void assign_box_ids()
         {
             std::random_device rd;
@@ -120,14 +119,18 @@ namespace credentials
             box_gid_ = box_uid_;
         }
         
+        /// @brief Assign a root directory for the filesystem of this instance.
+        /// @param box_id box_id acquired in assign_box_ids().
         fs::path assign_box_root(uid_t box_id)
         {
             return config_->boxes_dir() / fs::path(std::to_string(box_id));
         }
         
+        /// @brief Assign a root cgroup for this instance.
+        /// @param box_id box_id acquired in assign_box_ids().
         fs::path assign_box_cgroup(uid_t box_id)
         {
-            return fs::path(std::to_string(box_id));
+            return config_->boxes_cgroup() / fs::path(std::to_string(box_id));
         }
     };
 
@@ -137,34 +140,25 @@ namespace credentials
     public:
         proxy_credentials_manager() {}
         
-        /**
-         * @brief Constructor
-         * @param root_manager Reference to the root class storing assigned credentials.
-         */
+        /// @brief Constructor
+        /// @param root_manager Reference to the corresponding root class that assigns credentials.
         proxy_credentials_manager(const root_credentials_manager& root_manager) : credentials_root_(&root_manager)
         {}
         
-        /**
-         * @brief Getter for the assigned box_uid.
-         */
+        /// @brief Getter for the assigned box_uid.
         uid_t box_uid() const
         {
             return credentials_root_->box_uid();
         }
 
-        /**
-         * @brief Getter for the assigned box_gid.
-         */
+        /// @brief Getter for the assigned box_gid.
         uid_t box_gid() const
         {
             return credentials_root_->box_gid();
         }
 
-        /**
-         * @brief Switch back to the original UID/GID.
-         * 
-         * @details Switches real, effective, and saved-set UID and GID. 
-         */
+        /// @brief Switch back to the UID/GID as which this instance was launched.
+        /// @details Switches real, effective, and saved-set UID and GID. 
         void switch_to_user()
         {
             auto orig_gid = credentials_root_->orig_gid();
@@ -179,11 +173,8 @@ namespace credentials
                 { terminate("Couldn't switch to original UID, errno: {}", errno); }
         }
 
-        /**
-         * @brief Switch credentials (UID and GID) to values assigned to the box.
-         * 
-         * @details Switches real, effective, and saved-set UID and GID. 
-         */
+        /// @brief Switch credentials (UID and GID) to values assigned to the box.
+        /// @details Switches real, effective, and saved-set UID and GID. 
         void switch_to_box()
         {
             auto box_gid = credentials_root_->box_gid();
@@ -199,21 +190,20 @@ namespace credentials
                 { terminate("Couldn't switch to box UID, errno: {}", errno); }
         }
         
-        /// @brief Getter for box root directory assigned by root_credentials_manager().
+        /// @brief Getter for box root directory assigned by the root credentials manager class.
         const fs::path& box_root() const
         {
             return credentials_root_->box_root();
         }
 
-        /// @brief Getter for box root cgroup assigned by root_credentials_manager().
+        /// @brief Getter for sandbox root cgroup assigned by the root credentials manager class.
         const fs::path& box_cgroup() const
         {
-            logs::debug("box cgroup test: {}", credentials_root_->box_cgroup().string());
             return credentials_root_->box_cgroup();
         }
 
     private:
-        /// @brief Pointer to the root class storing assigned credentials.
+        /// @brief Corresponding root class that assigns credentials.
         const root_credentials_manager* credentials_root_;
     };
 }

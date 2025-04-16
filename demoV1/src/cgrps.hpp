@@ -26,39 +26,37 @@ namespace cgroup
         return path;
     }
 
-    /**
-     * @brief Base class for cgroup resource controller classes.
-     */
+    
+    /// @brief Base class for cgroup resource controller classes.
     class controller
     {
     protected:
         /// @brief Pointer to the path of the cgroup (member of cgroupv2_t).
         const fs::path* cgrp_path_;
 
-        /// @brief String with the type of the controller (written to cgroup.subtree_control to enable in child cgroups)
+        /// @brief String with the type of the controller (written to cgroup.subtree_control to enable this controller in child cgroups)
         virtual const std::string& cntrlr_type() const = 0;
 
     public:
         controller()
         {}
         
-        /// @brief 
-        /// @param path reference to the cgroup path (stored as a member in cgroupv2_t) 
+        /// @brief Constructor.
+        /// @param path reference to the path of the cgroup (stored as a member in cgroupv2_t) 
         controller(const fs::path& path) : cgrp_path_(&path) {}
 
-        /// @brief Enable this controller for child cgroups.
-        /// @return 
+        /// @brief Enable this controller for child cgroups by writing into the cgroup.subtree_control file.
+        /// @return True if the write succeeded.
         bool enable()
         {
-            //    "echo +type >> /sys/fs/cgroup/cgroup.subtree_control"
+            // Equivalent to "echo +type >> cgrp_path_/cgroup.subtree_control".
 
             fs::path subtree_control(*cgrp_path_ / CGROUP_SUBTREE_CONTROL());
             bool success = file_utils::append_text(subtree_control, "+" + cntrlr_type());
             return success;
         }
     private:
-        /// @brief Name of the cgroup.subtree_control file.
-        /// @return 
+        /// @brief Returns the name of the cgroup.subtree_control file.
         static const fs::path& CGROUP_SUBTREE_CONTROL()
         {
             static fs::path fname("cgroup.subtree_control");
@@ -89,14 +87,14 @@ namespace cgroup
         }
 
     private:
-        /// @brief Name of the cgroup cpu.max file.
+        /// @brief Returns the name of the cgroup cpu.max file.
         static const fs::path& CPU_MAX()
         {
             static fs::path fname("cpu.max");
             return fname;
         }
 
-        /// @brief Name of the cgroup cpu.stat file.
+        /// @brief Returns the name of the cgroup cpu.stat file.
         static const fs::path& CPU_STAT()
         {
             static fs::path fname("cpu.stat");
@@ -116,7 +114,7 @@ namespace cgroup
         /// @return true if the write succeeded.
         bool set_memory_max(unsigned int bytes)
         {
-            //  echo "$BYTES" > memory.max
+            //  Equivalent to "echo $BYTES > memory.max"
 
             fs::path memory_max(*cgrp_path_ / MEMORY_MAX());
             bool success = file_utils::write_formatted(memory_max, "{}", bytes);
@@ -129,7 +127,7 @@ namespace cgroup
         /// @return true if the write succeeded.
         bool set_memory_min_to_max()
         {
-            //  echo max > memory.min
+            // Equivalent to "echo max > memory.min".
 
             fs::path memory_min(*cgrp_path_ / MEMORY_MIN());
             bool success = file_utils::write_formatted(memory_min,"max");
@@ -145,29 +143,28 @@ namespace cgroup
             return std::stoi(file_utils::read_row_col(memory_peak,0,0));
         }
     protected:
+        /// @brief override the cntrlr_type() with "memory".
+        /// @return "memory"
         const std::string& cntrlr_type() const override
         {
             return type;
         }
     private:
-        /// @brief Name of the cgroup memory.max file.
-        /// @return 
+        /// @brief Returns the name of the cgroup memory.max file.
         static const fs::path& MEMORY_MAX()
         {
             static fs::path fname("memory.max");
             return fname;
         }
 
-        /// @brief Name of the cgroup memory.peak file.
-        /// @return 
+        /// @brief Returns the name of the cgroup memory.peak file.
         static const fs::path& MEMORY_PEAK()
         {
             static fs::path fname("memory.peak");
             return fname;
         }
         
-        /// @brief Name of the cgroup memory.min file.
-        /// @return 
+        /// @brief Returns the name of the cgroup memory.min file.
         static const fs::path& MEMORY_MIN()
         {
             static fs::path fname("memory.min");
@@ -187,19 +184,21 @@ namespace cgroup
         /// @return true if the write was a success.
         bool set_pids_max(size_t count)
         {
-            //  echo "$count" > pids.max
+            // Equivalent to "echo $count > pids.max"
 
             fs::path pids_max(*cgrp_path_ / PIDS_MAX());
             bool success = file_utils::write_formatted(pids_max, "{}", count);
             return success;
         }
     protected:
+        /// @brief Override the cntrlr_type() with "pids".
+        /// @return "pids"
         const std::string& cntrlr_type() const override
         {
             return type;
         }
     private:
-        /// @brief Name of the cgroup pids.max file.
+        /// @brief Returns the name of the cgroup pids.max file.
         static const fs::path& PIDS_MAX()
         {
             static fs::path fname("pids.max");
@@ -236,7 +235,7 @@ namespace cgroup
             return fd_.value();
         }
 
-        /// @brief Close the file descriptor opened for this cgroup.
+        /// @brief Close the file descriptor opened for this cgroup. (Does nothing if there's no open descriptor.)
         void close_fd()
         {
             if(fd_.has_value())
@@ -337,7 +336,7 @@ namespace cgroup
             }
         }
 
-        /// @brief Delete the cgroup with this path and create a new one.
+        /// @brief Delete the cgroup with this path and create it again.
         void reset_path()
         {
             if(fs::is_directory(cgrp_path_))
@@ -400,7 +399,7 @@ namespace cgroup
         /// @brief Interface for the root cgroup (/sys/fs/cgroup).
         root_cgroupv2_t root_cgrp_;
         
-        /// @brief The proxy process is placed here because we cant enable controllers in a populated cgroup.
+        /// @brief The proxy process is placed in a leaf cgroup without children, because controllers can't be enabled in a populated cgroup.
         std::unique_ptr<cgroupv2_t> leaf_cgrp_;
     };
 
@@ -411,9 +410,9 @@ namespace cgroup
         root_cgroup_manager()
         {}
         
-        /// @brief 
-        /// @param config
-        /// @param credentials
+        /// @brief Constructor.
+        /// @param config Root node of the configuration.
+        /// @param credentials Called to obtain path of the box cgroup.
         root_cgroup_manager(const config::root_configuration& config, credentials::root_credentials_manager& credentials) : 
         config_(&config), 
         credentials_(&credentials)
@@ -424,10 +423,10 @@ namespace cgroup
             cleanup();
         }
 
-        /// @brief Setup the box and proxy cgroup.
+        /// @brief Setup the root and proxy cgroups.
         void run()
         {
-            fs::path box_cg = config_->get_box_cgroup(fs::path(std::to_string(credentials_->box_id()))) ;
+            fs::path box_cg = credentials_->box_cgroup() ;
             box_cgrp_   = std::make_unique<cgroupv2_t>(box_cg);
             leaf_cgrp_  = std::make_unique<cgroupv2_t>(box_cg / fs::path("leaf"));
             proxy_cgrp_ = std::make_unique<cgroupv2_t>(box_cg / fs::path("proxy"));
@@ -444,16 +443,16 @@ namespace cgroup
             return proxy_cgrp_->open_fd();
         }
 
-        /// @brief Close the fd pointing to the proxy cgroup directory (won't fail if it isn't open).
+        /// @brief Close the fd pointing to the proxy cgroup directory (won't fail if open_proxy_fd() hasn't been called).
         void close_proxy_fd()
         {
             proxy_cgrp_->close_fd();
         }
     private:
-        /// @brief 
+        /// @brief Root node of the configuration.
         const config::root_configuration* config_;
         
-        /// @brief 
+        /// @brief Called to obtain path of the box cgroup.
         const credentials::root_credentials_manager* credentials_;
         
         /// @brief Interface for the root cgroup (/sys/fs/cgroup).
@@ -465,7 +464,7 @@ namespace cgroup
         /// @brief The cgroup for the proxy and the root of the cgroup namespace that the proxy runs in.
         std::unique_ptr<cgroup::cgroupv2_t> proxy_cgrp_;
         
-        /// @brief The root process is placed here because we cant enable controllers in a populated cgroup.
+        /// @brief The root process is placed in a leaf cgroup without children, because controllers can't be enabled in a populated cgroup.
         std::unique_ptr<cgroup::cgroupv2_t> leaf_cgrp_;
 
         void cleanup()

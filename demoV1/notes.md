@@ -317,3 +317,5 @@ TEMATA + PROBLEMY DO BAKALARKY:
 - DETACH flag pri unmountovani rootu.
 
 -system settings - napriklad swap musi byt vypnuty aby fungoval memory limit.
+
+- CLONE_INTO_CGROUP - ano/ne

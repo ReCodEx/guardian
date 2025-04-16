@@ -703,12 +703,14 @@ namespace config
     class credentials_config
     {
     public:
+        /// @brief Return the path to the common directory for all container instances.
         static const fs::path& boxes_dir()
         {
             static fs::path p(defaults::BOXES_DIR);
             return p;
         } 
 
+        /// @brief Return the path to the common cgroup for all container instances.
         static const fs::path& boxes_cgroup()
         {
             static fs::path p(defaults::BOXES_CGROUP);
@@ -780,31 +782,11 @@ namespace config
             return proxy_config_;
         }
         
-        fs::path get_box_root(fs::path rel) const
-        {
-            return boxes_dir() / rel;
-        }
-
-        fs::path get_box_cgroup(fs::path rel) const
-        {
-            return boxes_cgroup() / rel;
-        }
     private:
+        credentials_config creds_config_;
         proxy_config proxy_config_;
         std::vector<std::unique_ptr<task_config>> tasks_;
         
-        static const fs::path& boxes_dir()
-        {
-            static fs::path p(defaults::BOXES_DIR);
-            return p;
-        } 
-
-        static const fs::path& boxes_cgroup()
-        {
-            static fs::path p(defaults::BOXES_CGROUP);
-            return p;
-        } 
-
         void parse_options(int argc, char** argv)
         {
             options::options_description general("General options");
