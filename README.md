@@ -1,4 +1,4 @@
-# rcdx_cntnr 🚀
+# ReCoDex Isolator 🚀
 
 Lightweight Linux containerization tool written "from scratch", primarily intended for evaluation of programming assignments.
 
@@ -11,7 +11,7 @@ Terminology used throughout this README and the codebase:
 
 #### 🧠 Terminology
 
-- **ReCoDex isolator** — This project including all the code.
+- **Isolator** — This tool as a whole.
 - **Instance** — One run of the isolator, from parsing the configuration file to creating a file with metadata about the run.
 - **Sandbox** — The isolated environment that is created based on the configuration file. Includes namespaces, cgroups, UID/GID, environment variables, ...
 - **Task** — A single unit of execution of the isolator, runs an executable with specified arguments in a sandbox.
