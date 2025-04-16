@@ -19,7 +19,7 @@ namespace cgroup
 {
     namespace fs = std::filesystem;
 
-    /// @brief The default path to the cgroup virtual filesystem.
+    /// @brief Default path to the cgroup virtual filesystem.
     inline auto const& CGROUP_FS_PATH()
     {
         static fs::path path("/sys/fs/cgroup");
@@ -31,7 +31,7 @@ namespace cgroup
     class controller
     {
     protected:
-        /// @brief Pointer to the path of the cgroup (member of cgroupv2_t).
+        /// @brief Pointer to the path of the cgroup ( stored in the cgroupv2_t class this controller belongs to).
         const fs::path* cgrp_path_;
 
         /// @brief String with the type of the controller (written to cgroup.subtree_control to enable this controller in child cgroups)
@@ -42,7 +42,7 @@ namespace cgroup
         {}
         
         /// @brief Constructor.
-        /// @param path reference to the path of the cgroup (stored as a member in cgroupv2_t) 
+        /// @param path reference to the path of the cgroup ( stored in the cgroupv2_t class this controller belongs to ). 
         controller(const fs::path& path) : cgrp_path_(&path) {}
 
         /// @brief Enable this controller for child cgroups by writing into the cgroup.subtree_control file.
@@ -79,7 +79,7 @@ namespace cgroup
             return std::stoi(file_utils::read_row_col(cpu_stat,0,0));
         }
     protected:
-        /// @brief Override the cntrlr_type() with "cpu".
+        /// @brief Override cntrlr_type() with "cpu".
         /// @return "cpu"
         const std::string& cntrlr_type() const override
         {
@@ -143,7 +143,7 @@ namespace cgroup
             return std::stoi(file_utils::read_row_col(memory_peak,0,0));
         }
     protected:
-        /// @brief override the cntrlr_type() with "memory".
+        /// @brief Override cntrlr_type() with "memory".
         /// @return "memory"
         const std::string& cntrlr_type() const override
         {
@@ -191,7 +191,7 @@ namespace cgroup
             return success;
         }
     protected:
-        /// @brief Override the cntrlr_type() with "pids".
+        /// @brief Override cntrlr_type() with "pids".
         /// @return "pids"
         const std::string& cntrlr_type() const override
         {
@@ -213,14 +213,14 @@ namespace cgroup
         cgroupv2_t()
         {}
         
-        /// @brief 
+        /// @brief Constructor. 
         /// @param rel_cgrp_path Relative path of the cgroup (excluding the path to the cgroup filesystem).
         cgroupv2_t(const fs::path& rel_cgrp_path) : cgrp_path_(CGROUP_FS_PATH() / rel_cgrp_path),
                                                     cpu_(cgrp_path_),
                                                     mem_(cgrp_path_),
                                                     pid_(cgrp_path_)
         {
-            init_path();
+            init();
         }
 
         ~cgroupv2_t()
@@ -235,7 +235,7 @@ namespace cgroup
             return fd_.value();
         }
 
-        /// @brief Close the file descriptor opened for this cgroup. (Does nothing if there's no open descriptor.)
+        /// @brief Close the file descriptor opened for this cgroup (Does nothing if open_fd() hasn't been called ).
         void close_fd()
         {
             if(fd_.has_value())
@@ -276,12 +276,14 @@ namespace cgroup
             return mem_.memory_usage_bytes();
         }
 
-        /// @brief Setup the memory controller so that processes are killed upon exceeding the memory limit.
-        /// @param bytes Memory limit in bytes.
+        /// @brief Setup the memory controller so that processes are killed upon exceeding a limit on memory utilization.
+        /// @param bytes The limit in bytes.
         /// @note Swap has to disabled in order for this to work properly.
+        /// @details As I understand from experimenting, the memory.min is a soft limit which causes lighter page reclaim when exceeded.
+        /// memory.max causes very aggresive page reclaim when exceeded and killing the process if pages can't be reclaimed. So we set the memory.min
+        /// to "max", not to get in the way and the memory.max to the intended limit. But swap has to be disabled even with this setup.
         void set_strict_memory_limit(size_t bytes)
         {
-            /// TODO: explain memory_min and memory_max.
             mem_.set_memory_max(bytes);
             mem_.set_memory_min_to_max();
         }
@@ -325,30 +327,14 @@ namespace cgroup
         }
 
         /// @brief Create the cgroup.
-        void init_path()
-        {
-            if(!fs::is_directory(cgrp_path_))
-            {
-                if(!fs::create_directory(cgrp_path_))
-                {
-                    terminate("Creating the cgroup {} failed", cgrp_path_.string());
-                }
-            }
-        }
-
-        /// @brief Delete the cgroup with this path and create it again.
-        void reset_path()
+        void init()
         {
             if(fs::is_directory(cgrp_path_))
-            {
-                fs::remove(cgrp_path_);
-            }
-            if(!fs::create_directory(cgrp_path_))
-            {
-                terminate("Creating the cgroup {} failed", cgrp_path_.string());
-            }
-        }
+                { terminate("Cgroup '{}' already exists.", cgrp_path_.string()); }
 
+            if(!fs::create_directory(cgrp_path_))
+                { terminate("Creating cgroup '{}' failed", cgrp_path_.string()); }
+        }
     };
 
     /// @brief Supervisor class for setting up the root cgroup (/sys/fs/cgroup).
@@ -386,8 +372,16 @@ namespace cgroup
     class proxy_cgroup_manager
     {
     public:
-        /// @brief Prepare the proxy cgroup hierarchy. Has to be run AFTER proxy_mount_manager::run().
-        /// @details The task_supervisor class is responsible for the task cgroup, so this effectively only enables controllers.
+        /// @brief Prepare the proxy level of the cgroup hierarchy for tasks to execute.
+        /// Has to be called AFTER proxy_mount_manager::run().
+        ///
+        /// @note The cgroup the proxy initially runs in is created BEFORE cloning the proxy with CLONE_INTO_CGROUP.
+        /// Together with CLONE_NEWCGROUP, this is a convenient way to both launch the process in a specific cgroup and set this cgroup as the root 
+        /// of the new namespace.
+        ///
+        /// @details The main responsibility of this method is enabling controllers to be used deeper in the hierarchy. 
+        /// Before doing that, a "proxy_leaf" cgroup is created, where the proxy is placed. This is because enabling controllers isn't possible in a
+        /// cgroup populated by a process.
         void run()
         {
             leaf_cgrp_ = std::make_unique<cgroupv2_t>("proxy_leaf");
@@ -396,10 +390,10 @@ namespace cgroup
             root_cgrp_.enable_all_cntrlrs();
         }
     private:
-        /// @brief Interface for the root cgroup (/sys/fs/cgroup).
+        /// @brief Interface for the cgroup the proxy is launched in, which is now the root cgroup in the new namespace. (/sys/fs/cgroup).
         root_cgroupv2_t root_cgrp_;
         
-        /// @brief The proxy process is placed in a leaf cgroup without children, because controllers can't be enabled in a populated cgroup.
+        /// @brief Leaf cgroup for the proxy process. See the description of run().
         std::unique_ptr<cgroupv2_t> leaf_cgrp_;
     };
 
@@ -411,8 +405,8 @@ namespace cgroup
         {}
         
         /// @brief Constructor.
-        /// @param config Root node of the configuration.
-        /// @param credentials Called to obtain path of the box cgroup.
+        /// @param config Root node of configuration.
+        /// @param credentials Reference to credentials_manager, which is called to obtain root cgroup of this instance.
         root_cgroup_manager(const config::root_configuration& config, credentials::root_credentials_manager& credentials) : 
         config_(&config), 
         credentials_(&credentials)
@@ -424,16 +418,19 @@ namespace cgroup
         }
 
         /// @brief Setup the root and proxy cgroups.
+        /// @details This method creates the root and proxy cgroups for this instance, and enables controllers for the proxy cgroup.
+        /// Before enabling controllers, a leaf cgroup is created, where the root process is placed. This is needed because enabling controllers isn't possible in a
+        /// cgroup populated by a process.
         void run()
         {
-            fs::path box_cg = credentials_->box_cgroup() ;
-            box_cgrp_   = std::make_unique<cgroupv2_t>(box_cg);
-            leaf_cgrp_  = std::make_unique<cgroupv2_t>(box_cg / fs::path("leaf"));
-            proxy_cgrp_ = std::make_unique<cgroupv2_t>(box_cg / fs::path("proxy"));
+            fs::path instance_cg = credentials_->instance_cgroup();
+            instance_cgrp_   = std::make_unique<cgroupv2_t>(instance_cg);
+            leaf_cgrp_  = std::make_unique<cgroupv2_t>(instance_cg / fs::path("leaf"));
+            proxy_cgrp_ = std::make_unique<cgroupv2_t>(instance_cg / fs::path("proxy"));
 
             root_cgrp_.enable_all_cntrlrs();
             leaf_cgrp_->add_me();
-            box_cgrp_->enable_all_cntrlrs();
+            instance_cgrp_->enable_all_cntrlrs();
         }
 
         /// @brief Open a file descriptor pointing to the proxy cgroup directory (used in clone3() with the CLONE_INTO_CGROUP flag).
@@ -449,22 +446,22 @@ namespace cgroup
             proxy_cgrp_->close_fd();
         }
     private:
-        /// @brief Root node of the configuration.
+        /// @brief Root node of configuration.
         const config::root_configuration* config_;
         
-        /// @brief Called to obtain path of the box cgroup.
+        /// @brief Pointer to credentials_manager, which is called to obtain root cgroup of this instance.
         const credentials::root_credentials_manager* credentials_;
         
-        /// @brief Interface for the root cgroup (/sys/fs/cgroup).
+        /// @brief Interface for setting up the root of the cgroup filesystem. (/sys/fs/cgroup).
         root_cgroupv2_t root_cgrp_;
         
-        /// @brief The root cgroup of this box.
-        std::unique_ptr<cgroup::cgroupv2_t> box_cgrp_;
+        /// @brief Root cgroup of this instance.
+        std::unique_ptr<cgroup::cgroupv2_t> instance_cgrp_;
         
-        /// @brief The cgroup for the proxy and the root of the cgroup namespace that the proxy runs in.
+        /// @brief Proxy cgroup of this instance (and root of the sandbox cgroup namespace).
         std::unique_ptr<cgroup::cgroupv2_t> proxy_cgrp_;
         
-        /// @brief The root process is placed in a leaf cgroup without children, because controllers can't be enabled in a populated cgroup.
+        /// @brief Leaf cgroup for the root process. See the description of run().
         std::unique_ptr<cgroup::cgroupv2_t> leaf_cgrp_;
 
         void cleanup()

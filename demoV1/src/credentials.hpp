@@ -68,7 +68,7 @@ namespace credentials
         }
         
         /// @brief Getter for the path of the root cgroup of this instance.
-        const fs::path& box_cgroup() const
+        const fs::path& instance_cgroup() const
         {
             return box_cgroup_;
         }
@@ -199,7 +199,7 @@ namespace credentials
         /// @brief Getter for sandbox root cgroup assigned by the root credentials manager class.
         const fs::path& box_cgroup() const
         {
-            return credentials_root_->box_cgroup();
+            return credentials_root_->instance_cgroup();
         }
 
     private:

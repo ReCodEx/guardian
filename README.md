@@ -32,7 +32,7 @@ An instance runs three different processes:
   ```
 - CMake 3.20 and a compiler capable of C++23.
 - Boost `program_options` package.
-- For using limits on disk usage, the container itself has to run on a filesystem that supports `QUOTACTL(2)` (e.g. ext4).
+- For using limits on disk usage, the sandbox has to be located on a filesystem that supports `QUOTACTL(2)` (e.g. ext4).
 
 ---
 
