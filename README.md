@@ -1,4 +1,4 @@
-# ReCoDex Isolator 🚀
+# ReCoDex Isolator
 
 Lightweight Linux containerization tool written "from scratch", primarily intended for evaluation of programming assignments.
 
