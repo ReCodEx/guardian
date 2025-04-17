@@ -87,6 +87,12 @@ tasks:
 
 The configuration file comprises of YAML nodes organised hierarchically into smaller units.
 
+### Basic options
+
+name: 'id'::
+	When you run multiple sandboxes in parallel, you should assign unique
+	IDs to them by this option. A fallback is a randomly assigned ID, which might collide anyway.
+
 ### 🌿 Environment
 Contains configuration of the environment variables that will be visible in the sandbox environment. It comprises of a list of environment rules:
 
@@ -161,12 +167,12 @@ Contains configuration of a task.
 
 ### 📊 Resource limits
 
-- `cpu-time: 'time'`:
+- `cpu-time: 'time'`  
   Limit run time of the program to `'time'` seconds. Fractional numbers are allowed.
   Time in which the OS assigns the processor to other tasks is not counted.
   If this limit is exceeded, the program is killed (after `--extra-time`, if set).
 
-- `wall-time: 'time'`:
+- `wall-time: 'time'`  
   Limit wall-clock time to `'time'` seconds. Fractional values are allowed.
   This clock measures the time from the start of the task to its exit,
   so it does not stop when the program has lost the CPU or when it is waiting
@@ -175,24 +181,46 @@ Contains configuration of a task.
   sleeping programs.
   If this limit is exceeded, the program is killed.
 
-- `extra-time: 'time'`:
+- `extra-time: 'time'`  
   When the `--time` limit is exceeded, do not kill the program immediately,
   but wait until `--extra-time` seconds elapse since the start of the program.
   This allows to report the real execution time, even if it exceeds the limit
   slightly.
 
-- `memory: 'bytes'`:
+- `memory: 'bytes'`  
   Limit total utilization of memory as measured by cgroups accounting to `'bytes'`.
   If the limit is exceeded, the task is killed.
 
-- `disk-usage: 'blocks'`:
+- `stack: 'size'`  
+  Limit the process stack to `'size'` kilobytes.  
+  By default, the entire address space is available for the stack, but it's still subject to the `--mem` limit.  
+  If this limit is exceeded, the program receives the `SIGSEGV` signal.
+
+- `open-files: 'max'`  
+  <!-- TODO: check semantics -->
+  Limit the number of simultaneously open file descriptors to `'max'`.  
+  Default: `64`.  
+  Setting this to `0` disables the limit (unlimited open files).  
+  If the limit is reached, system calls that create file descriptors will fail with error `EMFILE`.  
+
+- `fsize: 'size'`  
+  Limit the size of each file created (or modified) by the program to `'size'` kilobytes.  
+  Typically, it’s better to control disk usage with a disk quota (see `disk-usage`), but this is helpful when quotas aren’t available on the underlying filesystem.  
+  If the limit is reached, system calls trying to grow the file fail with `EFBIG` and the program receives the `SIGXFSZ` signal.
+
+- `core: 'size'`  
+  Limit the size of core dumps created when a process crashes to `'size'` kilobytes.  
+  Default: `0` (no core dumps are created inside the sandbox).
+
+- `disk-usage: 'blocks'`
+<!-- TODO: implement semantics -->
   Set disk quota to a given number of blocks and inodes. This requires the
   filesystem to be mounted with support for quotas. Please note that this
   currently works only on the ext family of filesystems (other filesystems
   use other interfaces for setting quotas).
   If the quota is reached, system calls expanding files fail with error `EDQUOT`.
 
-- `processes: 'max'`:
+- `processes: 'max'`
   Permit the program to create up to `'max'` processes and/or threads.
   If this limit is exceeded, system calls creating processes fail with error
   `EAGAIN`.

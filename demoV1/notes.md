@@ -14,6 +14,7 @@ konzultace:
     jak ma vypadat rozhrani ReCoDex isolate - sepsat co isolate dela,
     keeper daemon proces? - prirazovani ID, directory, cgroup - zatim neresit, vyresit zkontrolovanim existence
     
+	TODO: special options v isolate
 
 ISOLATE OPTIONS vs NEW ISOLATE
 
