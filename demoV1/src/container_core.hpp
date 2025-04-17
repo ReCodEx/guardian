@@ -119,7 +119,7 @@ namespace container_core
     class root_core
     {
     public:
-        root_core(int argc, char** argv) : root_config_(argc, argv), credentials_(), cg_mngr_(root_config_, credentials_)
+        root_core(int argc, char** argv) : root_config_(argc, argv), credentials_(root_config_.get_credentials_config()), cg_mngr_(root_config_, credentials_)
         {
             logs::init_default_logger();
             logs::info("Hello world from container!");
@@ -148,7 +148,7 @@ namespace container_core
         void setup()
         {
             credentials_.run();
-            create_box_dir();
+            create_sandbox_dir();
             cg_mngr_.run();
         }
 
@@ -212,14 +212,14 @@ namespace container_core
         
         /// @brief Reserve and create root directory for the box.
         /// @note Terminates if the directory already exists.
-        void create_box_dir()
+        void create_sandbox_dir()
         {
             auto dir = credentials_.box_root();
             if(fs::is_directory(dir))
-                { terminate("Directory intended for box already exists!"); }
+                { terminate("Directory intended for the sandbox already exists!"); }
             
             if(!fs::create_directories(dir))
-                { terminate("Failed to create box directory"); }
+                { terminate("Failed to create root sandbox directory"); }
         }
 
         /// @brief Launch the proxy process with clone3().

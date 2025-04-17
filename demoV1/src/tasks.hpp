@@ -145,10 +145,10 @@ namespace tasks
                 ///
                 /// The steps before call_execve() don't depend on each other, so the order doesn't matter here.
 
-                set_resource_limits(); //Possible (probably stupid) alternative is to set these from the parent process with prlimit() and use cgroup freezer.
                 credentials_->switch_to_box();
                 optional_chdir();
                 redirect_descriptors();
+                set_resource_limits();
                 call_execve();
 
                 /// execve() doesn't return on success.
@@ -241,15 +241,23 @@ namespace tasks
         {
             auto& rlimits = task_config_->rlimits();
 
-            if(rlimits.memory())    set_mem_limit(rlimits.memory().value());
-            if(rlimits.cpu_time())  set_cpu_limit(rlimits.cpu_time().value());
-            if(rlimits.as_size())   set_as_size_limit(rlimits.as_size().value());
-            if(rlimits.processes()) set_processes_limit(rlimits.processes().value());
-            if(rlimits.disk_usage()) set_disk_quota_quotactl(rlimits.disk_usage().value());
+            if(rlimits.cpu_time())
+            {
+                if(rlimits.extra_time()) set_cpu_time(rlimits.cpu_time().value() + rlimits.extra_time().value());
+                else                     set_cpu_time(rlimits.cpu_time().value());   
+            }
+            if(rlimits.memory())        set_memory_usage(rlimits.memory().value());
+            if(rlimits.as_size())       set_as_size(rlimits.as_size().value());
+            if(rlimits.stack_size())    set_stack_size(rlimits.stack_size().value());
+            if(rlimits.processes())     set_processes_count(rlimits.processes().value());
+            if(rlimits.disk_usage())    set_disk_quota_quotactl(rlimits.disk_usage().value());
+            if(rlimits.open_files())    set_open_files(rlimits.open_files().value());
+            if(rlimits.file_size())    set_file_size(rlimits.file_size().value());
+            if(rlimits.core_dump_size())    set_core_dump_size(rlimits.core_dump_size().value());
         }
 
         /// @brief Set the limit on memory utilization for the task.
-        void set_mem_limit(size_t bytes)
+        void set_memory_usage(size_t bytes)
         {
             task_cgrp_.set_strict_memory_limit(bytes);
         }
@@ -262,14 +270,14 @@ namespace tasks
             /// TODO: comments
             std::string device = devices::find_device_for_dir(fs::path("."));
             uid_t box_uid = credentials_->box_uid();
-            std::cout << device << std::endl;
-            std::cout << box_uid << std::endl;
+            // std::cout << device << std::endl;
+            // std::cout << box_uid << std::endl;
             struct dqblk dq = 
             {
                 .dqb_bhardlimit = bytes / 1024,
                 .dqb_bsoftlimit = bytes / 1024,
-                .dqb_ihardlimit = 10,
-                .dqb_isoftlimit = 10,
+                // .dqb_ihardlimit = 10,
+                // .dqb_isoftlimit = 10,
                 .dqb_valid = QIF_LIMITS,
                 //.dqb_valid = QIF_BLIMITS,
             };
@@ -278,27 +286,63 @@ namespace tasks
         }
 
         /// @brief Set the limit on the total number of processes the task launches to 'n'. (e.g. using fork() or commands in a bash script)
-        void set_processes_limit(size_t n)
+        void set_processes_count(size_t n)
         {
             task_cgrp_.set_processes_limit(n);
         }
 
         /// @brief Set the limit on address space size of the task. Applies to each process launched (e.g. using fork() or a command in a bash script). 
         /// @param bytes 
-        void set_as_size_limit(size_t bytes)
+        void set_as_size(size_t bytes)
         {
             rlimit as{bytes,bytes};
             if(setrlimit(RLIMIT_AS, &as) == -1)
                 { terminate("setrlimit() failed when setting address space size limit for task \"{}\". Errno: {}", task_config_->name(), errno); }
         }
 
-        /// @brief Set the limit on CPU time consumed by the task. Applies to each process launched (e.g. using fork() or a command in a bash script). 
+        /// @brief Set the limit on stack size of the task. Applies to each process launched (e.g. using fork() or a command in a bash script). 
         /// @param bytes 
-        void set_cpu_limit(size_t s)
+        void set_stack_size(size_t bytes)
+        {
+            rlimit stack{bytes,bytes};
+            if(setrlimit(RLIMIT_STACK, &stack) == -1)
+                { terminate("setrlimit() failed when setting stack size limit for task \"{}\". Errno: {}", task_config_->name(), errno); }
+        }
+
+        /// @brief Set a limit on CPU time consumed by the task. Applies to each process launched (e.g. using fork() or a command in a bash script). 
+        /// @param bytes 
+        void set_cpu_time(size_t s)
         {
             rlimit cpu_time{s,s};
             if(setrlimit(RLIMIT_CPU, &cpu_time) == -1)
                 { terminate("setrlimit() failed when setting cpu_time limit for task \"{}\". Errno: {}", task_config_->name(), errno); }
+        }
+
+        /// @brief Set a limit on the number of simultaneously opened file descriptors. 
+        /// @param bytes 
+        void set_open_files(size_t n)
+        {
+            rlimit files{n,n};
+            if(setrlimit(RLIMIT_NOFILE, &files) == -1)
+                { terminate("setrlimit() failed when setting file descriptor limit for task \"{}\". Errno: {}", task_config_->name(), errno); }
+        }
+
+        /// @brief Set a limit on maximum file size. 
+        /// @param bytes 
+        void set_file_size(size_t bytes)
+        {
+            rlimit file{bytes,bytes};
+            if(setrlimit(RLIMIT_FSIZE, &file) == -1)
+                { terminate("setrlimit() failed when setting file size limit for task \"{}\". Errno: {}", task_config_->name(), errno); }
+        }
+
+        /// @brief Set a limit on maximum size of a core dump when an isolated process crashes. Longer dumps get truncated to this size.
+        /// @param bytes 
+        void set_core_dump_size(size_t bytes)
+        {
+            rlimit core{bytes,bytes};
+            if(setrlimit(RLIMIT_CORE, &core) == -1)
+                { terminate("setrlimit() failed when setting core size limit for task \"{}\". Errno: {}", task_config_->name(), errno); }
         }
 
         std::chrono::milliseconds waiting_time()

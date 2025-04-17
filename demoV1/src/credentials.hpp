@@ -123,14 +123,16 @@ namespace credentials
         /// @param box_id box_id acquired in assign_box_ids().
         fs::path assign_box_root(uid_t box_id)
         {
-            return config_->boxes_dir() / fs::path(std::to_string(box_id));
+            auto idf = config_->instance_name() ? config_->instance_name().value() : std::to_string(box_id);
+            return config_->boxes_dir() / fs::path(idf);
         }
         
         /// @brief Assign a root cgroup for this instance.
         /// @param box_id box_id acquired in assign_box_ids().
         fs::path assign_box_cgroup(uid_t box_id)
         {
-            return config_->boxes_cgroup() / fs::path(std::to_string(box_id));
+            auto idf = config_->instance_name() ? config_->instance_name().value() : std::to_string(box_id);
+            return config_->boxes_cgroup() / idf;
         }
     };
 

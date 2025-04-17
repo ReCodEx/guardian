@@ -39,6 +39,11 @@ namespace config
     {
         constexpr auto STATS_YAML = "stats-yaml";
         constexpr auto CONFIG_YAML = "yaml";
+        
+        namespace credentials
+        {
+            constexpr auto INSTANCE_NAME = "name";
+        }
 
         constexpr auto TASKS = "tasks";
         namespace task 
@@ -58,9 +63,14 @@ namespace config
             constexpr auto AS_SIZE = "as-size";
             constexpr auto CPU_TIME = "cpu-time";
             constexpr auto WALL_TIME = "wall-time";
+            constexpr auto EXTRA_TIME = "extra-time";
             constexpr auto MEMORY = "mem";
+            constexpr auto STACK = "stack";
             constexpr auto PROCESSES = "processes";
             constexpr auto DISK_USAGE = "disk-usage";
+            constexpr auto OPEN_FILES = "open-files";
+            constexpr auto FILE_SIZE = "fsize";
+            constexpr auto CORE_DUMP_SIZE = "core";
         }
 
         constexpr auto ENV = "env";
@@ -125,11 +135,16 @@ namespace config
             {
                 try
                 {
-                    if(limits_node[config_options::task::CPU_TIME]) cpu_time_s_ = limits_node[config_options::task::CPU_TIME].as<size_t>();
-                    if(limits_node[config_options::task::MEMORY]) memory_bytes_ = limits_node[config_options::task::MEMORY].as<size_t>();
-                    if(limits_node[config_options::task::WALL_TIME]) wall_time_s_ = limits_node[config_options::task::WALL_TIME].as<size_t>();
-                    if(limits_node[config_options::task::PROCESSES]) forked_processes_ = limits_node[config_options::task::PROCESSES].as<size_t>();
-                    if(limits_node[config_options::task::DISK_USAGE]) disk_usage_bytes_ = limits_node[config_options::task::DISK_USAGE].as<size_t>();
+                    if(limits_node[config_options::task::CPU_TIME]) cpu_time_ = limits_node[config_options::task::CPU_TIME].as<size_t>();
+                    if(limits_node[config_options::task::MEMORY]) memory_usage_ = limits_node[config_options::task::MEMORY].as<size_t>();
+                    if(limits_node[config_options::task::STACK]) stack_size_ = limits_node[config_options::task::STACK].as<size_t>();
+                    if(limits_node[config_options::task::WALL_TIME]) wall_time_ = limits_node[config_options::task::WALL_TIME].as<size_t>();
+                    if(limits_node[config_options::task::EXTRA_TIME]) extra_time_ = limits_node[config_options::task::EXTRA_TIME].as<size_t>();
+                    if(limits_node[config_options::task::PROCESSES]) processes_ = limits_node[config_options::task::PROCESSES].as<size_t>();
+                    if(limits_node[config_options::task::DISK_USAGE]) disk_usage_ = limits_node[config_options::task::DISK_USAGE].as<size_t>();
+                    if(limits_node[config_options::task::OPEN_FILES]) open_files_ = limits_node[config_options::task::OPEN_FILES].as<size_t>();
+                    if(limits_node[config_options::task::FILE_SIZE]) file_size_ = limits_node[config_options::task::FILE_SIZE].as<size_t>();
+                    if(limits_node[config_options::task::CORE_DUMP_SIZE]) core_size_ = limits_node[config_options::task::CORE_DUMP_SIZE].as<size_t>();
                 }
                 catch(const YAML::BadConversion& e)
                 {
@@ -143,55 +158,82 @@ namespace config
         resource_limits(const options::variables_map& options_map)
         {
             if (options_map.contains(config_options::task::MEMORY)) 
-            {
-                memory_bytes_ = options_map[config_options::task::MEMORY].as<size_t>();
-            }
+                { memory_usage_ = options_map[config_options::task::MEMORY].as<size_t>(); }
             if (options_map.contains(config_options::task::CPU_TIME)) 
-            {
-                cpu_time_s_ = options_map[config_options::task::CPU_TIME].as<size_t>();
-            }
+                { cpu_time_ = options_map[config_options::task::CPU_TIME].as<size_t>();}
             if (options_map.contains(config_options::task::WALL_TIME)) 
-            {
-                wall_time_s_ = options_map[config_options::task::WALL_TIME].as<size_t>();
-            }
+                { wall_time_ = options_map[config_options::task::WALL_TIME].as<size_t>(); }
+            if (options_map.contains(config_options::task::EXTRA_TIME)) 
+                { wall_time_ = options_map[config_options::task::EXTRA_TIME].as<size_t>(); }
             if (options_map.contains(config_options::task::AS_SIZE)) 
-            {
-                as_size_bytes_ = options_map[config_options::task::AS_SIZE].as<size_t>();
-            }
+                { as_size_bytes_ = options_map[config_options::task::AS_SIZE].as<size_t>(); }
+            if (options_map.contains(config_options::task::STACK)) 
+                { stack_size_ = options_map[config_options::task::STACK].as<size_t>(); }
+            if (options_map.contains(config_options::task::OPEN_FILES)) 
+                { open_files_ = options_map[config_options::task::OPEN_FILES].as<size_t>(); }
+            if (options_map.contains(config_options::task::FILE_SIZE)) 
+                { file_size_ = options_map[config_options::task::FILE_SIZE].as<size_t>(); }
+            if (options_map.contains(config_options::task::CORE_DUMP_SIZE)) 
+                { core_size_ = options_map[config_options::task::CORE_DUMP_SIZE].as<size_t>(); }
         }
 
-        auto cpu_time() const { return cpu_time_s_; }
-        auto memory() const { return memory_bytes_; }
-        auto wall_time() const { return wall_time_s_; }
+        auto cpu_time() const { return cpu_time_; }
+        auto memory() const { return memory_usage_; }
+        auto wall_time() const { return wall_time_; }
+        auto extra_time() const { return extra_time_; }
         auto as_size() const { return as_size_bytes_; }
-        auto processes() const { return forked_processes_; }
-        auto disk_usage() const { return disk_usage_bytes_; }
+        auto stack_size() const { return stack_size_; }
+        auto processes() const { return processes_; }
+        auto disk_usage() const { return disk_usage_; }
+        auto open_files() const { return open_files_; }
+        auto file_size() const { return file_size_; }
+        auto core_dump_size() const { return core_size_; }
 
-        void set_cpu_time(size_t s) { cpu_time_s_ = s; }
-        void set_memory(size_t bytes) { memory_bytes_ = bytes; }
-        void set_wall_time(size_t s) { wall_time_s_ = s; }
-        void set_as_size(size_t s) { as_size_bytes_ = s; }
-        void set_processes(size_t n) { forked_processes_ = n; }
+        void set_cpu_time(size_t s) { cpu_time_ = s; }
+        void set_memory(size_t bytes) { memory_usage_ = bytes; }
+        void set_wall_time(size_t s) { wall_time_ = s; }
+        void set_extra_time(size_t s) { extra_time_ = s; }
+        void set_as_size(size_t b) { as_size_bytes_ = b; }
+        void set_stack_size(size_t b) { stack_size_ = b; }
+        void set_processes(size_t n) { processes_ = n; }
+        void set_open_files(size_t n) { open_files_ = n; }
+        void set_file_size(size_t b) { file_size_ = b; }
+        void set_core_dump_size(size_t b) { core_size_ = b; }
     private:
-        /// @brief CPU time limit in seconds.
-        std::optional<size_t> cpu_time_s_; 
+        /// @brief Maximum CPU time in seconds.
+        std::optional<size_t> cpu_time_; 
         
-        /// @brief Memory limit in bytes.
-        std::optional<size_t> memory_bytes_;
+        /// @brief Extra time, added to cpu_time_s_, in seconds.
+        std::optional<size_t> extra_time_; 
+
+        /// @brief Maximum total memory utilization in bytes.
+        std::optional<size_t> memory_usage_;
         
-        /// @brief 
+        /// @brief Maximum address space size in bytes.
         std::optional<size_t> as_size_bytes_;
+
+        /// @brief Maximum stack size in bytes.
+        std::optional<size_t> stack_size_;
         
-        /// @brief Limit on number of child processes of the task.
-        std::optional<size_t> forked_processes_;
+        /// @brief Maximum number of child processes and threads.
+        std::optional<size_t> processes_;
         
-        /// @brief Limit on the size of files on the disk.
-        std::optional<size_t> disk_usage_bytes_;
+        /// @brief Maximum total size of files on the disk.
+        std::optional<size_t> disk_usage_;
+
+        /// @brief Limit on the number of simultaneously opened file descriptors.
+        std::optional<size_t> open_files_;
+
+        /// @brief Maximum size of files.
+        std::optional<size_t> file_size_;
         
-        /// @brief Wall time limit.
-        size_t wall_time_s_ = DEFAULT_WALL_TIME; 
+        /// @brief Maximum size of a core dump file that is created when isolated program crashes. Longer dumps get truncated to this size.
+        std::optional<size_t> core_size_ = 0;
+
+        /// @brief Maximum wall time.
+        size_t wall_time_ = DEFAULT_WALL_TIME; 
         
-        static constexpr size_t DEFAULT_WALL_TIME = 20;
+        static constexpr size_t DEFAULT_WALL_TIME = 60;
 
         void set_defaults() 
         {
@@ -549,15 +591,15 @@ namespace config
         /// @brief 
         /// @param box_root 
         /// @param env_node 
-        box_fs_config(const YAML::Node& env_node)
+        box_fs_config(const YAML::Node& box_fs_node)
         {
             define_default_rules();
 
-            if(!env_node) { _default(); }
+            if(!box_fs_node) { _default(); }
             else
             {
-                if(env_node[config_options::box_fs::USE_DEFAULT_DIR_RULES]) use_defaults_ = env_node[config_options::box_fs::USE_DEFAULT_DIR_RULES].as<bool>();
-                if(env_node[config_options::box_fs::DIRECTORY_RULES]) add_rules(env_node[config_options::box_fs::DIRECTORY_RULES]);
+                if(box_fs_node[config_options::box_fs::USE_DEFAULT_DIR_RULES]) use_defaults_ = box_fs_node[config_options::box_fs::USE_DEFAULT_DIR_RULES].as<bool>();
+                if(box_fs_node[config_options::box_fs::DIRECTORY_RULES]) add_rules(box_fs_node[config_options::box_fs::DIRECTORY_RULES]);
             }
         }
 
@@ -663,8 +705,13 @@ namespace config
             if(!env_node) { _default();}
             else 
             {
-                auto rules_list = env_node[config_options::env::ENV_VARS];
-                rules_ = parse_rules(rules_list); 
+                if(env_node[config_options::env::INHERIT_ALL])
+                    { inherit_all_ = env_node[config_options::env::INHERIT_ALL].as<bool>(); }
+                if(env_node[config_options::env::ENV_VARS])
+                {
+                    auto rules_list = env_node[config_options::env::ENV_VARS];
+                    rules_ = parse_rules(rules_list); 
+                }
             }
         }
         
@@ -703,6 +750,20 @@ namespace config
     class credentials_config
     {
     public:
+        credentials_config() {}
+        credentials_config(const YAML::Node& credentials_node)
+        {
+            if(!credentials_node) _default();
+            else
+            {
+                if(credentials_node[config_options::credentials::INSTANCE_NAME])
+                    { instance_name_ = credentials_node[config_options::credentials::INSTANCE_NAME].as<std::string>(); }
+            }
+        }
+        
+        const auto& instance_name() const { return instance_name_; }
+
+
         /// @brief Return the path to the common directory for all container instances.
         static const fs::path& boxes_dir()
         {
@@ -716,6 +777,11 @@ namespace config
             static fs::path p(defaults::BOXES_CGROUP);
             return p;
         } 
+        
+    private:
+        std::optional<std::string> instance_name_;
+        
+        void _default() {}
     };
     
     /// @brief Configuration node for the proxy_core.
@@ -780,6 +846,11 @@ namespace config
         auto& get_proxy_config() const
         {
             return proxy_config_;
+        }
+
+        auto& get_credentials_config() const
+        {
+            return creds_config_;
         }
         
     private:
@@ -865,6 +936,7 @@ namespace config
         {
             YAML::Node config = YAML::LoadFile(f);
             proxy_config_ = proxy_config(config);          
+            creds_config_ = credentials_config(config);
         }
     };
 }

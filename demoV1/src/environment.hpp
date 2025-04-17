@@ -414,7 +414,7 @@ namespace env
             }
             auto dummy_dir = underlying_dir / new_path.lexically_relative(longest_prefix);
             std::optional<fs::path> res;
-            if(dummy_dir.string() != "") res = dummy_dir;
+            if(dummy_dir.string() != "" && !fs::is_directory(dummy_dir)) res = dummy_dir;
             return res;           
         }
         

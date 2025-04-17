@@ -17,7 +17,7 @@ konzultace:
 
 ISOLATE OPTIONS vs NEW ISOLATE
 
- *-b, --box-id=*'id':: CONSULT
+ *-b, --box-id=*'id':: DONE
 	When you run multiple sandboxes in parallel, you have to assign unique
 	IDs to them by this option. See the discussion on UIDs in the INSTALLATION
 	section. The ID defaults to 0.
@@ -56,7 +56,7 @@ ISOLATE OPTIONS vs NEW ISOLATE
 	Tell the sandbox manager to be verbose and report on what is going on.
 	Using *-v* multiple times produces even more jabber.
 
-*-s, --silent*:: 
+*-s, --silent*:: CONSULT 
 	Tell the sandbox manager to keep silence. No status messages are printed
 	to stderr except for fatal errors of the sandbox itself. The combination of
 	*--verbose* and *--silent* has an undefined effect. 
@@ -96,24 +96,24 @@ The following options can limit system resources consumed by the program.
 	If this limit is exceeded, the program is killed.
 
     
-*-x, --extra-time=*'time':: CONSULT.
+*-x, --extra-time=*'time':: DONE.
 	When the *--time* limit is exceeded, do not kill the program immediately,
 	but wait until *--extra-time* seconds elapse since the start of the program.
 	This allows to report the real execution time, even if it exceeds the limit
 	slightly. Fractional numbers are allowed.
 
-*-k, --stack=*'size':: CONSULT
+*-k, --stack=*'size':: DONE
 	Limit process stack to 'size' kilobytes. By default, the whole address
 	space is available for the stack, but it is subject to the *--mem* limit.
 	If this limit is exceeded, the program receives the SIGSEGV signal.
 
-*-n, --open-files=*'max':: TODO
+*-n, --open-files=*'max':: DONE
 	Limit number of open files to 'max'. The default value is 64. Setting this
 	option to 0 will result in unlimited open files.
 	If this limit is reached, system calls creating file descriptors fail
 	with error EMFILE.
 
-*-f, --fsize=*'size':: CONSULT
+*-f, --fsize=*'size':: DONE
 	Limit size of each file created (or modified) by the program to 'size' kilobytes.
 	In most cases, it is better to restrict overall disk usage by a disk quota
 	(see below). This option can help in cases when quotas are not enabled
@@ -129,7 +129,7 @@ The following options can limit system resources consumed by the program.
 	use other interfaces for setting quotas).
 	If the quota is reached, system calls expanding files fail with error EDQUOT.
 
-*--core=*'size':: CONSULT
+*--core=*'size':: DONE
 	Limit size of core files created when a process crashes to 'size' kilobytes.
 	Defaults to zero, meaning that no core files are produced inside the sandbox.
 
@@ -295,13 +295,10 @@ of format 'key'*:*'value'. The following keys are defined:
 *time-wall*::
 	Wall clock time of the program in fractional seconds.
 
-Please note that not all keys have to be present.
-For example, no *status* nor *message* is reported upon normal termination.
-
 TEMATA + PROBLEMY DO BAKALARKY:
 
 - kolize pri behu vice kontejneru najednou - navrh reseni
-- failed to bind mount pivot directory na novem pristroji - spatne prirazeni box root - reseni: single source of truth (root_credentials_manager)
+-single source of truth pristup s pointery.
 - MOUNT_DETACH a busy chyba pri umount() 
 
 - redirectovani stdin a stderr - pomoci freopen, nejdrive err, err to out pomoci dup2()
@@ -312,10 +309,13 @@ TEMATA + PROBLEMY DO BAKALARKY:
 
 -klonovani tasku, execve, pracovani s PID.
 
--pripraveni tasku "zvenku" s pouzitim prlimit a cgroup freezer? asi je to nesmysl.
-
 - DETACH flag pri unmountovani rootu.
 
 -system settings - napriklad swap musi byt vypnuty aby fungoval memory limit.
 
 - CLONE_INTO_CGROUP - ano/ne
+
+- moznost castecne obejit disk quota pomoci limitu na fds a velikost souboru.
+
+- diskuze o prirazovani UID/GID - nastudovat v isolate
+-dynamic linker chyba pri nizkem limitu na pocet deskriptoru
