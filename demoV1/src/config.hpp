@@ -39,6 +39,7 @@ namespace config
     {
         constexpr auto STATS_YAML = "stats-yaml";
         constexpr auto CONFIG_YAML = "yaml";
+        constexpr auto SHARE_NET = "share-net";
         
         namespace credentials
         {
@@ -800,6 +801,8 @@ namespace config
                 tasks_ = tasks_config(proxy_node[config_options::TASKS]);
                 env_    = env_config(proxy_node[config_options::ENV]);
                 box_fs_ = box_fs_config(proxy_node[config_options::BOX_FS]);
+                if(proxy_node[config_options::SHARE_NET]) 
+                    { share_net_ = proxy_node[config_options::SHARE_NET].as<bool>(); }
             }
         }
         
@@ -822,11 +825,19 @@ namespace config
         {
             return box_root_;
         }
+        
+        bool share_net() const
+        {
+            return share_net_;
+        }
     private:
         fs::path box_root_;
         tasks_config tasks_;
         env_config env_;
         box_fs_config box_fs_;
+        
+        /// @brief Launch the proxy and tasks in the same network namespace as the root process.
+        bool share_net_ = false;
         
         void _default()
         {

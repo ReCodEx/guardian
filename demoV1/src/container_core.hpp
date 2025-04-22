@@ -114,51 +114,43 @@ namespace container_core
                 { logs::error("umount on old root failed, errno: {}", errno); }
         } 
     };
-
-    /// @brief Core class implementing responsibilities of the root process. TODO: link
-    class root_core
+    
+    /// @brief Manager class responsible for launching the proxy process and waiting for its exit.
+    class proxy_connector
     {
     public:
-        root_core(int argc, char** argv) : root_config_(argc, argv), credentials_(root_config_.get_credentials_config()), cg_mngr_(root_config_, credentials_)
-        {
-            logs::init_default_logger();
-            logs::info("Hello world from container!");
-        }
+        proxy_connector() {}
+        
+        proxy_connector(config::root_configuration& root_config, credentials::root_credentials_manager& credentials, 
+                        cgroup::root_cgroup_manager& cg_manager) : 
+                        root_config_(&root_config),
+                        credentials_(&credentials),
+                        cg_mngr_(&cg_manager)
+        {}
 
-        /// @brief The "main" function of a container run.
-        void run()
+        /// @brief Run the proxy process and wait for its exit.
+        void run_and_wait_for_proxy()
         {
-            setup();
             pid_t proxy_pid = spawn_proxy();
             wait_for_proxy(proxy_pid);
-            generate_results();
         }
-
     private:
         /// @brief Internal representation of container configuration.
-        config::root_configuration root_config_;
+        config::root_configuration* root_config_;
 
         /// @brief Responsible for assigning credentials (box_id, UID/GID) used by the box.
-        credentials::root_credentials_manager credentials_;
+        credentials::root_credentials_manager* credentials_;
 
         /// @brief Responsible for setting up for the root level of the cgroup hierarchy.
-        cgroup::root_cgroup_manager cg_mngr_;
-        
-        /// @brief Reserve and prepare identifiers ( box ID, ...) and global resources ( root directory, cgroup, ...)
-        void setup()
-        {
-            credentials_.run();
-            create_sandbox_dir();
-            cg_mngr_.run();
-        }
+        cgroup::root_cgroup_manager* cg_mngr_;
 
         /// @brief Run the proxy process. 
         /// @return PID of the proxy as returned by clone3().
         pid_t spawn_proxy()
         {
-            auto& proxy_conf = root_config_.get_proxy_config();
+            auto& proxy_conf = root_config_->get_proxy_config();
             logs::debug("Calling clone3 for the proxy process");
-            pid_t outside_pid = clone3_proxy(proxy_conf, cg_mngr_.open_proxy_fd());
+            pid_t outside_pid = clone3_proxy(proxy_conf, cg_mngr_->open_proxy_fd());
 
             if (outside_pid < 0)
                 { terminate("Cannot run the proxy process, clone3 failed. Errno: {}", errno); }
@@ -166,14 +158,14 @@ namespace container_core
             else if (!outside_pid)
             {
                 //we are in the proxy process
-                cg_mngr_.close_proxy_fd();
-                proxy_core proxy(proxy_conf, credentials_);
+                cg_mngr_->close_proxy_fd();
+                proxy_core proxy(proxy_conf, *credentials_);
                 proxy.run();
 
                 // We will never get here
                 terminate("Something very weird happened");
             }
-            cg_mngr_.close_proxy_fd();
+            cg_mngr_->close_proxy_fd();
             return outside_pid;
         }
         
@@ -199,29 +191,13 @@ namespace container_core
             clone_args args{0};
             args.exit_signal = SIGCHLD;
 
-            args.flags =    CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | //user namespaces might not always be supported
+            args.flags =    CLONE_NEWIPC | CLONE_NEWNS |
                             CLONE_NEWPID | CLONE_NEWCGROUP | CLONE_NEWUTS | CLONE_INTO_CGROUP;
-
+            if(!proxy_conf.share_net()) args.flags |= CLONE_NEWNET;
             args.cgroup = cgrp_fd;
             return args; 
         }
         
-        void generate_results()
-        {
-        }
-        
-        /// @brief Reserve and create root directory for the box.
-        /// @note Terminates if the directory already exists.
-        void create_sandbox_dir()
-        {
-            auto dir = credentials_.box_root();
-            if(fs::is_directory(dir))
-                { terminate("Directory intended for the sandbox already exists!"); }
-            
-            if(!fs::create_directories(dir))
-                { terminate("Failed to create root sandbox directory"); }
-        }
-
         /// @brief Launch the proxy process with clone3().
         /// @param config Proxy configuration node.
         /// @param cgrp_fd FD of the cgroup to launch proxy in.
@@ -230,6 +206,63 @@ namespace container_core
         {
             auto args = proxy_clone_args(config, cgrp_fd);
             return syscall(SYS_clone3, &args, sizeof(clone_args));
+        }
+    };
+
+    /// @brief Core class implementing responsibilities of the root process. TODO: link
+    class root_core
+    {
+    public:
+        root_core(int argc, char** argv) :  root_config_(argc, argv), 
+                                            credentials_(root_config_.get_credentials_config()), 
+                                            cg_mngr_(root_config_, credentials_),
+                                            proxy_connector_(root_config_, credentials_, cg_mngr_)
+
+        {
+            logs::init_default_logger();
+            logs::info("Hello world from the Isolator!");
+        }
+
+        /// @brief The "main" function of an instance.
+        void run()
+        {
+            credentials_.run();
+            create_sandbox_root_dir();
+            cg_mngr_.run();
+            proxy_connector_.run_and_wait_for_proxy();
+        }
+
+    private:
+        /// @brief Internal representation of container configuration.
+        config::root_configuration root_config_;
+
+        /// @brief Responsible for assigning credentials (box_id, UID/GID) used by the box.
+        credentials::root_credentials_manager credentials_;
+
+        /// @brief Responsible for setting up for the root level of the cgroup hierarchy.
+        cgroup::root_cgroup_manager cg_mngr_;
+        
+        /// @brief Responsible for launching the proxy process and waiting for its exit.
+        proxy_connector proxy_connector_;
+        
+        /// @brief Reserve and prepare identifiers ( box ID, ...) and global resources ( root directory, cgroup, ...)
+        void setup()
+        {
+            credentials_.run();
+            create_sandbox_root_dir();
+            cg_mngr_.run();
+        }
+
+        /// @brief Reserve and create root directory for the box.
+        /// @note Terminates if the directory already exists.
+        void create_sandbox_root_dir()
+        {
+            auto dir = credentials_.box_root();
+            if(fs::is_directory(dir))
+                { terminate("Directory intended for the sandbox already exists!"); }
+            
+            if(!fs::create_directories(dir))
+                { terminate("Failed to create root sandbox directory"); }
         }
     };
 }
