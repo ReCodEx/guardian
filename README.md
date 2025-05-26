@@ -5,7 +5,7 @@ Lightweight Linux containerization tool written "from scratch", primarily intend
 ---
 
 ### 📚 Reading this README
-This project uses advanced Linux concepts (namespaces, cgroups, UID/GID mappings, etc.). For a deeper dive, see my thesis (link placeholder).
+This project uses advanced Linux concepts (namespaces, cgroups, UID/GID mappings, etc.). For an overview, see my thesis (link placeholder).
 
 Terminology used throughout this README and the codebase:
 
