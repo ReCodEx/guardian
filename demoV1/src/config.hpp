@@ -37,13 +37,18 @@ namespace config
     /// @brief Keywords for the configuration file 
     namespace config_options
     {
+        constexpr auto BOXES_DIR = "root-dir";
+        constexpr auto BOXES_CGROUP = "root-cgroup";
         constexpr auto STATS_YAML = "stats-yaml";
         constexpr auto CONFIG_YAML = "yaml";
         constexpr auto SHARE_NET = "share-net";
         
         namespace credentials
         {
+            constexpr auto INSTANCE_ID = "id";
             constexpr auto INSTANCE_NAME = "name";
+            constexpr auto BOX_UID = "as-uid";
+            constexpr auto BOX_GID = "as-gid";
         }
 
         constexpr auto TASKS = "tasks";
@@ -732,7 +737,7 @@ namespace config
         }
     private:
         std::vector<env_rule> rules_;
-        bool inherit_all_ = false;
+        bool inherit_all_ = false;  
         
         std::vector<env_rule> parse_rules(const YAML::Node& rules_list)
         {
@@ -757,30 +762,55 @@ namespace config
             if(!credentials_node) _default();
             else
             {
+                if(credentials_node[config_options::BOXES_DIR])
+                    { boxes_dir_ = fs::path(credentials_node[config_options::BOXES_DIR].as<std::string>()); }
+                if(credentials_node[config_options::BOXES_CGROUP])
+                    { boxes_cgroup_ = fs::path(credentials_node[config_options::BOXES_CGROUP].as<std::string>()); }
                 if(credentials_node[config_options::credentials::INSTANCE_NAME])
                     { instance_name_ = credentials_node[config_options::credentials::INSTANCE_NAME].as<std::string>(); }
+                if(credentials_node[config_options::credentials::INSTANCE_ID])
+                    { instance_id_  = credentials_node[config_options::credentials::INSTANCE_ID].as<size_t>(); }
+                if(credentials_node[config_options::credentials::BOX_UID])
+                    { box_uid_ = credentials_node[config_options::credentials::BOX_UID].as<size_t>(); }
+                if(credentials_node[config_options::credentials::BOX_GID])
+                    { box_gid_ = credentials_node[config_options::credentials::BOX_GID].as<size_t>(); }
             }
         }
         
         const auto& instance_name() const { return instance_name_; }
+        const auto& instance_id() const { return instance_id_; }
 
 
         /// @brief Return the path to the common directory for all container instances.
-        static const fs::path& boxes_dir()
+        const fs::path& boxes_dir() const
         {
-            static fs::path p(defaults::BOXES_DIR);
-            return p;
+            return boxes_dir_;
         } 
 
         /// @brief Return the path to the common cgroup for all container instances.
-        static const fs::path& boxes_cgroup()
+        const fs::path& boxes_cgroup() const 
         {
-            static fs::path p(defaults::BOXES_CGROUP);
-            return p;
+            return boxes_cgroup_;
         } 
         
+        const auto& box_uid() const 
+        {
+            return box_uid_;
+        }
+        
+        const auto& box_gid() const 
+        {
+            return box_gid_;
+        }
+        
     private:
+        fs::path boxes_dir_ = defaults::BOXES_DIR;    
+        fs::path boxes_cgroup_ = defaults::BOXES_CGROUP;
+
         std::optional<std::string> instance_name_;
+        std::optional<size_t> instance_id_;
+        std::optional<size_t> box_uid_;
+        std::optional<size_t> box_gid_;
         
         void _default() {}
     };
@@ -794,7 +824,7 @@ namespace config
         {
             if(!proxy_node) 
             { 
-                terminate("No proxy node specified in configuration file");
+                terminate("No proxy node specified in configuration file!");
             }
             else
             {

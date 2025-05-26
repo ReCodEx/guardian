@@ -114,9 +114,9 @@ namespace credentials
             std::mt19937 gen(rd());
             std::uniform_int_distribution<uid_t> dist(1,5000);
 
-            box_id_ = dist(gen);
-            box_uid_ = box_uid_range_start_ + box_id_;
-            box_gid_ = box_uid_;
+            box_id_ = config_->instance_id().has_value() ? config_->instance_id().value() : dist(gen);
+            box_uid_ = config_->box_uid().has_value() ? config_->box_uid().value() : box_id_ + box_uid_range_start_;
+            box_gid_ = config_->box_gid().has_value() ? config_->box_gid().value() : box_uid_;
         }
         
         /// @brief Assign a root directory for the filesystem of this instance.

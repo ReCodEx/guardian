@@ -194,8 +194,8 @@ namespace env
             if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
                 { terminate("chown() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
             
-            /// TODO: set proper permissions.
-            if(chmod(dir.c_str(), 0777) < 0)
+            /// TODO: make sure permissions are correct.
+            if(chmod(dir.c_str(), 0700) < 0)
                 { terminate("chmod() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
         }
 

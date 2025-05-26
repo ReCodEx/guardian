@@ -1,26 +1,22 @@
 konzultace:
 
-    1. cast - zatim asi necham na pozdeji
+    v konfiguraci se musi nastavovat PATH, LD_LIBRARY_PATH
 
-    rozdeleni 2 casti na podkapitoly, 
-    styl psani technickych detailu, (vzorky kodu + popis) - detaily na levelu syscallu popisovat 
-
-    co patri do bakalarky a co do dokumentace?,
-
-    demo
-    co dal - 
-
-    vyresit problemy se spustenim - 
-    jak ma vypadat rozhrani ReCoDex isolate - sepsat co isolate dela,
-    keeper daemon proces? - prirazovani ID, directory, cgroup - zatim neresit, vyresit zkontrolovanim existence
+    parametrizovana root cgroup, directory a box id - DONE
+    meta files -- zkopirovat format z result.yml 
+    verbose, wait -- SKIP
+	special options ( inherit-fds, tty-hack, special-files) - SKIP krome as-uid, as-gid
+    as-uid, as-gid  - DONE
+    spravit permissions v box_fs - MOZNA DONE
     
-	TODO: special options v isolate
+    kapitola o pozadavcich recodexu 
+    recodex obecne- seznam environmentu, tisice uzivatelu, hodne variabilni zatez - c# kompilace 
+    bezpecnost
+    isolate -co dela a co bychom chteli
+
+    jak pojmout kapitolu o linuxu - nechodit do detailu, odkazat se na manpages a strucne popsat
+    stejne kapitola o bezpecnosti - odkazat se na praci a napsat strucny souhrn
 	
-konzultace cca 1.5.
-
-zeptat se na CONSULT polozky z rozhrani
-syntax konfiguraku a meta souboru
-
 TEMATA + PROBLEMY DO BAKALARKY:
 
 - kolize pri behu vice kontejneru najednou - navrh reseni
@@ -39,7 +35,7 @@ TEMATA + PROBLEMY DO BAKALARKY:
 
 -system prerequisites a settings - napriklad swap musi byt vypnuty aby fungoval memory limit.
 
-- CLONE_INTO_CGROUP - ano/ne
+- CLONE_INTO_CGROUP - ano/ne - ANO potrebuji na inicializaci cg namespace
 
 - moznost castecne obejit disk quota pomoci limitu na fds a velikost souboru.
 
@@ -47,3 +43,6 @@ TEMATA + PROBLEMY DO BAKALARKY:
 -dynamic linker chyba pri nizkem limitu na pocet deskriptoru
 
 - zminka o user namespacech, k cemu by se v nasem pripade hodily.
+
+SECURITY - Martin Mares paper
+- schovani isolatoru v /proc namespacu.

@@ -1,4 +1,9 @@
-name: bsearch
+root-dir: /isolate_boxes
+root-cg: /sys/fs/cgroup/isolate_boxes
+# id: 123
+as-uid: 1234 
+as-gid: 1234
+# name: bsearch
 box-fs:
   dir-rules:
     - "lib64/tests=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests"
