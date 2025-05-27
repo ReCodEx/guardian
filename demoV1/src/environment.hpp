@@ -97,6 +97,11 @@ namespace env
                 logs::debug("Skipping the mount of maybe() rule: \"{}\".", rule_->string()); 
                 return;
             } 
+            
+            if(rule_->tmp())
+            {
+                logs::debug("Skipping mount of tmp rule: \"{}\".", rule_->string());
+            }
 
             auto in = credentials_->box_root() / rule_->in_dir();
             auto& out = rule_->out_dir();
@@ -138,7 +143,7 @@ namespace env
             } 
 
             create_inner_dir();
-            if(rule_->tmp()) { create_outer_temp_dir(); }
+            // if(rule_->tmp()) { create_outer_temp_dir(); }
             if(dummy_dir_) { create_dummy_dir(); }
         }
         
@@ -188,7 +193,7 @@ namespace env
 
             logs::debug("Creating directory: {}",dir.string());
 
-            if(!fs::create_directory(dir))
+            if(!fs::create_directories(dir))
                 { terminate("Failed to create outside directory ({})", dir.string()); } 
             
             if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)

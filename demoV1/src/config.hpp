@@ -54,9 +54,9 @@ namespace config
         constexpr auto TASKS = "tasks";
         namespace task 
         {
-
+            constexpr auto CMD = "cmd";
             constexpr auto TASK_ID = "task-id";
-            constexpr auto EXEC_PATH = "path";
+            constexpr auto EXEC_PATH = "bin";
             constexpr auto EXEC_ARGS = "args";
             constexpr auto STDIN_FILE = "stdin";
             constexpr auto STDOUT_FILE = "stdout";
@@ -64,7 +64,7 @@ namespace config
             constexpr auto STDERR_TO_STDOUT = "stderr-to-stdout";
             constexpr auto CHDIR = "chdir";
             
-            constexpr auto RLIMS = "rlims";
+            constexpr auto RLIMS = "limits";
 
             constexpr auto AS_SIZE = "as-size";
             constexpr auto CPU_TIME = "cpu-time";
@@ -163,18 +163,20 @@ namespace config
 
         resource_limits(const options::variables_map& options_map)
         {
-            if (options_map.contains(config_options::task::MEMORY)) 
-                { memory_usage_ = options_map[config_options::task::MEMORY].as<size_t>(); }
             if (options_map.contains(config_options::task::CPU_TIME)) 
                 { cpu_time_ = options_map[config_options::task::CPU_TIME].as<size_t>();}
+            if (options_map.contains(config_options::task::MEMORY)) 
+                { memory_usage_ = options_map[config_options::task::MEMORY].as<size_t>(); }
+            if (options_map.contains(config_options::task::STACK)) 
+                { stack_size_ = options_map[config_options::task::STACK].as<size_t>(); }
             if (options_map.contains(config_options::task::WALL_TIME)) 
                 { wall_time_ = options_map[config_options::task::WALL_TIME].as<size_t>(); }
             if (options_map.contains(config_options::task::EXTRA_TIME)) 
                 { wall_time_ = options_map[config_options::task::EXTRA_TIME].as<size_t>(); }
+            if ( options_map.contains(config_options::task::PROCESSES)) 
+                { processes_ = options_map[config_options::task::PROCESSES].as<size_t>(); }
             if (options_map.contains(config_options::task::AS_SIZE)) 
                 { as_size_bytes_ = options_map[config_options::task::AS_SIZE].as<size_t>(); }
-            if (options_map.contains(config_options::task::STACK)) 
-                { stack_size_ = options_map[config_options::task::STACK].as<size_t>(); }
             if (options_map.contains(config_options::task::OPEN_FILES)) 
                 { open_files_ = options_map[config_options::task::OPEN_FILES].as<size_t>(); }
             if (options_map.contains(config_options::task::FILE_SIZE)) 
@@ -299,15 +301,15 @@ namespace config
             if(!task_node[config_options::task::TASK_ID])
                 { terminate("Missing task id"); }
 
-            if(!task_node[config_options::task::EXEC_PATH])
+            if(!task_node[config_options::task::CMD][config_options::task::EXEC_PATH])
                 { terminate("Missing path to executable for task \"{}\"", id_); }
             
             id_ = task_node[config_options::task::TASK_ID].as<std::string>();
-            exec_ = fs::path(task_node[config_options::task::EXEC_PATH].as<std::string>());
+            exec_ = fs::path(task_node[config_options::task::CMD][config_options::task::EXEC_PATH].as<std::string>());
             rlimits_ = resource_limits(task_node[config_options::task::RLIMS]);
             
-            if(task_node[config_options::task::EXEC_ARGS]) 
-                { args_ = yaml_utils::get_vector<std::string>(task_node[config_options::task::EXEC_ARGS]); }
+            if(task_node[config_options::task::CMD][config_options::task::EXEC_ARGS]) 
+                { args_ = yaml_utils::get_vector<std::string>(task_node[config_options::task::CMD][config_options::task::EXEC_ARGS]); }
 
             if(task_node[config_options::STATS_YAML]) 
                 { results_file_ = task_node[config_options::STATS_YAML].as<std::string>(); }
@@ -349,9 +351,15 @@ namespace config
 
             if(options_map.contains(config_options::task::CHDIR))
                 { chdir_ = fs::path(options_map[config_options::task::CHDIR].as<std::string>()); }
-
-            if(options_map.contains(config_options::task::CHDIR))
-                { chdir_ = fs::path(options_map[config_options::task::CHDIR].as<std::string>()); }
+            
+            if(options_map.contains(config_options::task::TASK_ID))
+                { id_ = options_map[config_options::task::TASK_ID].as<std::string>(); }
+            
+            if(options_map.contains(config_options::STATS_YAML))
+                { results_file_ = fs::path(options_map[config_options::STATS_YAML].as<std::string>()); }
+            
+            if(options_map.contains(config_options::task::STDERR_TO_STDOUT))
+                { stderr_to_stdout_ = options_map[config_options::task::STDERR_TO_STDOUT].as<bool>(); }
         }
         
               auto& exec_args()             { return args_; }
@@ -455,9 +463,15 @@ namespace config
             {
                 for(std::size_t i = 0; i < tasks_node.size(); i++)
                 {
+                    logs::debug("Adding task {}", i);
                     tasks_.emplace_back(std::make_unique<task_config>(tasks_node[i]));
                 }
             }
+        }
+        
+        tasks_config(const options::variables_map& options_map)
+        {
+            tasks_.emplace_back(std::make_unique<task_config>(options_map));
         }
         
         /// @brief Getter for task configurations.
@@ -544,6 +558,9 @@ namespace config
             parse_options(options);
             inner_ = inner;
             outer_ = fs::path("/") / (outer ? outer.value() : inner);
+            
+            logs::debug("Parsed fs-rule: inner={}, outer={}, rw={}, dev={}, noexec={}, maybe={}, fs={}, tmp={}, norec={}, allow_newdir={}",
+                inner_.string(), outer_.string(), rw_, dev_, noexec_, maybe_, fs_, tmp_, norec_, allow_newdir_);
         }
         
         /// @brief 
@@ -721,6 +738,20 @@ namespace config
             }
         }
         
+        env_config(const options::variables_map& options_map)
+        {
+            if(options_map.contains(config_options::env::INHERIT_ALL))
+                { inherit_all_ = options_map[config_options::env::INHERIT_ALL].as<bool>(); }
+            if(options_map.contains(config_options::env::ENV_VARS))
+            {
+                auto rules_list = options_map[config_options::env::ENV_VARS].as<std::vector<std::string>>();
+                for(const auto& rule : rules_list)
+                {
+                    rules_.emplace_back(env_rule(rule));
+                }
+            }
+        }
+        
         void _default()
         {
 
@@ -775,6 +806,22 @@ namespace config
                 if(credentials_node[config_options::credentials::BOX_GID])
                     { box_gid_ = credentials_node[config_options::credentials::BOX_GID].as<size_t>(); }
             }
+        }
+        
+        credentials_config(const options::variables_map& options_map)
+        {
+            if(options_map.contains(config_options::BOXES_DIR))
+                { boxes_dir_ = fs::path(options_map[config_options::BOXES_DIR].as<std::string>()); }
+            if(options_map.contains(config_options::BOXES_CGROUP))
+                { boxes_cgroup_ = fs::path(options_map[config_options::BOXES_CGROUP].as<std::string>()); }
+            if(options_map.contains(config_options::credentials::INSTANCE_NAME))
+                { instance_name_ = options_map[config_options::credentials::INSTANCE_NAME].as<std::string>(); }
+            if(options_map.contains(config_options::credentials::INSTANCE_ID))
+                { instance_id_ = options_map[config_options::credentials::INSTANCE_ID].as<size_t>(); }
+            if(options_map.contains(config_options::credentials::BOX_UID))
+                { box_uid_ = options_map[config_options::credentials::BOX_UID].as<size_t>(); }
+            if(options_map.contains(config_options::credentials::BOX_GID))
+                { box_gid_ = options_map[config_options::credentials::BOX_GID].as<size_t>(); }
         }
         
         const auto& instance_name() const { return instance_name_; }
@@ -834,6 +881,14 @@ namespace config
                 if(proxy_node[config_options::SHARE_NET]) 
                     { share_net_ = proxy_node[config_options::SHARE_NET].as<bool>(); }
             }
+        }
+        
+        proxy_config(const options::variables_map& options_map)
+        {
+            tasks_ = tasks_config(options_map);
+            env_ = env_config(options_map);
+            // box_fs_ = box_fs_config(options_map);
+            share_net_ = options_map[config_options::SHARE_NET].as<bool>();
         }
         
         const auto& get_tasks_config() const
@@ -959,6 +1014,7 @@ namespace config
                 auto f = fs::path(options_map[config_options::CONFIG_YAML].as<std::string>());
                 try
                 {
+                    logs::debug("Reading configuration from file: {}", f.string());
                     configure_from_yaml(f);
                 }
                 catch(YAML::BadFile& bf)
@@ -969,7 +1025,8 @@ namespace config
             else
             {
                 tasks_.emplace_back(std::make_unique<task_config>(options_map));
-                return;
+                proxy_config_ = proxy_config(options_map);          
+                creds_config_ = credentials_config(options_map);
             }
         }
 

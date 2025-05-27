@@ -1,5 +1,6 @@
-konzultace:
-
+TODO:
+    skript na mockup workera - C, python, dotnet/maven
+    
     v konfiguraci se musi nastavovat PATH, LD_LIBRARY_PATH
 
     parametrizovana root cgroup, directory a box id - DONE
@@ -10,7 +11,7 @@ konzultace:
     spravit permissions v box_fs - MOZNA DONE
     
     kapitola o pozadavcich recodexu 
-    recodex obecne- seznam environmentu, tisice uzivatelu, hodne variabilni zatez - c# kompilace 
+    recodex obecne- seznam environmentu, tisice uzivatelu, hodne variabilni zatez, c# kompilace 
     bezpecnost
     isolate -co dela a co bychom chteli
 

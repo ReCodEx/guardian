@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+import sys
+import os
+import shutil
+import re
+from pathlib import Path
+
+def wildcards_to_regex(pattern: str) -> re.Pattern:
+    escaped = re.escape(pattern).replace(r'\*', '.*').replace(r'\?', '.')
+    return re.compile(f"^{escaped}$")
+
+def dumpdir(src_root, dest_root, limit_kb, *exclude_patterns):
+    src_root = Path(src_root).resolve()
+    dest_root = Path(dest_root).resolve()
+    limit = limit_kb * 1024  # Convert to bytes
+
+    # Convert exclude patterns to regexes
+    excludes = [wildcards_to_regex(p) for p in exclude_patterns]
+
+    def is_excluded(rel_path):
+        return any(r.match(str(rel_path)) for r in excludes)
+
+    # Find all regular files
+    all_files = [f for f in src_root.rglob('*') if f.is_file()]
+    all_files.sort(key=lambda f: f.stat().st_size)
+
+    for src_path in all_files:
+        rel_path = src_path.relative_to(src_root)
+        if is_excluded(rel_path):
+            continue
+
+        dest_path = dest_root / rel_path
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+
+        size = src_path.stat().st_size
+        if size <= limit:
+            try:
+                shutil.copy2(src_path, dest_path)
+                limit -= size
+            except Exception as e:
+                print(f"Failed to copy {src_path} -> {dest_path}: {e}", file=sys.stderr)
+                sys.exit(1)
+        else:
+            with open(dest_path.with_suffix('.skipped'), 'w') as f:
+                f.write(' ')
+
+def main():
+    if len(sys.argv) < 4:
+        print("Usage: dumpdir <src_dir> <dest_dir> <limit_kb> [exclude1 exclude2 ...]", file=sys.stderr)
+        sys.exit(1)
+
+    src_dir = sys.argv[1]
+    dest_dir = sys.argv[2]
+    limit_kb = int(sys.argv[3])
+    excludes = sys.argv[4:]
+
+    dumpdir(src_dir, dest_dir, limit_kb, *excludes)
+
+if __name__ == "__main__":
+    main()

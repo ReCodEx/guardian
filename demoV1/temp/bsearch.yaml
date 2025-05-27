@@ -1,6 +1,6 @@
 root-dir: /isolate_boxes
 root-cg: /sys/fs/cgroup/isolate_boxes
-# id: 123
+id: 1
 as-uid: 1234 
 as-gid: 1234
 # name: bsearch
@@ -10,11 +10,12 @@ box-fs:
 tasks:
     - task-id: "bsearch"
       stats-yaml: "/result.yaml"
-      path: "lib64/tests/test_binaries/bsearch"
-      rlims:
+      cmd:
+        bin: "lib64/tests/test_binaries/bsearch"
+      limits:
           mem: 5000000
-          # cpu-time: 1
-          # extra-time: 1
+          cpu-time: 1
+          extra-time: 2
           stack: 100000
           open-files: 40
           file-size: 0
