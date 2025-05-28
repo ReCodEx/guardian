@@ -8,12 +8,13 @@ import re
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ISOLATE_SANDBOX = "/tmp/container"  # simulated sandbox dir
+CWD = os.getcwd()
 
 variables = {
     "ISOLATE_CONFIG": "isolate_config.yml",
-    "SOURCE_DIR": "hello-world-c",
+    "SOURCE_DIR": f"{CWD}/{sys.argv[1]}",
     "EVAL_DIR": ".",
-    "RESULT_DIR": "results/hello-world-c",
+    "RESULT_DIR": f"{CWD}/results/{sys.argv[1]}",
     "JUDGES_DIR": "/opt/worker/judges/build"
 }
 
@@ -83,7 +84,7 @@ def run_task(task):
             config_data['tasks'][-1].setdefault('cmd', {})['bin'] = bin_path
             config_data['tasks'][-1]['cmd']['args'] = args
             workdir = sandbox['working-directory']
-            config_data['box-fs']['dir-rules'].append(f"{workdir}={SCRIPT_DIR}/{variables['SOURCE_DIR']}/{workdir}:rw")
+            config_data['box-fs']['dir-rules'].append(f"{workdir}={variables['SOURCE_DIR']}/{workdir}:rw")
             config_data['tasks'][-1]['chdir'] = workdir
 
 
@@ -115,7 +116,7 @@ def run_task(task):
 
 def main():
 
-    with open(sys.argv[1]) as f:
+    with open(f"{variables['SOURCE_DIR']}/job-config.yml") as f:
         data = yaml.safe_load(f)
     
     data = substitute_variables(data, variables)

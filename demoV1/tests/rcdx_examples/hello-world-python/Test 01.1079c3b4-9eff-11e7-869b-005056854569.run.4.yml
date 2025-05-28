@@ -1,0 +1,52 @@
+box-fs:
+  dir-rules:
+  - tmp:tmp
+  - var/recodex-worker-python-venv:maybe
+  - opt/worker
+  - opt/remi:maybe
+  - opt/kotlin:maybe
+  - opt/groovy:maybe
+  - opt/maven:maybe
+  - opt/maven-repo:maybe
+  - opt/dotnet:maybe
+  - opt/Picat:maybe
+  - opt/intel:maybe
+  - etc/java:maybe
+  - etc/OpenCL:maybe
+  - etc/alternatives=/etc/alternatives:maybe
+  - Test 01=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/hello-world-python/Test
+    01:rw
+env:
+  vars:
+  - LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/opt/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/opt/compiler/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/tbb/latest/lib/intel64/gcc4.8:/usr/local/recodex-gcc/lib64
+  - PATH=/opt/intel/oneapi/compiler/latest/bin/compiler:/opt/intel/oneapi/compiler/latest/bin:/var/recodex-worker-python-venv/bin:/usr/local/recodex-gcc/bin:/usr/bin:/bin
+  - HOME=/box
+  - JAVA_HOME=/usr/lib/jvm/jre-openjdk
+  - PPC_CONFIG_PATH=/usr/etc
+  - PYTHONHASHSEED=0
+  - PYTHONIOENCODING=utf-8
+  - VIRTUAL_ENV=/var/recodex-worker-python-venv
+  - GO111MODULE=auto
+  - GROOVY_HOME=/opt/groovy
+  - MAVEN_HOME=/opt/maven
+  - M2_HOME=/opt/maven-repo
+root-cg: /sys/fs/cgroup/isolate_boxes
+root-dir: /isolate_boxes
+tasks:
+- chdir: Test 01
+  cmd:
+    args:
+    - python3
+    - cb83045aeb0c9d6a871c240f79b68507952a8308
+    - ./hello-world.py
+    bin: /usr/bin/env
+  limits:
+  - bound-directories: []
+    hw-group-id: 01-supmic-regular
+    memory: 65536
+    time: 1
+  name: isolate
+  stderr: ./execution.adioxl52yhvaov8sbvkd.stderr
+  stdout: ./ayspsmsmuw1zvj7hr8ob.stdout
+  task-id: Test 01.1079c3b4-9eff-11e7-869b-005056854569.run.4
+  working-directory: Test 01
