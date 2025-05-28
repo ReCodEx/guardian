@@ -12,9 +12,9 @@ ISOLATE_SANDBOX = "/tmp/container"  # simulated sandbox dir
 variables = {
     "ISOLATE_CONFIG": "isolate_config.yml",
     "SOURCE_DIR": "hello-world-c",
-    "EVAL_DIR": "hello-world-c",
+    "EVAL_DIR": ".",
     "RESULT_DIR": "results/hello-world-c",
-    "JUDGES_DIR": "/opt/recodex-judges"
+    "JUDGES_DIR": "/opt/worker/judges/build"
 }
 
 
@@ -40,12 +40,30 @@ def run_task(task):
 
     if bin_path == 'dumpdir':
         bin_path = os.path.join(SCRIPT_DIR, 'dumpdir')
+        
+    if bin_path == 'exists':
+        bin_path = os.path.join(SCRIPT_DIR, 'exists')
+        
+    if bin_path == 'fetch':
+        bin_path = 'cp'
+        src = os.path.join(variables['SOURCE_DIR'], f"fetch/{args[0]}")
+        dst = args[1]
+        args = [src, dst]
+    
+    if(bin_path == "/usr/local/recodex-gcc/bin/gcc"):
+        bin_path = "/usr/bin/gcc"
+        args.insert(0, "-B/usr/libexec/gcc/x86_64-redhat-linux/14/")
+        args.insert(0, "-B/usr/lib/gcc/x86_64-redhat-linux/14/")
+        args.insert(0, "-I/usr/lib/gcc/x86_64-redhat-linux/14/include/")
+        
+    if "token-judge" in bin_path:
+        bin_path = os.path.join(variables['JUDGES_DIR'], 'recodex_token_judge/recodex-token-judge')
+
     full_cmd = [bin_path] + args
     full_cmd = [str(arg) for arg in full_cmd]
-    print(f"cmd: {full_cmd}")
-
     sandbox = task.get('sandbox')
     task_id = task.get('task-id')
+
     if sandbox and sandbox.get('name') == 'isolate':
         print(f"Running in isolate sandbox: {task['task-id']}")
         # workdir = os.path.join(ISOLATE_SANDBOX, sandbox.get('working-directory', '.'))
@@ -55,16 +73,18 @@ def run_task(task):
                 variables["ISOLATE_CONFIG"] = arg.split('=')[1]
             break
         
-        config_file = os.path.join(variables['SOURCE_DIR'], variables['ISOLATE_CONFIG']) 
+        config_file = os.path.join(variables['SOURCE_DIR'], task_id + ".yml") 
         with open(variables['ISOLATE_CONFIG'], 'r') as f:
             config_data = yaml.safe_load(f)
 
-            # Inject sandbox node into the correct task in the task list
             config_data.setdefault('tasks', [])
             config_data['tasks'].append(sandbox)
             config_data['tasks'][-1]['task-id'] = task_id
             config_data['tasks'][-1].setdefault('cmd', {})['bin'] = bin_path
             config_data['tasks'][-1]['cmd']['args'] = args
+            workdir = sandbox['working-directory']
+            config_data['box-fs']['dir-rules'].append(f"{workdir}={SCRIPT_DIR}/{variables['SOURCE_DIR']}/{workdir}:rw")
+            config_data['tasks'][-1]['chdir'] = workdir
 
 
             # Write modified YAML back to file

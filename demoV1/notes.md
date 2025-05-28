@@ -45,5 +45,10 @@ TEMATA + PROBLEMY DO BAKALARKY:
 
 - zminka o user namespacech, k cemu by se v nasem pripade hodily.
 
+- permissions pri behu vice kontejneru + worker commandu
+
 SECURITY - Martin Mares paper
 - schovani isolatoru v /proc namespacu.
+
+GCC DEBUGGING!
+echo '' | gcc -xc -E -v -

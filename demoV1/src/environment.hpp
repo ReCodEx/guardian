@@ -128,6 +128,18 @@ namespace env
                 if( mount(out.c_str(), in.c_str(), "none", flags, "") < 0 ||
                     mount(out.c_str(), in.c_str(), "none", MS_REMOUNT | flags, "") < 0)
                     { terminate("Mount failed for directory rule: {}, errno: {}", rule_->string(), errno); }
+                
+                    
+                /// TODO: figure out if this is ideal
+                if(rule_->rw())
+                {
+                    // if(chown(out.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
+                    //     { terminate("chown() on outside temp directory ({}) failed, errno: {}", out.string(), errno); }
+                    
+                    // /// TODO: make sure permissions are correct.
+                    if(chmod(out.c_str(), 0777) < 0)
+                        { terminate("chmod() on outside rw directory ({}) failed, errno: {}", out.string(), errno); }
+                }
             }
         }
         
@@ -196,19 +208,22 @@ namespace env
             if(!fs::create_directories(dir))
                 { terminate("Failed to create outside directory ({})", dir.string()); } 
             
-            if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
-                { terminate("chown() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
-            
-            /// TODO: make sure permissions are correct.
-            if(chmod(dir.c_str(), 0700) < 0)
-                { terminate("chmod() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
+            if(rule_->tmp())
+            {
+                if(chown(dir.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
+                    { terminate("chown() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
+                
+                /// TODO: make sure permissions are correct.
+                if(chmod(dir.c_str(), 0700) < 0)
+                    { terminate("chmod() on outside temp directory ({}) failed, errno: {}", dir.string(), errno); }
+            }
         }
 
         /// @brief Get default mount() flags parameter common for all types of rules.
         unsigned long default_flags()
         {
             unsigned long flags = 0;
-            if(!rule_->rw())      { flags |= MS_RDONLY; }
+            // if(!rule_->rw())      { flags |= MS_RDONLY; }
             if(rule_->noexec())   { flags |= MS_NOEXEC; }            
             if(!rule_->dev())     { flags |= MS_NODEV; }            
             
@@ -365,6 +380,9 @@ namespace env
         void create_mount_points()
         {
             std::vector<std::tuple<fs::path,fs::path>> mount_points;
+            // chown(credentials_->box_root().c_str(), credentials_->box_uid(), credentials_->box_gid());
+            // chmod(credentials_->box_root().c_str(), 0700);
+            // logs::debug("box root directory: {}", credentials_->box_root().string());
             if(fs_config_->use_default_rules())
             {
                 for(auto&& rule : fs_config_->default_rules())

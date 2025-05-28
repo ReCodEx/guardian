@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+import sys
+from pathlib import Path
+
+
+class TaskException(Exception):
+    pass
+
+
+class TaskStatus:
+    OK = "OK"
+    FAILED = "FAILED"
+
+
+class TaskResults:
+    def __init__(self):
+        self.status = TaskStatus.OK
+        self.error_message = None
+        self.output_stderr = None
+
+
+class TaskMetadata:
+    def __init__(self, cmd_args):
+        self.cmd_args = cmd_args
+
+
+class ExistsTask:
+    def __init__(self, task_id, task_meta):
+        self.task_id = task_id
+        self.task_meta = task_meta
+        if len(self.task_meta.cmd_args) < 2:
+            raise TaskException("At least two arguments required.")
+
+    def run(self):
+        result = TaskResults()
+        try:
+            for file_arg in self.task_meta.cmd_args[1:]:
+                file_path = Path(file_arg)
+                if not file_path.exists():
+                    result.status = TaskStatus.FAILED
+                    result.error_message = f"File/folder '{file_arg}' cannot be found"
+                    result.output_stderr = self.task_meta.cmd_args[0]
+                    break
+        except Exception as e:
+            result.status = TaskStatus.FAILED
+            result.error_message = f"Cannot check file/folder existence. Error: {e}"
+        return result
+
+
+def main():
+    if len(sys.argv) < 3:
+        print("Usage: exists <error-message> <file1> [file2 ...]", file=sys.stderr)
+        sys.exit(1)
+
+    cmd_args = sys.argv[1:]
+    task_meta = TaskMetadata(cmd_args)
+    task = ExistsTask(task_id=0, task_meta=task_meta)
+    result = task.run()
+
+    if result.status == TaskStatus.FAILED:
+        print(result.output_stderr, file=sys.stderr)
+        sys.exit(1)
+
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

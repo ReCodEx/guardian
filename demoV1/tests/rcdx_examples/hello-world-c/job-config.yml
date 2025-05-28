@@ -39,6 +39,7 @@ tasks:
   priority: 100
   fatal-failure: false
   cmd:
+    # INTERPRETED TO /usr/bin/gcc with additional args
     bin: /usr/local/recodex-gcc/bin/gcc
     args:
     - -Wall
@@ -59,74 +60,74 @@ tasks:
     output: true
     carboncopy-stdout: ${RESULT_DIR}/compilation.eb217f7aozif1h0zg4ar.out
     working-directory: Test 01
-# - task-id: Test 01.a1b191ce-9a50-11e7-869b-005056854569.compilation.4
-#   priority: 100
-#   fatal-failure: false
-#   cmd:
-#     bin: exists
-#     args:
-#     - Compilation process completed correctly but no executable file was yielded.
-#       Unable to proceed with testing.
-#     - ${SOURCE_DIR}/Test 01/a.out
-#   dependencies:
-#   - Test 01.a1b191ce-9a50-11e7-869b-005056854569.sources.2
-#   - Test 01..mkdir.0
-#   - Test 01.a1b191ce-9a50-11e7-869b-005056854569.compilation.3
-#   test-id: Test 01
-#   type: initiation
-# - task-id: Test 01.73daa928-a22e-11e7-869b-005056854569.run.5
-#   priority: 90
-#   fatal-failure: false
-#   cmd:
-#     bin: ${EVAL_DIR}/a.out
-#     success-exit-codes:
-#     - 0
-#   dependencies:
-#   - Test 01..mkdir.0
-#   - Test 01.a1b191ce-9a50-11e7-869b-005056854569.compilation.3
-#   - Test 01.a1b191ce-9a50-11e7-869b-005056854569.compilation.4
-#   test-id: Test 01
-#   type: execution
-#   sandbox:
-#     name: isolate
-#     stdout: ${EVAL_DIR}/34qejduqd1dj85856ebq.stdout
-#     stderr: ${EVAL_DIR}/execution.ctsrsnygu7traefkq0jx.stderr
-#     working-directory: Test 01
-#     limits:
-#     - hw-group-id: 01-supmic-regular
-#       time: 1
-#       memory: 65536
-#       bound-directories: []
-# - task-id: Test 01.73daa928-a22e-11e7-869b-005056854569.expected.6
-#   priority: 42
-#   fatal-failure: false
-#   cmd:
-#     bin: fetch
-#     args:
-#     - 648a6a6ffffdaa0badb23b8baf90b6168dd16b3a
-#     - ${SOURCE_DIR}/Test 01/expected.out
-#   dependencies:
-#   - Test 01..mkdir.0
-#   test-id: Test 01
-# - task-id: Test 01.73daa928-a22e-11e7-869b-005056854569.judge.7
-#   priority: 80
-#   fatal-failure: false
-#   cmd:
-#     bin: ${JUDGES_DIR}/recodex-token-judge
-#     args:
-#     - --log-limit
-#     - 4k
-#     - --ignore-trailing-whitespace
-#     - ${EVAL_DIR}/expected.out
-#     - ${EVAL_DIR}/34qejduqd1dj85856ebq.stdout
-#   dependencies:
-#   - Test 01.73daa928-a22e-11e7-869b-005056854569.expected.6
-#   - Test 01.73daa928-a22e-11e7-869b-005056854569.run.5
-#   - Test 01..mkdir.0
-#   test-id: Test 01
-#   type: evaluation
-#   sandbox:
-#     name: isolate
-#     output: true
-#     working-directory: Test 01
+- task-id: Test 01.a1b191ce-9a50-11e7-869b-005056854569.compilation.4
+  priority: 100
+  fatal-failure: false
+  cmd:
+    bin: exists
+    args:
+    - Compilation process completed correctly but no executable file was yielded.
+      Unable to proceed with testing.
+    - ${SOURCE_DIR}/Test 01/a.out
+  dependencies:
+  - Test 01.a1b191ce-9a50-11e7-869b-005056854569.sources.2
+  - Test 01..mkdir.0
+  - Test 01.a1b191ce-9a50-11e7-869b-005056854569.compilation.3
+  test-id: Test 01
+  type: initiation
+- task-id: Test 01.73daa928-a22e-11e7-869b-005056854569.run.5
+  priority: 90
+  fatal-failure: false
+  cmd:
+    bin: ${EVAL_DIR}/a.out
+    success-exit-codes:
+    - 0
+  dependencies:
+  - Test 01..mkdir.0
+  - Test 01.a1b191ce-9a50-11e7-869b-005056854569.compilation.3
+  - Test 01.a1b191ce-9a50-11e7-869b-005056854569.compilation.4
+  test-id: Test 01
+  type: execution
+  sandbox:
+    name: isolate
+    stdout: ${EVAL_DIR}/34qejduqd1dj85856ebq.stdout
+    stderr: ${EVAL_DIR}/execution.ctsrsnygu7traefkq0jx.stderr
+    working-directory: Test 01
+    limits:
+    - hw-group-id: 01-supmic-regular
+      time: 1
+      memory: 65536
+      bound-directories: []
+- task-id: Test 01.73daa928-a22e-11e7-869b-005056854569.expected.6
+  priority: 42
+  fatal-failure: false
+  cmd:
+    bin: fetch
+    args:
+    - 648a6a6ffffdaa0badb23b8baf90b6168dd16b3a
+    - ${SOURCE_DIR}/Test 01/expected.out
+  dependencies:
+  - Test 01..mkdir.0
+  test-id: Test 01
+- task-id: Test 01.73daa928-a22e-11e7-869b-005056854569.judge.7
+  priority: 80
+  fatal-failure: false
+  cmd:
+    bin: ${JUDGES_DIR}/recodex-token-judge
+    args:
+    - --log-limit
+    - 4k
+    - --ignore-trailing-whitespace
+    - ${EVAL_DIR}/expected.out
+    - ${EVAL_DIR}/34qejduqd1dj85856ebq.stdout
+  dependencies:
+  - Test 01.73daa928-a22e-11e7-869b-005056854569.expected.6
+  - Test 01.73daa928-a22e-11e7-869b-005056854569.run.5
+  - Test 01..mkdir.0
+  test-id: Test 01
+  type: evaluation
+  sandbox:
+    name: isolate
+    output: true
+    working-directory: Test 01
 # ...

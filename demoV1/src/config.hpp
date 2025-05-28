@@ -310,6 +310,7 @@ namespace config
             
             if(task_node[config_options::task::CMD][config_options::task::EXEC_ARGS]) 
                 { args_ = yaml_utils::get_vector<std::string>(task_node[config_options::task::CMD][config_options::task::EXEC_ARGS]); }
+            args_.insert(args_.begin(), exec_.string());
 
             if(task_node[config_options::STATS_YAML]) 
                 { results_file_ = task_node[config_options::STATS_YAML].as<std::string>(); }
@@ -559,8 +560,8 @@ namespace config
             inner_ = inner;
             outer_ = fs::path("/") / (outer ? outer.value() : inner);
             
-            logs::debug("Parsed fs-rule: inner={}, outer={}, rw={}, dev={}, noexec={}, maybe={}, fs={}, tmp={}, norec={}, allow_newdir={}",
-                inner_.string(), outer_.string(), rw_, dev_, noexec_, maybe_, fs_, tmp_, norec_, allow_newdir_);
+            // logs::debug("Parsed fs-rule: inner={}, outer={}, rw={}, dev={}, noexec={}, maybe={}, fs={}, tmp={}, norec={}, allow_newdir={}",
+                // inner_.string(), outer_.string(), rw_, dev_, noexec_, maybe_, fs_, tmp_, norec_, allow_newdir_);
         }
         
         /// @brief 
@@ -661,6 +662,8 @@ namespace config
         
         void define_default_rules()
         {
+            // default_rules_.emplace_back(dir_rule("tmp:tmp"));
+            default_rules_.emplace_back(dir_rule("etc"));
             default_rules_.emplace_back(dir_rule("bin"));
             default_rules_.emplace_back(dir_rule("dev:dev"));
             default_rules_.emplace_back(dir_rule("lib"));

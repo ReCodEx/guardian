@@ -1,7 +1,6 @@
 env: 
   inherit-all: true
   vars:
-    - "PATH="
     - "HELLO=hello"
     - "WORLD=world"
 box-fs:
@@ -12,7 +11,8 @@ box-fs:
 tasks:
     - task-id: "env_vars"
       stats-yaml: "/result.yaml"
-      path: "/build/tests/env_vars"
+      cmd: 
+        bin: "/build/tests/env_vars"
       stdout: "/outputs/stdout.txt"
       stderr-to-stdout: true
       rlims:

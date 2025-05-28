@@ -25,6 +25,7 @@ root-cg: /sys/fs/cgroup/isolate_boxes
 # [job_logger] [debug]   --env=MAVEN_HOME=/opt/maven
 # [job_logger] [debug]   --env=M2_HOME=/opt/maven-repo
 env: 
+  # inherit-all: true
   vars:
    - LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/opt/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/opt/compiler/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/tbb/latest/lib/intel64/gcc4.8:/usr/local/recodex-gcc/lib64 
    - PATH=/opt/intel/oneapi/compiler/latest/bin/compiler:/opt/intel/oneapi/compiler/latest/bin:/var/recodex-worker-python-venv/bin:/usr/local/recodex-gcc/bin:/usr/bin:/bin                                                                                   
@@ -54,8 +55,9 @@ env:
 # [job_logger] [debug]   --dir=etc/alternatives=/etc/alternatives:maybe
 box-fs:
   dir-rules:
-    # - tmp:tmp
+    - tmp:tmp
     - var/recodex-worker-python-venv:maybe
+    - opt/worker
     - opt/remi:maybe                      
     - opt/kotlin:maybe                   
     - opt/groovy:maybe                   
