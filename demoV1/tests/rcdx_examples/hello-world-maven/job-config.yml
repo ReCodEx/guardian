@@ -84,6 +84,7 @@ tasks:
     output: true
     carboncopy-stdout: ${RESULT_DIR}/compilation.62mmkgg9spjkqsv0u2nj.out
     working-directory: Test 01
+    stats-yaml: /Test01/compilation.yml
 - task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.6
   priority: 90
   fatal-failure: false
@@ -108,6 +109,7 @@ tasks:
     stdout: ${EVAL_DIR}/p1p4lko1we8okkjusiwj.stdout
     stderr: ${EVAL_DIR}/execution.ng51k606izbmclt604ue.stderr
     working-directory: Test 01
+    stats-yaml: /Test 01/run.yaml
     limits:
     - hw-group-id: 01-supmic-regular
       time: 10
@@ -145,4 +147,5 @@ tasks:
     name: isolate
     output: true
     working-directory: Test 01
+    stats-yaml: /Test 01/judge.yaml
 ...

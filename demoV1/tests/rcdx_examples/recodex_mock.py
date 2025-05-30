@@ -30,7 +30,7 @@ def substitute_variables(obj, variables):
     else:
         return obj
 
-def run_task(task):
+def run_task(task, results):
     cmd = task.get('cmd')
     if not cmd:
         print(f"Task {task['task-id']} has no command.")
@@ -42,6 +42,8 @@ def run_task(task):
     if bin_path == 'dumpdir':
         bin_path = os.path.join(SCRIPT_DIR, 'dumpdir')
         
+    if bin_path == 'extract':
+        bin_path = os.path.join(SCRIPT_DIR, 'extract')
     if bin_path == 'exists':
         bin_path = os.path.join(SCRIPT_DIR, 'exists')
         
@@ -56,6 +58,9 @@ def run_task(task):
         args.insert(0, "-B/usr/libexec/gcc/x86_64-redhat-linux/14/")
         args.insert(0, "-B/usr/lib/gcc/x86_64-redhat-linux/14/")
         args.insert(0, "-I/usr/lib/gcc/x86_64-redhat-linux/14/include/")
+        
+    if "maven" in bin_path:
+        bin_path = "/usr/bin/mvn"
         
     if "token-judge" in bin_path:
         bin_path = os.path.join(variables['JUDGES_DIR'], 'recodex_token_judge/recodex-token-judge')
@@ -75,42 +80,69 @@ def run_task(task):
             break
         
         config_file = os.path.join(variables['SOURCE_DIR'], task_id + ".yml") 
+        workdir = None
         with open(variables['ISOLATE_CONFIG'], 'r') as f:
             config_data = yaml.safe_load(f)
+
+            if('share-net' in sandbox):
+                config_data['share-net'] = sandbox['share-net']
+            if('as-uid' in sandbox):
+                config_data['as-uid'] = sandbox['as-uid']
+            if('as-gid' in sandbox):
+                config_data['as-gid'] = sandbox['as-gid']
 
             config_data.setdefault('tasks', [])
             config_data['tasks'].append(sandbox)
             config_data['tasks'][-1]['task-id'] = task_id
             config_data['tasks'][-1].setdefault('cmd', {})['bin'] = bin_path
             config_data['tasks'][-1]['cmd']['args'] = args
-            workdir = sandbox['working-directory']
-            config_data['box-fs']['dir-rules'].append(f"{workdir}={variables['SOURCE_DIR']}/{workdir}:rw")
-            config_data['tasks'][-1]['chdir'] = workdir
+            if 'working-directory' in sandbox:
+                workdir = sandbox['working-directory']
+                config_data['box-fs']['dir-rules'].append(f"{workdir}={variables['SOURCE_DIR']}/{workdir}:rw")
+                config_data['tasks'][-1]['chdir'] = workdir
 
 
             # Write modified YAML back to file
             with open(config_file, 'w') as f:
                 yaml.dump(config_data, f)
+                
+        
             
 
         # os.makedirs(workdir, exist_ok=True)
         try:
-
+                
             isolate_cmd = [ISOLATE_SANDBOX] + [f"--yaml={config_file}"]
             print(f"Running isolate command: {isolate_cmd}")
             result = subprocess.run(isolate_cmd, capture_output=True, text=True)
             print(result.stdout)
+            taskresults = {}
+            sandbox_res = f"{variables['SOURCE_DIR']}/{sandbox.get('stats-yaml')}"
+            print(f"sandbox_res: {sandbox_res}")
+            with open(sandbox_res, 'r') as f:
+                taskresults['sandbox_results'] = yaml.safe_load(f)
+            if result.returncode == 0:
+                taskresults["status"] = "OK"
+                taskresults["task-id"] = task_id
             if result.stderr:
                 print(result.stderr)
+            results['results'].append(taskresults)
+            
         except FileNotFoundError:
             print(f"Command not found: {bin_path}")
     else:
         print(f"Running normal command: {task['task-id']}")
         try:
             result = subprocess.run(full_cmd, capture_output=True, text=True)
+            taskresults = {}
+            if result.returncode == 0:
+                taskresults["task-id"] = task_id
+                taskresults["status"] = "OK"
+                
             print(result.stdout)
             if result.stderr:
                 print(result.stderr)
+            results['results'].append(taskresults)
         except FileNotFoundError:
             print(f"Command not found: {bin_path}")
 
@@ -122,9 +154,13 @@ def main():
     data = substitute_variables(data, variables)
 
     tasks = data.get('tasks', [])
+    results = {}
+    results.setdefault('results', [])
     for task in tasks:
         print(f"--- Running {task['task-id']} ---")
-        run_task(task)
+        run_task(task,results)
+    with open(f"{variables['SOURCE_DIR']}/my_results.yml", 'w') as f:
+        yaml.dump(results, f)
 
 if __name__ == "__main__":
     main()

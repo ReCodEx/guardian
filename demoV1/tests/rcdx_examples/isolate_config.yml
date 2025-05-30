@@ -55,6 +55,7 @@ env:
 # [job_logger] [debug]   --dir=etc/alternatives=/etc/alternatives:maybe
 box-fs:
   dir-rules:
+    - run
     - tmp:tmp
     - var/recodex-worker-python-venv:maybe
     - opt/worker

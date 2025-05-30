@@ -130,15 +130,19 @@ namespace env
                     { terminate("Mount failed for directory rule: {}, errno: {}", rule_->string(), errno); }
                 
                     
-                /// TODO: figure out if this is ideal
+                /// TODO: more secure solution
                 if(rule_->rw())
                 {
                     // if(chown(out.c_str(), credentials_->box_uid(), credentials_->box_gid()) < 0)
                     //     { terminate("chown() on outside temp directory ({}) failed, errno: {}", out.string(), errno); }
                     
-                    // /// TODO: make sure permissions are correct.
                     if(chmod(out.c_str(), 0777) < 0)
                         { terminate("chmod() on outside rw directory ({}) failed, errno: {}", out.string(), errno); }
+                    // Recursively chmod the entire directory tree
+                    for(const auto& entry : fs::recursive_directory_iterator(out)) {
+                        if(chmod(entry.path().c_str(), 0777) < 0)
+                            { terminate("chmod() on path ({}) failed, errno: {}", entry.path().string(), errno); }
+                    }
                 }
             }
         }

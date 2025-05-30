@@ -103,10 +103,11 @@ namespace config
         constexpr auto OK = "ok";
         constexpr auto KILLED = "killed";
         constexpr auto NON_ZERO_EXIT_CODE = "non zero exit code";
-        constexpr auto SIGNAL = "signal";
-        constexpr auto EXIT_CODE = "exit-code";
-        constexpr auto CG_TOTAL_TIME_USEC = "cg_total_time_usec";
-        constexpr auto CG_TOTAL_MEM_BYTES = "cg_total_mem_bytes";
+        constexpr auto SIGNAL = "exitsig";
+        constexpr auto EXIT_CODE = "exitcode";
+        constexpr auto WALL_TIME = "wall-time";
+        constexpr auto CG_TOTAL_TIME_SEC = "time";
+        constexpr auto CG_TOTAL_MEM_BYTES = "memory";
         constexpr auto RUSAGE_TOTAL_TIME_USEC = "rusage_total_time_usec";
         constexpr auto RUSAGE_TOTAL_MEM_BYTES = "rusage_total_mem_bytes";
     }
@@ -258,6 +259,7 @@ namespace config
     /// @brief Internal representation of metadata about the run of a single task.
     struct task_stats
     {
+        task_config* config_;
         bool exited_normally;
         bool signalled;
         int exit_code;
@@ -285,6 +287,8 @@ namespace config
         {
             tasks_.emplace_back(task);
         }
+        
+        const auto& tasks() const { return tasks_; } 
     private:
         std::vector<task_stats> tasks_;
     };
@@ -426,6 +430,7 @@ namespace config
         /// @param stats 
         static void generate_stats_yaml(const fs::path& path, const task_stats& stats)
         {
+            logs::debug("generating {}", path.string());
             YAML::Emitter yaml;
             yaml << YAML::BeginMap;
             yaml << YAML::Key << stats_names::STATUS; 
@@ -444,11 +449,11 @@ namespace config
 
             yaml << YAML::Key << stats_names::EXIT_CODE << YAML::Value << stats.exit_code; 
             yaml << YAML::Key << stats_names::SIGNAL << YAML::Value << stats.signal; 
-            yaml << YAML::Key << stats_names::CG_TOTAL_TIME_USEC << YAML::Value << stats.cg_total_time_usec; 
+            yaml << YAML::Key << stats_names::CG_TOTAL_TIME_SEC << YAML::Value << (float)stats.cg_total_time_usec / (float)1000000; 
             yaml << YAML::Key << stats_names::CG_TOTAL_MEM_BYTES << YAML::Value << stats.cg_total_mem_bytes; 
             
             std::ofstream f(path);
-            f << yaml.c_str(); 
+            f << yaml.c_str();
         }
     };
 

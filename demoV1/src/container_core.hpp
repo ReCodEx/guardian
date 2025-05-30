@@ -87,7 +87,6 @@ namespace container_core
 
         void generate_proxy_report(const config::task_report& task_report)
         {
-
         }
         
         /// @brief Change root to the root of box directory tree.
