@@ -84,7 +84,7 @@ tasks:
     output: true
     carboncopy-stdout: ${RESULT_DIR}/compilation.62mmkgg9spjkqsv0u2nj.out
     working-directory: Test 01
-    stats-yaml: /Test01/compilation.yml
+    stats-yaml: Test 01/compilation.yml
 - task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.6
   priority: 90
   fatal-failure: false

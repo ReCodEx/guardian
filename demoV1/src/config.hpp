@@ -100,7 +100,7 @@ namespace config
     namespace stats_names
     {
         constexpr auto STATUS = "status";
-        constexpr auto OK = "ok";
+        constexpr auto OK = "OK";
         constexpr auto KILLED = "killed";
         constexpr auto NON_ZERO_EXIT_CODE = "non zero exit code";
         constexpr auto SIGNAL = "exitsig";

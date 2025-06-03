@@ -60,6 +60,7 @@ tasks:
     output: true
     carboncopy-stdout: ${RESULT_DIR}/compilation.eb217f7aozif1h0zg4ar.out
     working-directory: Test 01
+    stats-yaml: Test 01/compilation.stats.yml
 - task-id: Test 01.a1b191ce-9a50-11e7-869b-005056854569.compilation.4
   priority: 100
   fatal-failure: false
@@ -98,6 +99,7 @@ tasks:
       time: 1
       memory: 65536
       bound-directories: []
+    stats-yaml: Test 01/execution.stats.yml
 - task-id: Test 01.73daa928-a22e-11e7-869b-005056854569.expected.6
   priority: 42
   fatal-failure: false
@@ -130,4 +132,5 @@ tasks:
     name: isolate
     output: true
     working-directory: Test 01
+    stats-yaml: Test 01/judge.stats.yml
 # ...
