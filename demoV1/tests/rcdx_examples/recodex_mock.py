@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-ISOLATE_SANDBOX = "/tmp/container"
+ISOLATE_SANDBOX = f"{SCRIPT_DIR}/../../build/src/container"
 CWD = os.getcwd()
 
 MAVEN_REPO = "/opt/maven-repo"

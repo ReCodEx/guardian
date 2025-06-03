@@ -52,3 +52,6 @@ GCC DEBUGGING!
 
 MAVEN - maven-repo/.m2 - treba poradne nainstalovat, potom staci r prava a neni potreba internet
 DNS - /etc/resolv.conf muze byt symlink napr na /run - pridat do dir rules pokud potrebuju internet
+
+TESTY NA VIRTUALKACH 
+bob1 - nainstalovan maven
