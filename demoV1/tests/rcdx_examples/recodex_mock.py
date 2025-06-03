@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-ISOLATE_SANDBOX = "/tmp/container"  # simulated sandbox dir
+ISOLATE_SANDBOX = "/tmp/container"
 CWD = os.getcwd()
 
 variables = {
@@ -15,8 +15,10 @@ variables = {
     "SOURCE_DIR": f"{CWD}/{sys.argv[1]}",
     "EVAL_DIR": ".",
     "RESULT_DIR": f"{CWD}/results/{sys.argv[1]}",
-    "JUDGES_DIR": "/opt/worker/judges/build"
+    "JUDGES_DIR": "/opt/worker/judges/build",
 }
+
+print(f"Variables: {variables}")
 
 
 def substitute_variables(obj, variables):
@@ -54,13 +56,13 @@ def run_task(task, results):
         args = [src, dst]
     
     if(bin_path == "/usr/local/recodex-gcc/bin/gcc"):
-        bin_path = "/usr/bin/gcc"
+        bin_path = subprocess.getoutput("which gcc")
         args.insert(0, "-B/usr/libexec/gcc/x86_64-redhat-linux/14/")
         args.insert(0, "-B/usr/lib/gcc/x86_64-redhat-linux/14/")
         args.insert(0, "-I/usr/lib/gcc/x86_64-redhat-linux/14/include/")
         
     if "maven" in bin_path:
-        bin_path = "/usr/bin/mvn"
+        bin_path = subprocess.getoutput("which mvn")
         
     if "token-judge" in bin_path:
         bin_path = os.path.join(variables['JUDGES_DIR'], 'recodex_token_judge/recodex-token-judge')

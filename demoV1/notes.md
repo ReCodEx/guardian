@@ -1,13 +1,9 @@
 TODO:
-    skript na mockup workera - C, python, dotnet/maven - hello world funguje
+    skript na mockup workera - C, python, dotnet/maven - hello world funguje, pridat parametrizovane gcc, maven-repo
     
     v konfiguraci se musi nastavovat PATH, LD_LIBRARY_PATH
 
-    parametrizovana root cgroup, directory a box id - DONE
-    meta files -- zkopirovat format z result.yml - CASTECNE
-    verbose, wait -- SKIP
-	special options ( inherit-fds, tty-hack, special-files) - SKIP krome as-uid, as-gid
-    as-uid, as-gid  - DONE
+    meta files -- zkopirovat format z result.yml - VYPADA DOBRE
     spravit permissions v box_fs - ROZMYSLET
     
     kapitola o pozadavcich recodexu 
