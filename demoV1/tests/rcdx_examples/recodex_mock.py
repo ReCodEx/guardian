@@ -18,7 +18,7 @@ variables = {
     "SOURCE_DIR": f"{CWD}/{sys.argv[1]}",
     "EVAL_DIR": ".",
     "RESULT_DIR": f"{CWD}/results/{sys.argv[1]}",
-    "JUDGES_DIR": "/opt/worker/judges/build",
+    "JUDGES_DIR": f"worker/judges/build",
 }
 
 print(f"Variables: {variables}")
@@ -75,7 +75,7 @@ def run_task(task, results):
         bin_path = subprocess.getoutput("which mvn")
         
     elif "token-judge" in bin_path:
-        bin_path = os.path.join(variables['JUDGES_DIR'], 'recodex_token_judge/recodex-token-judge')
+        bin_path = os.path.join(f"/{variables['JUDGES_DIR']}", 'recodex_token_judge/recodex-token-judge')
 
     full_cmd = [bin_path] + args
     full_cmd = [str(arg) for arg in full_cmd]
@@ -109,6 +109,7 @@ def run_task(task, results):
             config_data['tasks'][-1].setdefault('cmd', {})['bin'] = bin_path
             config_data['tasks'][-1]['cmd']['args'] = args
             config_data['env']['vars'].append(f"LD_LIBRARY_PATH={GCC_LD_LIBRARY_PATH}:/usr/lib64:/usr/lib:/lib64:/lib")
+            config_data['box-fs']['dir-rules'].append(f"{variables['JUDGES_DIR']}={CWD}/{variables['JUDGES_DIR']}")
             if 'working-directory' in sandbox:
                 workdir = sandbox['working-directory']
                 config_data['box-fs']['dir-rules'].append(f"{workdir}={variables['SOURCE_DIR']}/{workdir}:rw")
