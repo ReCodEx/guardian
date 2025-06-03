@@ -59,7 +59,7 @@ box-fs:
     - run
     - tmp:tmp
     - var/recodex-worker-python-venv:maybe
-    - opt/worker
+    # - opt/worker
     - opt/remi:maybe                      
     - opt/kotlin:maybe                   
     - opt/groovy:maybe                   
