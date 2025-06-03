@@ -1,14 +1,14 @@
 TODO:
-    skript na mockup workera - C, python, dotnet/maven
+    skript na mockup workera - C, python, dotnet/maven - hello world funguje
     
     v konfiguraci se musi nastavovat PATH, LD_LIBRARY_PATH
 
     parametrizovana root cgroup, directory a box id - DONE
-    meta files -- zkopirovat format z result.yml 
+    meta files -- zkopirovat format z result.yml - CASTECNE
     verbose, wait -- SKIP
 	special options ( inherit-fds, tty-hack, special-files) - SKIP krome as-uid, as-gid
     as-uid, as-gid  - DONE
-    spravit permissions v box_fs - MOZNA DONE
+    spravit permissions v box_fs - ROZMYSLET
     
     kapitola o pozadavcich recodexu 
     recodex obecne- seznam environmentu, tisice uzivatelu, hodne variabilni zatez, c# kompilace 
@@ -54,4 +54,4 @@ GCC DEBUGGING!
 echo '' | gcc -xc -E -v -
 
 MAVEN - maven-repo/.m2 - treba poradne nainstalovat, potom staci r prava a neni potreba internet
-DNS - /etc/resolv.conf muze byt symlink napr na /run - pridat do dir rules
+DNS - /etc/resolv.conf muze byt symlink napr na /run - pridat do dir rules pokud potrebuju internet

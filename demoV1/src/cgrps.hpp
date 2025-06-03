@@ -117,9 +117,9 @@ namespace cgroup
             //  Equivalent to "echo $BYTES > memory.max"
 
             fs::path memory_max(*cgrp_path_ / MEMORY_MAX());
-            bool success = file_utils::write_formatted(memory_max, "{}", bytes);
-            
-            return success;
+            if(!file_utils::write_formatted(memory_max, "{}", bytes))
+                { terminate("Failed to write memory.max in cgroup {}", cgrp_path_->string()); }
+            return true;
         }
 
         ///
@@ -130,9 +130,10 @@ namespace cgroup
             // Equivalent to "echo max > memory.min".
 
             fs::path memory_min(*cgrp_path_ / MEMORY_MIN());
-            bool success = file_utils::write_formatted(memory_min,"max");
+            if(!file_utils::write_formatted(memory_min,"max"))
+                { terminate("Failed to write memory.min in cgroup {}", cgrp_path_->string()); }
             
-            return success;
+            return true;
         }
 
         /// @brief Extractor for the memory usage of a cgroup from the memory.peak file.
@@ -284,6 +285,7 @@ namespace cgroup
         /// to "max", not to get in the way and the memory.max to the intended limit. But swap has to be disabled even with this setup.
         void set_strict_memory_limit(size_t bytes)
         {
+            logs::debug("Setting memory limit for cgroup {} to {} bytes", cgrp_path_.string(), bytes);
             mem_.set_memory_max(bytes);
             mem_.set_memory_min_to_max();
         }

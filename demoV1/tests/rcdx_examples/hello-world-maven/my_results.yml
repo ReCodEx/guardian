@@ -12,9 +12,10 @@ results:
 - sandbox_results:
     exitcode: 0
     exitsig: 0
-    memory: 117645312
+    memory: 132698
     status: ok
-    time: 5.398484
+    time: 3.548201
+    wall-time: 1.501
   status: OK
   task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.6
 - status: OK
@@ -22,8 +23,9 @@ results:
 - sandbox_results:
     exitcode: 0
     exitsig: 0
-    memory: 544768
+    memory: 544
     status: ok
-    time: 0.004332
+    time: 0.002102
+    wall-time: 0.1
   status: OK
   task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.judge.8

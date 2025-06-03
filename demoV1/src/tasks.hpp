@@ -64,9 +64,22 @@ namespace tasks
         /// @brief Generate metadata about the execution of this task.
         /// @param stat stat_loc output parameter of waitpid() 
         /// @return task_stats struct as defined in the config source file.
-        config::task_stats generate_task_stats(const cgroup::cgroupv2_t& task_cgroup, int stat)
+        config::task_stats generate_task_stats(const cgroup::cgroupv2_t& task_cgroup, int stat, size_t wall_time_ms, config::exit_status exit = config::exit_status::OK)
         {
             auto r_usage = get_children_rusage();
+            auto memory = task_cgroup.memory_usage_bytes();
+            auto cputime = task_cgroup.cpu_usage_usec();
+            
+            if(task_config_->rlimits().memory().has_value() && memory > task_config_->rlimits().memory())
+            {
+                logs::debug("Task \"{}\" exceeded memory limit, cgroup memory usage: {}, limit: {}", task_config_->name(), task_cgroup.memory_usage_bytes(), task_config_->rlimits().memory().value());
+                exit = config::exit_status::MEMORY_LIMIT_EXCEEDED;
+            }
+            if(task_config_->rlimits().cpu_time().has_value() && (float)cputime / 1000000 > task_config_->rlimits().cpu_time().value())
+            {
+                logs::debug("Task \"{}\" exceeded CPU time limit, cgroup CPU time usage: {}, limit: {}", task_config_->name(), (float)task_cgroup.cpu_usage_usec() / 1000000, task_config_->rlimits().cpu_time().value());
+                exit = config::exit_status::CPU_TIME_EXCEEDED;
+            }
 
             return config::task_stats   {
                                 .exited_normally = WIFEXITED(stat),
@@ -74,9 +87,11 @@ namespace tasks
                                 .exit_code = WEXITSTATUS(stat),
                                 .err_no = errno,
                                 .signal = WTERMSIG(stat),
+                                .exit = exit,
 
                                 .cg_total_mem_bytes = task_cgroup.memory_usage_bytes(),
                                 .cg_total_time_usec = task_cgroup.cpu_usage_usec(),
+                                .wall_time_ms = wall_time_ms,
 
                                 .rusage_total_mem_bytes = r_usage.ru_maxrss*1000,
                                 .rusage_total_time_usec = rusage_total_time_usec(r_usage),
@@ -99,30 +114,31 @@ namespace tasks
             {
                 // WNOHANG flag so that we don't block here.
                 p = waitpid(task_pid, &stat, WNOHANG);
+                auto wtime = std::chrono::system_clock::now() - stime;
 
                 if (p < 0)
                     { terminate("waitpid() for task \"{}\" failed. Stat: {}, Errno: {}", task_config_->name(), stat, errno); }
                 else if (p == 0) 
                 {
-                    auto ctime = std::chrono::system_clock::now();
-                    if(ctime - stime < wall_limit)
+                    if(wtime < wall_limit)
                     {
-                        logs::debug("Task \"{}\" still running after {}s", task_config_->name(), std::chrono::duration_cast<std::chrono::seconds>(ctime - stime).count());
+                        // logs::debug("Task \"{}\" still running after {}s", task_config_->name(), std::chrono::duration_cast<std::chrono::seconds>(wtime).count());
                         std::this_thread::sleep_for(waiting_time());
                     }
                     else
                     {
-                        logs::debug("Task \"{}\" killed for exceeding wall time limit", task_config_->name());
+                        logs::debug("Sending SIGKILL to task \"{}\" for exceeding wall time limit", task_config_->name());
                         kill(task_pid, SIGKILL);
                         p = waitpid(task_pid, &stat, 0);
-                        return generate_task_stats(task_cgrp_, stat);
+                        logs::debug("Task \"{}\" exited. WTERMSIG: {}, WEXITSTATUS : {}, Errno: {}", task_config_->name(), WTERMSIG(stat), WEXITSTATUS(stat), errno);
+                        return generate_task_stats(task_cgrp_, stat, std::chrono::duration_cast<std::chrono::milliseconds>(wtime).count(), config::exit_status::WALL_TIME_EXCEEDED);
                     }
                     
                 }
                 else
                 {
-                    logs::debug("Task process exited. Signal: {}, RV : {}, Errno: {}", WTERMSIG(stat), p, errno);
-                    return generate_task_stats(task_cgrp_, stat);
+                    logs::debug("Task \"{}\" exited. WTERMSIG: {}, WEXITSTATUS : {}, Errno: {}", task_config_->name(), WTERMSIG(stat), WEXITSTATUS(stat), errno);
+                    return generate_task_stats(task_cgrp_, stat, std::chrono::duration_cast<std::chrono::milliseconds>(wtime).count());
                 }
             }
         }
@@ -131,7 +147,7 @@ namespace tasks
         /// @return PID of the task to use in wait_for_task(). Doesn't return in the task process. 
         pid_t launch_task()
         {
-            logs::debug("Launching the task process for task \"{}\"", task_config_->name());
+            logs::debug("Launching the task process for \"{}\"", task_config_->name());
 
             /// TODO: remove usage of FD to get into the cgroup, use add_me() instead.
             auto fd = task_cgrp_.open_fd();
@@ -142,13 +158,11 @@ namespace tasks
             else if (!clone_rv)
             {
                 /// We are in the task process. 
-                ///
-                /// The steps before call_execve() don't depend on each other, so the order doesn't matter here.
 
-                credentials_->switch_to_box();
                 optional_chdir();
                 redirect_descriptors();
                 set_resource_limits();
+                credentials_->switch_to_box();
                 call_execve();
 
                 /// execve() doesn't return on success.
@@ -347,7 +361,7 @@ namespace tasks
 
         std::chrono::milliseconds waiting_time()
         {
-            return std::chrono::milliseconds(1000);
+            return std::chrono::milliseconds(100);
         }
 
         /// @brief Get the rusage struct with total accounting for all tasks (all child processes of the proxy process). 

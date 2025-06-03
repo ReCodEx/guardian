@@ -105,9 +105,12 @@ namespace config
         constexpr auto NON_ZERO_EXIT_CODE = "non zero exit code";
         constexpr auto SIGNAL = "exitsig";
         constexpr auto EXIT_CODE = "exitcode";
-        constexpr auto WALL_TIME = "wall-time";
-        constexpr auto CG_TOTAL_TIME_SEC = "time";
-        constexpr auto CG_TOTAL_MEM_BYTES = "memory";
+        constexpr auto WALL_TIME_EXCEEDED = "wall-time";
+        constexpr auto CPU_TIME_EXCEEDED = "cpu-time";
+        constexpr auto MEMORY_EXCEEDED = "memory";
+        constexpr auto WALL_TIME_S = "wall-time";
+        constexpr auto CG_TOTAL_TIME_S = "time";
+        constexpr auto CG_TOTAL_MEM_KB = "memory";
         constexpr auto RUSAGE_TOTAL_TIME_USEC = "rusage_total_time_usec";
         constexpr auto RUSAGE_TOTAL_MEM_BYTES = "rusage_total_mem_bytes";
     }
@@ -255,6 +258,16 @@ namespace config
     {
 
     };
+    
+    enum class exit_status
+    {
+        OK,                ///< Task exited normally with exit code 0.
+        WALL_TIME_EXCEEDED, ///< Task exceeded the wall time limit.
+        CPU_TIME_EXCEEDED,  ///< Task exceeded the CPU time limit.
+        MEMORY_LIMIT_EXCEEDED, ///< Task exceeded the memory limit.
+        KILLED,            ///< Task was killed by a signal.
+        NON_ZERO_EXIT_CODE ///< Task exited with a non-zero exit code.
+    };
 
     /// @brief Internal representation of metadata about the run of a single task.
     struct task_stats
@@ -265,12 +278,16 @@ namespace config
         int exit_code;
         int err_no;
         int signal;
+        
+        exit_status exit;
 
         /// @brief Memory usage in bytes from cgroups accounting.
         size_t cg_total_mem_bytes;
         
         /// @brief CPU time in microseconds from cgroups accounting.
         size_t cg_total_time_usec;
+        
+        size_t wall_time_ms;
 
         /// @brief Memory usage in bytes from getrusage().
         long rusage_total_mem_bytes;
@@ -428,15 +445,23 @@ namespace config
         /// @brief Generate a yaml results file.
         /// @param path 
         /// @param stats 
-        static void generate_stats_yaml(const fs::path& path, const task_stats& stats)
+        void generate_stats_yaml(const fs::path& path, const task_stats& stats)
         {
-            logs::debug("generating {}", path.string());
+            logs::debug("Generating meta file for \"{}\" at sandbox path {}", id_, path.string());
             YAML::Emitter yaml;
             yaml << YAML::BeginMap;
             yaml << YAML::Key << stats_names::STATUS; 
-            if(stats.exited_normally && stats.exit_code == 0)
+            if (stats.exit == config::exit_status::WALL_TIME_EXCEEDED)
             {
-                yaml << YAML::Value << stats_names::OK;
+                yaml << YAML::Value << stats_names::WALL_TIME_EXCEEDED;
+            }
+            else if (stats.exit == config::exit_status::CPU_TIME_EXCEEDED)
+            {
+                yaml << YAML::Value << stats_names::CPU_TIME_EXCEEDED;
+            }
+            else if (stats.exit == config::exit_status::MEMORY_LIMIT_EXCEEDED)
+            {
+                yaml << YAML::Value << stats_names::MEMORY_EXCEEDED;
             }
             else if (stats.signalled)
             {
@@ -446,11 +471,16 @@ namespace config
             {
                 yaml << YAML::Value << stats_names::NON_ZERO_EXIT_CODE;
             }
+            else if(stats.exited_normally && stats.exit_code == 0)
+            {
+                yaml << YAML::Value << stats_names::OK;
+            }
 
             yaml << YAML::Key << stats_names::EXIT_CODE << YAML::Value << stats.exit_code; 
             yaml << YAML::Key << stats_names::SIGNAL << YAML::Value << stats.signal; 
-            yaml << YAML::Key << stats_names::CG_TOTAL_TIME_SEC << YAML::Value << (float)stats.cg_total_time_usec / (float)1000000; 
-            yaml << YAML::Key << stats_names::CG_TOTAL_MEM_BYTES << YAML::Value << stats.cg_total_mem_bytes; 
+            yaml << YAML::Key << stats_names::CG_TOTAL_TIME_S << YAML::Value << (float)stats.cg_total_time_usec / (float)1000000; 
+            yaml << YAML::Key << stats_names::CG_TOTAL_MEM_KB << YAML::Value << stats.cg_total_mem_bytes / 1000; 
+            yaml << YAML::Key << stats_names::WALL_TIME_S << YAML::Value << (float)stats.wall_time_ms / 1000; 
             
             std::ofstream f(path);
             f << yaml.c_str();
