@@ -3,6 +3,7 @@ import sys
 import subprocess
 import yaml
 import os
+import pathlib
 from pathlib import Path
 import re
 
@@ -11,7 +12,6 @@ ISOLATE_SANDBOX = f"{SCRIPT_DIR}/../../build/src/container"
 CWD = os.getcwd()
 
 MAVEN_REPO = "/opt/maven-repo"
-GCC_LD_LIBRARY_PATH = "/usr/lib/gcc/x86_64-redhat-linux/14/include:/usr/lib/gcc/x86_64-redhat-linux/14/"
 
 dirs = {
     "ISOLATE_CONFIG": "isolate_config.yml",
@@ -23,11 +23,21 @@ dirs = {
 
 print(f"Directories: {dirs}")
 
+def find_java_home():
+    try:
+        javac_path = subprocess.check_output(['which', 'javac'], text=True).strip()
+        real_javac = pathlib.Path(javac_path).resolve()
+        java_home = real_javac.parents[1]  # usually the grandparent of 'bin/javac'
+        return str(java_home)
+    except subprocess.CalledProcessError:
+        return None
+
 def mvn_init():
     if not os.path.exists(f"{MAVEN_REPO}/.m2"):
         print("Initializing Maven repository with an online compilation")
         os.makedirs(f"{MAVEN_REPO}/.m2", exist_ok=True)
         subprocess.run([f"{SCRIPT_DIR}/recodex_mock.py", "mvn_init_job"])
+
 def get_container_path():
     paths = set()
 
@@ -37,15 +47,12 @@ def get_container_path():
     # 2. Add standard system paths explicitly (to avoid stripping them later)
     paths.update(["/bin", "/usr/bin", "/usr/local/bin", "/sbin", "/usr/sbin"])
 
-    # 3. Add GCC internal tools
-    #paths.update(gcc_internal_paths())
-
-    # 4. Optional: add specific development paths
     if os.path.exists("/usr/libexec/gcc"):
         for root, dirs, files in os.walk("/usr/libexec/gcc"):
             paths.add(root + '/')
 
     return ":".join(sorted(paths))        
+
 def get_ld_library_path():
     paths = set()
 
@@ -53,7 +60,6 @@ def get_ld_library_path():
     standard_paths = ["/lib", "/lib64", "/usr/lib", "/usr/lib64"]
     paths.update(standard_paths)
 
-    # 4. Optional: add specific development paths
     if os.path.exists("/usr/libexec/gcc"):
         for root, dirs, files in os.walk("/usr/libexec/gcc"):
             paths.add(root + '/')
@@ -82,6 +88,7 @@ def get_ld_library_path():
 
 print("LD_LIBRARY_PATH=" + get_ld_library_path())
 print("PATH=" + get_container_path())
+print("JAVA_HOME=" + find_java_home())
 
         
 def substitute_variables(obj, variables):
@@ -124,7 +131,7 @@ def run_task(task, results):
         # args.insert(0, "-B/usr/libexec/gcc/x86_64-redhat-linux/14/")
         # args.insert(0, "-B/usr/lib/gcc/x86_64-redhat-linux/14/")
         # args.insert(0, "-I/usr/lib/gcc/x86_64-redhat-linux/14/include/")
-        args.insert(0, "-fno-use-linker-plugin")
+        #args.insert(0, "-fno-use-linker-plugin") # was causing problems on rocky linux
         
     elif "maven" in bin_path:
         mvn_init()
@@ -140,12 +147,6 @@ def run_task(task, results):
 
     if (sandbox and sandbox.get('name') == 'isolate'):
         print(f"Running in isolate sandbox: {task['task-id']}")
-        # workdir = os.path.join(ISOLATE_SANDBOX, sandbox.get('working-directory', '.'))
-        # Find the yaml file from args
-        # for i, arg in enumerate(args):
-        #     if arg.startswith('--yaml='):
-        #         dirs["ISOLATE_CONFIG"] = arg.split('=')[1]
-        #     break
         
         config_file = os.path.join(dirs['SOURCE_DIR'], task_id + ".yml") 
         workdir = None
@@ -166,6 +167,7 @@ def run_task(task, results):
             config_data['tasks'][-1]['cmd']['args'] = args
             config_data['env']['vars'].append(f"LD_LIBRARY_PATH={get_ld_library_path()}")
             config_data['env']['vars'].append(f"PATH={get_container_path()}")
+            config_data['env']['vars'].append(f"JAVA_HOME={find_java_home()}")
             config_data['box-fs']['dir-rules'].append(f"{dirs['JUDGES_DIR']}={CWD}/{dirs['JUDGES_DIR']}")
             if 'box-fs' in sandbox:
                 fs = sandbox['box-fs']
