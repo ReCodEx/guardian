@@ -1,8 +1,9 @@
 box-fs:
   dir-rules:
+  - run
   - tmp:tmp
   - var/recodex-worker-python-venv:maybe
-  - opt/worker
+  - opt/worker:maybe
   - opt/remi:maybe
   - opt/kotlin:maybe
   - opt/groovy:maybe
@@ -14,11 +15,11 @@ box-fs:
   - etc/java:maybe
   - etc/OpenCL:maybe
   - etc/alternatives=/etc/alternatives:maybe
-  - Test 01=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/hello-world-python/Test
+  - worker/judges/build=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/worker/judges/build
+  - Test 01=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/hello-world-python//Test
     01:rw
 env:
   vars:
-  - LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/opt/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/opt/compiler/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/tbb/latest/lib/intel64/gcc4.8:/usr/local/recodex-gcc/lib64
   - PATH=/opt/intel/oneapi/compiler/latest/bin/compiler:/opt/intel/oneapi/compiler/latest/bin:/var/recodex-worker-python-venv/bin:/usr/local/recodex-gcc/bin:/usr/bin:/bin
   - HOME=/box
   - JAVA_HOME=/usr/lib/jvm/jre-openjdk
@@ -30,6 +31,7 @@ env:
   - GROOVY_HOME=/opt/groovy
   - MAVEN_HOME=/opt/maven
   - M2_HOME=/opt/maven-repo
+  - LD_LIBRARY_PATH=/lib:/lib/:/lib/../lib64/:/lib/x86_64-redhat-linux/14/:/lib64:/usr/lib:/usr/lib/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/14:/usr/lib/gcc/x86_64-redhat-linux/14/:/usr/lib/gcc/x86_64-redhat-linux/14/../../../:/usr/lib/gcc/x86_64-redhat-linux/14/../../../../lib64/:/usr/lib/gcc/x86_64-redhat-linux/14/../../../../x86_64-redhat-linux/lib/:/usr/lib/gcc/x86_64-redhat-linux/14/../../../../x86_64-redhat-linux/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/14/../../../../x86_64-redhat-linux/lib/x86_64-redhat-linux/14/:/usr/lib/gcc/x86_64-redhat-linux/14/../../../x86_64-redhat-linux/14/:/usr/lib/x86_64-redhat-linux/14/:/usr/lib64
 root-cg: /sys/fs/cgroup/isolate_boxes
 root-dir: /isolate_boxes
 tasks:
@@ -41,7 +43,7 @@ tasks:
     - --ignore-trailing-whitespace
     - ./expected.out
     - ./ayspsmsmuw1zvj7hr8ob.stdout
-    bin: /opt/worker/judges/build/recodex_token_judge/recodex-token-judge
+    bin: /worker/judges/build/recodex_token_judge/recodex-token-judge
   name: isolate
   output: true
   task-id: Test 01.1079c3b4-9eff-11e7-869b-005056854569.judge.6

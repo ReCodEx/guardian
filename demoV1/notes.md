@@ -1,7 +1,24 @@
 TODO:
     skript na mockup workera - C, python, dotnet/maven - hello world funguje, pridat parametrizovane gcc, maven-repo
     
+    pridat overwriting dir rules !!!
+    
     v konfiguraci se musi nastavovat PATH, LD_LIBRARY_PATH
+    GCC DEBUGGING!
+        echo '' | gcc -xc -E -v -
+        LD_LIBRARY_PATH - spravne gcc directories
+
+    MAVEN - maven-repo/.m2 - treba poradne nainstalovat, potom staci r prava a neni potreba internet
+    DNS - /etc/resolv.conf muze byt symlink napr na /run - pridat do dir rules pokud potrebuju internet
+
+    TESTY NA VIRTUALKACH 
+    bob1 - java - nainstalovan maven, java version snizena z 21 na 17 -> funguje
+
+
+
+
+
+
 
     meta files -- zkopirovat format z result.yml - VYPADA DOBRE
     spravit permissions v box_fs - ROZMYSLET
@@ -45,13 +62,3 @@ TEMATA + PROBLEMY DO BAKALARKY:
 
 SECURITY - Martin Mares paper
 - schovani isolatoru v /proc namespacu.
-
-GCC DEBUGGING!
-    echo '' | gcc -xc -E -v -
-    LD_LIBRARY_PATH - spravne gcc directories
-
-MAVEN - maven-repo/.m2 - treba poradne nainstalovat, potom staci r prava a neni potreba internet
-DNS - /etc/resolv.conf muze byt symlink napr na /run - pridat do dir rules pokud potrebuju internet
-
-TESTY NA VIRTUALKACH 
-bob1 - nainstalovan maven

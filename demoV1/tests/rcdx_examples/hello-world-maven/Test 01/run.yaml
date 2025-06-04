@@ -1,5 +1,6 @@
-status: ok
+status: OK
 exitcode: 0
 exitsig: 0
-time: 5.398484
-memory: 117645312
+time: 3.477345
+memory: 120795
+wall-time: 1.702

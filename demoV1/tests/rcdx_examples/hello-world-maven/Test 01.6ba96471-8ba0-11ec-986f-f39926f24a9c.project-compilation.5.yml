@@ -1,0 +1,54 @@
+box-fs:
+  dir-rules:
+  - run
+  - tmp:tmp
+  - var/recodex-worker-python-venv:maybe
+  - opt/worker:maybe
+  - opt/remi:maybe
+  - opt/kotlin:maybe
+  - opt/groovy:maybe
+  - opt/maven:maybe
+  - opt/maven-repo:maybe
+  - opt/dotnet:maybe
+  - opt/Picat:maybe
+  - opt/intel:maybe
+  - etc/java:maybe
+  - etc/OpenCL:maybe
+  - etc/alternatives=/etc/alternatives:maybe
+  - worker/judges/build=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/worker/judges/build
+  - Test 01=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/hello-world-maven//Test
+    01:rw
+env:
+  vars:
+  - PATH=/opt/intel/oneapi/compiler/latest/bin/compiler:/opt/intel/oneapi/compiler/latest/bin:/var/recodex-worker-python-venv/bin:/usr/local/recodex-gcc/bin:/usr/bin:/bin
+  - HOME=/box
+  - JAVA_HOME=/usr/lib/jvm/jre-openjdk
+  - PPC_CONFIG_PATH=/usr/etc
+  - PYTHONHASHSEED=0
+  - PYTHONIOENCODING=utf-8
+  - VIRTUAL_ENV=/var/recodex-worker-python-venv
+  - GO111MODULE=auto
+  - GROOVY_HOME=/opt/groovy
+  - MAVEN_HOME=/opt/maven
+  - M2_HOME=/opt/maven-repo
+  - LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/14/include:/usr/lib/gcc/x86_64-redhat-linux/14/:/usr/lib64:/usr/lib:/lib64:/lib
+root-cg: /sys/fs/cgroup/isolate_boxes
+root-dir: /isolate_boxes
+tasks:
+- carboncopy-stdout: /home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/results/hello-world-maven//compilation.62mmkgg9spjkqsv0u2nj.out
+  chdir: Test 01
+  cmd:
+    args:
+    - -Dmaven.repo.local=/opt/maven-repo/.m2
+    - -q
+    - clean
+    - compile
+    - -f
+    - ./extract_o20ohrug6vt1qzxrb1as
+    bin: /usr/bin/mvn
+  name: isolate
+  output: true
+  stats-yaml: Test 01/compilation.yml
+  stderr-to-stdout: true
+  task-id: Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.project-compilation.5
+  working-directory: Test 01

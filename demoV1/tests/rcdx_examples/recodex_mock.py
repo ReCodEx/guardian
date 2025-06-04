@@ -1,4 +1,4 @@
-#~/bin/python3
+#!/bin/python3
 import sys
 import subprocess
 import yaml
@@ -13,7 +13,7 @@ CWD = os.getcwd()
 MAVEN_REPO = "/opt/maven-repo"
 GCC_LD_LIBRARY_PATH = "/usr/lib/gcc/x86_64-redhat-linux/14/include:/usr/lib/gcc/x86_64-redhat-linux/14/"
 
-variables = {
+dirs = {
     "ISOLATE_CONFIG": "isolate_config.yml",
     "SOURCE_DIR": f"{CWD}/{sys.argv[1]}",
     "EVAL_DIR": ".",
@@ -21,13 +21,44 @@ variables = {
     "JUDGES_DIR": f"worker/judges/build",
 }
 
-print(f"Variables: {variables}")
+print(f"Directories: {dirs}")
 
 def mvn_init():
     if not os.path.exists(f"{MAVEN_REPO}/.m2"):
-        print("Initializing Maven repository...")
+        print("Initializing Maven repository with an online compilation")
         os.makedirs(f"{MAVEN_REPO}/.m2", exist_ok=True)
-        subprocess.run(["mvn", "-s", "mvn_settings.xml", "dependency:go-offline"])
+        subprocess.run([f"{SCRIPT_DIR}/recodex_mock.py", "mvn_init_job"])
+        
+def get_ld_library_path():
+    paths = set()
+
+    # 1. Standard lib paths
+    standard_paths = ["/lib", "/lib64", "/usr/lib", "/usr/lib64"]
+    paths.update(standard_paths)
+
+    # 2. GCC internal paths
+    try:
+        out = subprocess.check_output(["gcc", "-print-search-dirs"], text=True)
+        for line in out.splitlines():
+            if line.startswith("libraries: ="):
+                libs = line.split("=", 1)[1].split(":")
+                paths.update(libs)
+    except subprocess.CalledProcessError:
+        pass
+
+    # 3. Path to libstdc++
+    try:
+        libstdcpp = subprocess.check_output(["gcc", "-print-file-name=libstdc++.so"], text=True).strip()
+        if os.path.isfile(libstdcpp):
+            paths.add(os.path.dirname(libstdcpp))
+    except subprocess.CalledProcessError:
+        pass
+
+    # 4. Remove duplicates and empty entries
+    return ":".join(sorted(p for p in paths if p))
+
+print("LD_LIBRARY_PATH=" + get_ld_library_path())
+
         
 def substitute_variables(obj, variables):
     """Recursively substitute ${VAR} in strings of a nested structure."""
@@ -59,7 +90,7 @@ def run_task(task, results):
         
     elif bin_path == 'fetch':
         bin_path = 'cp'
-        src = os.path.join(variables['SOURCE_DIR'], f"fetch/{args[0]}")
+        src = os.path.join(dirs['SOURCE_DIR'], f"fetch/{args[0]}")
         dst = args[1]
         args = [src, dst]
     
@@ -75,7 +106,7 @@ def run_task(task, results):
         bin_path = subprocess.getoutput("which mvn")
         
     elif "token-judge" in bin_path:
-        bin_path = os.path.join(f"/{variables['JUDGES_DIR']}", 'recodex_token_judge/recodex-token-judge')
+        bin_path = os.path.join(f"/{dirs['JUDGES_DIR']}", 'recodex_token_judge/recodex-token-judge')
 
     full_cmd = [bin_path] + args
     full_cmd = [str(arg) for arg in full_cmd]
@@ -86,14 +117,14 @@ def run_task(task, results):
         print(f"Running in isolate sandbox: {task['task-id']}")
         # workdir = os.path.join(ISOLATE_SANDBOX, sandbox.get('working-directory', '.'))
         # Find the yaml file from args
-        for i, arg in enumerate(args):
-            if arg.startswith('--yaml='):
-                variables["ISOLATE_CONFIG"] = arg.split('=')[1]
-            break
+        # for i, arg in enumerate(args):
+        #     if arg.startswith('--yaml='):
+        #         dirs["ISOLATE_CONFIG"] = arg.split('=')[1]
+        #     break
         
-        config_file = os.path.join(variables['SOURCE_DIR'], task_id + ".yml") 
+        config_file = os.path.join(dirs['SOURCE_DIR'], task_id + ".yml") 
         workdir = None
-        with open(variables['ISOLATE_CONFIG'], 'r') as f:
+        with open(dirs['ISOLATE_CONFIG'], 'r') as f:
             config_data = yaml.safe_load(f)
 
             if('share-net' in sandbox):
@@ -108,13 +139,19 @@ def run_task(task, results):
             config_data['tasks'][-1]['task-id'] = task_id
             config_data['tasks'][-1].setdefault('cmd', {})['bin'] = bin_path
             config_data['tasks'][-1]['cmd']['args'] = args
-            config_data['env']['vars'].append(f"LD_LIBRARY_PATH={GCC_LD_LIBRARY_PATH}:/usr/lib64:/usr/lib:/lib64:/lib")
-            config_data['box-fs']['dir-rules'].append(f"{variables['JUDGES_DIR']}={CWD}/{variables['JUDGES_DIR']}")
+            config_data['env']['vars'].append(f"LD_LIBRARY_PATH={get_ld_library_path()}")
+            config_data['box-fs']['dir-rules'].append(f"{dirs['JUDGES_DIR']}={CWD}/{dirs['JUDGES_DIR']}")
+            if 'box-fs' in sandbox:
+                fs = sandbox['box-fs']
+                if 'dir-rules' in fs:
+                    rules = fs['dir-rules']
+                    for rule in rules:
+                        print(f"Adding box-fs rule: {rule}")
+                        config_data['box-fs']['dir-rules'].append(rule)
             if 'working-directory' in sandbox:
                 workdir = sandbox['working-directory']
-                config_data['box-fs']['dir-rules'].append(f"{workdir}={variables['SOURCE_DIR']}/{workdir}:rw")
+                config_data['box-fs']['dir-rules'].append(f"{workdir}={dirs['SOURCE_DIR']}/{workdir}:rw")
                 config_data['tasks'][-1]['chdir'] = workdir
-
 
             # Write modified YAML back to file
             with open(config_file, 'w') as f:
@@ -127,12 +164,13 @@ def run_task(task, results):
         try:
                 
             isolate_cmd = [ISOLATE_SANDBOX] + [f"--yaml={config_file}"]
+
             print(f"Running isolate command: {isolate_cmd}")
             result = subprocess.run(isolate_cmd, capture_output=True, text=True)
             print(result.stdout)
             taskresults = {}
-            sandbox_res = f"{variables['SOURCE_DIR']}/{sandbox.get('stats-yaml')}"
-            print(f"sandbox_res: {sandbox_res}")
+            sandbox_res = f"{dirs['SOURCE_DIR']}/{sandbox.get('stats-yaml')}"
+            # print(f"sandbox_res: {sandbox_res}")
             with open(sandbox_res, 'r') as f:
                 taskresults['sandbox_results'] = yaml.safe_load(f)
             if result.returncode == 0:
@@ -161,10 +199,10 @@ def run_task(task, results):
             print(f"Command not found: {bin_path}")
 
 def main():
-    with open(f"{variables['SOURCE_DIR']}/job-config.yml") as f:
+    with open(f"{dirs['SOURCE_DIR']}/job-config.yml") as f:
         data = yaml.safe_load(f)
     
-    data = substitute_variables(data, variables)
+    data = substitute_variables(data, dirs)
 
     tasks = data.get('tasks', [])
     results = {}
@@ -172,7 +210,7 @@ def main():
     for task in tasks:
         print(f"--- Running {task['task-id']} ---")
         run_task(task,results)
-    with open(f"{variables['SOURCE_DIR']}/my_results.yml", 'w') as f:
+    with open(f"{dirs['SOURCE_DIR']}/my_results.yml", 'w') as f:
         yaml.dump(results, f)
 
 if __name__ == "__main__":

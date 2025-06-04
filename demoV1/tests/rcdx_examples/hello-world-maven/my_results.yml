@@ -12,10 +12,19 @@ results:
 - sandbox_results:
     exitcode: 0
     exitsig: 0
-    memory: 132698
-    status: ok
-    time: 3.548201
-    wall-time: 1.501
+    memory: 138145
+    status: OK
+    time: 7.14197
+    wall-time: 3.204
+  status: OK
+  task-id: Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.project-compilation.5
+- sandbox_results:
+    exitcode: 0
+    exitsig: 0
+    memory: 120795
+    status: OK
+    time: 3.477345
+    wall-time: 1.702
   status: OK
   task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.6
 - status: OK
@@ -24,8 +33,8 @@ results:
     exitcode: 0
     exitsig: 0
     memory: 544
-    status: ok
-    time: 0.002102
+    status: OK
+    time: 0.002903
     wall-time: 0.1
   status: OK
   task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.judge.8

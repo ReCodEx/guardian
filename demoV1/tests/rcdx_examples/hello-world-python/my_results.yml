@@ -1,0 +1,11 @@
+results:
+- status: OK
+  task-id: Test 01..mkdir.0
+- status: OK
+  task-id: Test 01..dump-results.1
+- status: OK
+  task-id: Test 01.1079c3b4-9eff-11e7-869b-005056854569.fetch-runner.2
+- status: OK
+  task-id: Test 01.cb536605-fd0e-11e7-b1e1-005056854569.sources.3
+- status: OK
+  task-id: Test 01.1079c3b4-9eff-11e7-869b-005056854569.expected.5

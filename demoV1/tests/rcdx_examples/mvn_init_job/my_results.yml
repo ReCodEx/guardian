@@ -1,0 +1,38 @@
+results:
+- {}
+- status: OK
+  task-id: Test 01..dump-results.1
+- status: OK
+  task-id: Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.source-file.2
+- {}
+- status: OK
+  task-id: Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.extract-archives.4
+- sandbox_results:
+    exitcode: 0
+    exitsig: 0
+    memory: 168271
+    status: OK
+    time: 11.775691
+    wall-time: 6.208
+  status: OK
+  task-id: Test 01.6ba96471-8ba0-11ec-986f-f39926f24a9c.project-compilation.5
+- sandbox_results:
+    exitcode: 0
+    exitsig: 0
+    memory: 129425
+    status: OK
+    time: 7.614114
+    wall-time: 3.704
+  status: OK
+  task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.run.6
+- status: OK
+  task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.expected.7
+- sandbox_results:
+    exitcode: 0
+    exitsig: 0
+    memory: 544
+    status: OK
+    time: 0.003735
+    wall-time: 0.1
+  status: OK
+  task-id: Test 01.6ba8c7b8-8ba0-11ec-986f-f39926f24a9c.judge.8

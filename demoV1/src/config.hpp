@@ -691,7 +691,14 @@ namespace config
         {
             for(std::size_t i = 0; i < rules_list.size(); i++)
             {
-                rules_.emplace_back(dir_rule(rules_list[i].as<std::string>()));
+                auto new_rule = dir_rule(rules_list[i].as<std::string>());
+                // Remove existing rule with same prefix if it exists
+                rules_.erase(std::remove_if(rules_.begin(), rules_.end(),
+                    [&new_rule](const dir_rule& rule) {
+                        return rule.in_dir() == new_rule.in_dir();
+                    }), rules_.end());
+                
+                rules_.emplace_back(std::move(new_rule));
             }
         }
         
@@ -917,7 +924,10 @@ namespace config
                 env_    = env_config(proxy_node[config_options::ENV]);
                 box_fs_ = box_fs_config(proxy_node[config_options::BOX_FS]);
                 if(proxy_node[config_options::SHARE_NET]) 
-                    { share_net_ = proxy_node[config_options::SHARE_NET].as<bool>(); }
+                    { share_net_ = proxy_node[config_options::SHARE_NET].as<bool>();}
+                else 
+                    logs::debug("No share_net option specified, defaulting to false");
+
             }
         }
         
