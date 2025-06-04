@@ -28,13 +28,36 @@ def mvn_init():
         print("Initializing Maven repository with an online compilation")
         os.makedirs(f"{MAVEN_REPO}/.m2", exist_ok=True)
         subprocess.run([f"{SCRIPT_DIR}/recodex_mock.py", "mvn_init_job"])
-        
+def get_container_path():
+    paths = set()
+
+    # 1. Start with current system PATH
+    paths.update(os.environ.get("PATH", "").split(":"))
+
+    # 2. Add standard system paths explicitly (to avoid stripping them later)
+    paths.update(["/bin", "/usr/bin", "/usr/local/bin", "/sbin", "/usr/sbin"])
+
+    # 3. Add GCC internal tools
+    #paths.update(gcc_internal_paths())
+
+    # 4. Optional: add specific development paths
+    if os.path.exists("/usr/libexec/gcc"):
+        for root, dirs, files in os.walk("/usr/libexec/gcc"):
+            paths.add(root + '/')
+
+    return ":".join(sorted(paths))        
 def get_ld_library_path():
     paths = set()
 
     # 1. Standard lib paths
     standard_paths = ["/lib", "/lib64", "/usr/lib", "/usr/lib64"]
     paths.update(standard_paths)
+
+    # 4. Optional: add specific development paths
+    if os.path.exists("/usr/libexec/gcc"):
+        for root, dirs, files in os.walk("/usr/libexec/gcc"):
+            paths.add(root + '/')
+    paths.add("/usr/libexec/gcc/x86_64-redhat-linux/11/liblto_plugin.so")
 
     # 2. GCC internal paths
     try:
@@ -58,6 +81,7 @@ def get_ld_library_path():
     return ":".join(sorted(p for p in paths if p))
 
 print("LD_LIBRARY_PATH=" + get_ld_library_path())
+print("PATH=" + get_container_path())
 
         
 def substitute_variables(obj, variables):
@@ -100,6 +124,7 @@ def run_task(task, results):
         # args.insert(0, "-B/usr/libexec/gcc/x86_64-redhat-linux/14/")
         # args.insert(0, "-B/usr/lib/gcc/x86_64-redhat-linux/14/")
         # args.insert(0, "-I/usr/lib/gcc/x86_64-redhat-linux/14/include/")
+        args.insert(0, "-fno-use-linker-plugin")
         
     elif "maven" in bin_path:
         mvn_init()
@@ -140,6 +165,7 @@ def run_task(task, results):
             config_data['tasks'][-1].setdefault('cmd', {})['bin'] = bin_path
             config_data['tasks'][-1]['cmd']['args'] = args
             config_data['env']['vars'].append(f"LD_LIBRARY_PATH={get_ld_library_path()}")
+            config_data['env']['vars'].append(f"PATH={get_container_path()}")
             config_data['box-fs']['dir-rules'].append(f"{dirs['JUDGES_DIR']}={CWD}/{dirs['JUDGES_DIR']}")
             if 'box-fs' in sandbox:
                 fs = sandbox['box-fs']
