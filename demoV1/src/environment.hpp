@@ -100,7 +100,8 @@ namespace env
             
             if(rule_->tmp())
             {
-                logs::debug("Skipping mount of tmp rule: \"{}\".", rule_->string());
+                ///TODO: why is a tmp rule not being skipped?
+                // logs::debug("tmp rule, doesn't need mount: \"{}\".", rule_->string());
             }
 
             auto in = credentials_->box_root() / rule_->in_dir();

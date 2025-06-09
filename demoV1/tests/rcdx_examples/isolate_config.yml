@@ -1,29 +1,5 @@
 root-dir: /isolate_boxes
 root-cg: /sys/fs/cgroup/isolate_boxes
-# [job_logger] [debug]   isolate
-# [job_logger] [debug]   --box-id=1
-# id: 1
-
-
-# [job_logger] [debug]   --cg-mem=75776
-# [job_logger] [debug]   --time=1.000000
-# [job_logger] [debug]   --wall-time=120.000000
-# [job_logger] [debug]   --extra-time=3.000000
-# [job_logger] [debug]   --stdout=/box/34qejduqd1dj85856ebq.stdout
-# [job_logger] [debug]   --stderr=/box/execution.ctsrsnygu7traefkq0jx.stderr
-# [job_logger] [debug]   --processes
-# [job_logger] [debug]   --env=LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/opt/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/opt/compiler/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/tbb/latest/lib/intel64/gcc4.8:/usr/local/recodex-gcc/lib64
-# [job_logger] [debug]   --env=PATH=/opt/intel/oneapi/compiler/latest/bin/compiler:/opt/intel/oneapi/compiler/latest/bin:/var/recodex-worker-python-venv/bin:/usr/local/recodex-gcc/bin:/usr/bin:/bin
-# [job_logger] [debug]   --env=HOME=/box
-# [job_logger] [debug]   --env=JAVA_HOME=/usr/lib/jvm/jre-openjdk
-# [job_logger] [debug]   --env=PPC_CONFIG_PATH=/usr/etc
-# [job_logger] [debug]   --env=PYTHONHASHSEED=0
-# [job_logger] [debug]   --env=PYTHONIOENCODING=utf-8
-# [job_logger] [debug]   --env=VIRTUAL_ENV=/var/recodex-worker-python-venv
-# [job_logger] [debug]   --env=GO111MODULE=auto
-# [job_logger] [debug]   --env=GROOVY_HOME=/opt/groovy
-# [job_logger] [debug]   --env=MAVEN_HOME=/opt/maven
-# [job_logger] [debug]   --env=M2_HOME=/opt/maven-repo
 env: 
   # inherit-all: true
   vars:
@@ -31,7 +7,7 @@ env:
   #  - LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/14/include:/usr/lib/gcc/x86_64-redhat-linux/14/:opt/intel/oneapi/compiler/latest/opt/oclfpga/host/linux64/lib:/opt/intel/oneapi/compiler/latest/opt/compiler/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/tbb/latest/lib/intel64/gcc4.8:/usr/local/recodex-gcc/lib64 
   #  - JAVA_HOME=/usr/lib/jvm/jre-openjdk
   #  - PATH=/opt/intel/oneapi/compiler/latest/bin/compiler:/opt/intel/oneapi/compiler/latest/bin:/var/recodex-worker-python-venv/bin:/usr/local/recodex-gcc/bin:/usr/bin:/bin
-   - HOME=/box
+  #  - HOME=/box
    - PPC_CONFIG_PATH=/usr/etc                                                                                                                                                                                                                               
    - PYTHONHASHSEED=0
    - PYTHONIOENCODING=utf-8
@@ -41,19 +17,6 @@ env:
    - MAVEN_HOME=/opt/maven
    - M2_HOME=/opt/maven-repo
 
-# [job_logger] [debug]   --dir=/tmp:tmp
-# [job_logger] [debug]   --dir=/var/recodex-worker-python-venv
-# [job_logger] [debug]   --dir=/opt/remi
-# [job_logger] [debug]   --dir=/opt/kotlin
-# [job_logger] [debug]   --dir=/opt/groovy
-# [job_logger] [debug]   --dir=/opt/maven
-# [job_logger] [debug]   --dir=/opt/maven-repo
-# [job_logger] [debug]   --dir=/opt/dotnet
-# [job_logger] [debug]   --dir=/opt/Picat
-# [job_logger] [debug]   --dir=/opt/intel
-# [job_logger] [debug]   --dir=/etc/java
-# [job_logger] [debug]   --dir=/etc/OpenCL
-# [job_logger] [debug]   --dir=etc/alternatives=/etc/alternatives:maybe
 box-fs:
   dir-rules:
     - run

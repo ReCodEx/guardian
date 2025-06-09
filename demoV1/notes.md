@@ -1,7 +1,6 @@
 TODO:
     skript na mockup workera - C, python, dotnet/maven - hello world funguje, pridat parametrizovane gcc, maven-repo
     
-    pridat overwriting dir rules !!!
     
     v konfiguraci se musi nastavovat PATH, LD_LIBRARY_PATH
     GCC DEBUGGING!
@@ -9,6 +8,7 @@ TODO:
         LD_LIBRARY_PATH - spravne gcc directories
 
     MAVEN - maven-repo/.m2 - treba poradne nainstalovat, potom staci r prava a neni potreba internet
+    DOTNET - manualni instalace- skript dotnet-install. pridat detekci verze runtimu a prepisovani latest symlinku do mock scriptu
     DNS - /etc/resolv.conf muze byt symlink napr na /run - pridat do dir rules pokud potrebuju internet
 
     TESTY NA VIRTUALKACH 

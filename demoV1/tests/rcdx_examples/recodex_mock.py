@@ -121,17 +121,15 @@ def run_task(task, results):
         
     elif bin_path == 'fetch':
         bin_path = 'cp'
-        src = os.path.join(dirs['SOURCE_DIR'], f"fetch/{args[0]}")
+        src = os.path.join(dirs['SOURCE_DIR'], f"{args[0]}")
         dst = args[1]
         args = [src, dst]
+        
+    elif "g++" in bin_path:
+        bin_path = subprocess.getoutput("which g++")
     
     elif "gcc" in bin_path:
         bin_path = subprocess.getoutput("which gcc")
-        ### REPLACED BY CORRECT LD_LIBRARY_PATH
-        # args.insert(0, "-B/usr/libexec/gcc/x86_64-redhat-linux/14/")
-        # args.insert(0, "-B/usr/lib/gcc/x86_64-redhat-linux/14/")
-        # args.insert(0, "-I/usr/lib/gcc/x86_64-redhat-linux/14/include/")
-        #args.insert(0, "-fno-use-linker-plugin") # was causing problems on rocky linux
         
     elif "maven" in bin_path:
         mvn_init()
@@ -149,8 +147,10 @@ def run_task(task, results):
         print(f"Running in isolate sandbox: {task['task-id']}")
         
         config_file = os.path.join(dirs['SOURCE_DIR'], task_id + ".yml") 
-        workdir = None
-        with open(dirs['ISOLATE_CONFIG'], 'r') as f:
+        workdir = sandbox['working-directory']
+        sandbox_res_in = f"{workdir}/{task['task-id']}.result.yml"
+        sandbox_res_out = f"{dirs['SOURCE_DIR']}/{sandbox_res_in}"
+        with open(f"{SCRIPT_DIR}/{dirs['ISOLATE_CONFIG']}", 'r') as f:
             config_data = yaml.safe_load(f)
 
             if('share-net' in sandbox):
@@ -165,10 +165,12 @@ def run_task(task, results):
             config_data['tasks'][-1]['task-id'] = task_id
             config_data['tasks'][-1].setdefault('cmd', {})['bin'] = bin_path
             config_data['tasks'][-1]['cmd']['args'] = args
+            config_data['tasks'][-1]['stats-yaml'] = f"{sandbox_res_in}"
             config_data['env']['vars'].append(f"LD_LIBRARY_PATH={get_ld_library_path()}")
             config_data['env']['vars'].append(f"PATH={get_container_path()}")
             config_data['env']['vars'].append(f"JAVA_HOME={find_java_home()}")
-            config_data['box-fs']['dir-rules'].append(f"{dirs['JUDGES_DIR']}={CWD}/{dirs['JUDGES_DIR']}")
+            config_data['env']['vars'].append(f"HOME=/{workdir}")
+            config_data['box-fs']['dir-rules'].append(f"{dirs['JUDGES_DIR']}={SCRIPT_DIR}/{dirs['JUDGES_DIR']}")
             if 'box-fs' in sandbox:
                 fs = sandbox['box-fs']
                 if 'dir-rules' in fs:
@@ -176,10 +178,9 @@ def run_task(task, results):
                     for rule in rules:
                         print(f"Adding box-fs rule: {rule}")
                         config_data['box-fs']['dir-rules'].append(rule)
-            if 'working-directory' in sandbox:
-                workdir = sandbox['working-directory']
-                config_data['box-fs']['dir-rules'].append(f"{workdir}={dirs['SOURCE_DIR']}/{workdir}:rw")
-                config_data['tasks'][-1]['chdir'] = workdir
+
+            config_data['box-fs']['dir-rules'].append(f"{workdir}={dirs['SOURCE_DIR']}/{workdir}:rw")
+            config_data['tasks'][-1]['chdir'] = workdir
 
             # Write modified YAML back to file
             with open(config_file, 'w') as f:
@@ -197,9 +198,8 @@ def run_task(task, results):
             result = subprocess.run(isolate_cmd, capture_output=True, text=True)
             print(result.stdout)
             taskresults = {}
-            sandbox_res = f"{dirs['SOURCE_DIR']}/{sandbox.get('stats-yaml')}"
             # print(f"sandbox_res: {sandbox_res}")
-            with open(sandbox_res, 'r') as f:
+            with open(sandbox_res_out, 'r') as f:
                 taskresults['sandbox_results'] = yaml.safe_load(f)
             if result.returncode == 0:
                 taskresults["status"] = "OK"
@@ -208,8 +208,8 @@ def run_task(task, results):
                 print(result.stderr)
             results['results'].append(taskresults)
             
-        except FileNotFoundError:
-            print(f"Launching isolator with \"{bin_path}\" failed.")
+        except Exception as e:
+            print(f"Exception while running the isolator command: {e}")
     else:
         print(f"Running normal command: {task['task-id']}")
         try:
@@ -223,11 +223,23 @@ def run_task(task, results):
             if result.stderr:
                 print(result.stderr)
             results['results'].append(taskresults)
-        except FileNotFoundError:
-            print(f"Command not found: {bin_path}")
+        except Exception as e:
+            print(f"Exception while running the command: {e}")
 
 def main():
-    with open(f"{dirs['SOURCE_DIR']}/job-config.yml") as f:
+    job_configs = ["job-config.yml", "job.yaml", "job.yml"]
+    job_config = None
+
+    for config in job_configs:
+        if os.path.exists(f"{dirs['SOURCE_DIR']}/{config}"):
+            job_config = config
+            break
+
+    if job_config is None:
+        print(f"No job config file found in {dirs['SOURCE_DIR']}/. Tried: {', '.join(job_configs)}")
+        sys.exit(1)
+
+    with open(f"{dirs['SOURCE_DIR']}/{job_config}") as f:
         data = yaml.safe_load(f)
     
     data = substitute_variables(data, dirs)
