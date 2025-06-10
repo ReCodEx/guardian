@@ -4,15 +4,15 @@ set -e
 # === Configuration ===
 DOTNET_DIR="/opt/dotnet"
 DOTNET_VERSIONS="6.0.420 7.0.400 8.0.100"
-LATEST_RUNTIME="8.0.0"  # Set the latest version to be used
-LATEST_SDK="8.0.100"  # Set the latest version to be used
+LATEST_RUNTIME="7.0.10"  # Set the latest version to be used
+LATEST_SDK="7.0.400"  # Set the latest version to be used
 
 ARCH="x64"
 
 # === Create base install dir ===
 mkdir -p "$DOTNET_DIR"
 
-=== Install SDKs and Runtimes ===
+#=== Install SDKs and Runtimes ===
 for VERSION in $DOTNET_VERSIONS; do
     echo "Installing .NET SDK $VERSION..."
 
