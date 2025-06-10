@@ -1,4 +1,5 @@
 root-dir: /isolate_boxes
+# id: 1
 root-cg: /sys/fs/cgroup/isolate_boxes
 env: 
   # inherit-all: true

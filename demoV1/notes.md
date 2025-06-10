@@ -1,5 +1,6 @@
 TODO:
-    skript na mockup workera - C, python, dotnet/maven - hello world funguje, pridat parametrizovane gcc, maven-repo
+    recodex_mock.py
+        - dotnet ma ruzne verze - nejak automaticky nastavit latest symlink?
     
     
     v konfiguraci se musi nastavovat PATH, LD_LIBRARY_PATH
@@ -12,7 +13,11 @@ TODO:
     DNS - /etc/resolv.conf muze byt symlink napr na /run - pridat do dir rules pokud potrebuju internet
 
     TESTY NA VIRTUALKACH 
+    prerekvizity: g++, python, dotnet ze skriptu
+                commandy: /usr/bin/mono, /usr/bin/cp/ /usr/bin/diff
+
     bob1 - java - nainstalovan maven, java version snizena z 21 na 17 -> funguje
+        - c++ custom gcc14 toolchain - nevim
 
 
 

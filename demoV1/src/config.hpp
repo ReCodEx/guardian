@@ -1010,6 +1010,7 @@ namespace config
                 ("help-module", options::value<std::string>(),
                     "produce a help for a given module")
                 ("version", "output the version number")
+                ("debug", "enable debug output")
                 (config_options::CONFIG_YAML, options::value<std::string>(), "read the configuration from a yaml config file")
                 ;
 
@@ -1055,6 +1056,16 @@ namespace config
                     return;
                 }
                 return;
+            }
+            
+            if(options_map.contains("debug"))
+            {
+                spdlog::set_level(spdlog::level::debug);
+                logs::debug("Debug output enabled");
+            }
+            else
+            {
+                spdlog::set_level(spdlog::level::critical);
             }
             
             if (options_map.contains(config_options::CONFIG_YAML))

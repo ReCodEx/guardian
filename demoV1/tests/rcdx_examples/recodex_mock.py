@@ -1,4 +1,4 @@
-#!/bin/python3
+#!/bin/env python3
 import sys
 import subprocess
 import yaml
@@ -6,6 +6,7 @@ import os
 import pathlib
 from pathlib import Path
 import re
+import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ISOLATE_SANDBOX = f"{SCRIPT_DIR}/../../build/src/container"
@@ -15,12 +16,14 @@ MAVEN_REPO = "/opt/maven-repo"
 
 dirs = {
     "ISOLATE_CONFIG": "isolate_config.yml",
-    "SOURCE_DIR": f"{CWD}/{sys.argv[1]}",
+    # "SOURCE_DIR": f"{CWD}/{sys.argv[1]}",
     "EVAL_DIR": ".",
-    "RESULT_DIR": f"{CWD}/results/{sys.argv[1]}",
+    # "RESULT_DIR": f"{CWD}/results/{sys.argv[1]}",
     "JUDGES_DIR": f"worker/judges/build",
 }
-
+if len(sys.argv) > 1:
+    dirs["SOURCE_DIR"] = f"{CWD}/{sys.argv[1]}"
+    dirs["RESULT_DIR"] = f"{CWD}/results/{sys.argv[1]}"
 print(f"Directories: {dirs}")
 
 def find_java_home():
@@ -53,21 +56,12 @@ def get_container_path():
 
     return ":".join(sorted(paths))        
 
-def get_ld_library_path():
+def get_ld_library_path(CC="gcc"):
     paths = set()
 
-    # 1. Standard lib paths
-    standard_paths = ["/lib", "/lib64", "/usr/lib", "/usr/lib64"]
-    paths.update(standard_paths)
-
-    if os.path.exists("/usr/libexec/gcc"):
-        for root, dirs, files in os.walk("/usr/libexec/gcc"):
-            paths.add(root + '/')
-    paths.add("/usr/libexec/gcc/x86_64-redhat-linux/11/liblto_plugin.so")
-
-    # 2. GCC internal paths
+    # 1. gcc/g++ internal paths
     try:
-        out = subprocess.check_output(["gcc", "-print-search-dirs"], text=True)
+        out = subprocess.check_output([f"{CC}", "-print-search-dirs"], text=True)
         for line in out.splitlines():
             if line.startswith("libraries: ="):
                 libs = line.split("=", 1)[1].split(":")
@@ -75,15 +69,20 @@ def get_ld_library_path():
     except subprocess.CalledProcessError:
         pass
 
-    # 3. Path to libstdc++
+    # 4. Path to libstdc++
     try:
-        libstdcpp = subprocess.check_output(["gcc", "-print-file-name=libstdc++.so"], text=True).strip()
+        libstdcpp = subprocess.check_output([f"{CC}", "-print-file-name=libstdc++.so"], text=True).strip()
         if os.path.isfile(libstdcpp):
-            paths.add(os.path.dirname(libstdcpp))
+            real_libstdcpp = pathlib.Path(libstdcpp).resolve()
+            paths.add(str(real_libstdcpp.parent))
     except subprocess.CalledProcessError:
         pass
 
-    # 4. Remove duplicates and empty entries
+    # 2. Standard lib paths
+    standard_paths = ["/lib", "/lib64", "/usr/lib", "/usr/lib64"]
+    paths.update(standard_paths)
+
+    # 5. Remove duplicates and empty entries
     return ":".join(sorted(p for p in paths if p))
 
 print("LD_LIBRARY_PATH=" + get_ld_library_path())
@@ -102,8 +101,19 @@ def substitute_variables(obj, variables):
     else:
         return obj
 
+test_ids = {}
+token_failed_tests = 0
+token_successful_tests = 0
+diff_failed_tests = 0
+diff_successful_tests = 0
+failed_submissions = []
+failed_tests = []
+
 def run_task(task, results):
+    global token_failed_tests, token_successful_tests, diff_failed_tests, diff_successful_tests, test_ids
     cmd = task.get('cmd')
+    if task.get('test-id'):
+        test_ids[task['test-id']] = True
     if not cmd:
         print(f"Task {task['task-id']} has no command.")
         return
@@ -144,10 +154,11 @@ def run_task(task, results):
     task_id = task.get('task-id')
 
     if (sandbox and sandbox.get('name') == 'isolate'):
-        print(f"Running in isolate sandbox: {task['task-id']}")
-        
+        instance_id = 1
         config_file = os.path.join(dirs['SOURCE_DIR'], task_id + ".yml") 
-        workdir = sandbox['working-directory']
+
+        workdir = sandbox.get('working-directory')
+
         sandbox_res_in = f"{workdir}/{task['task-id']}.result.yml"
         sandbox_res_out = f"{dirs['SOURCE_DIR']}/{sandbox_res_in}"
         with open(f"{SCRIPT_DIR}/{dirs['ISOLATE_CONFIG']}", 'r') as f:
@@ -159,6 +170,11 @@ def run_task(task, results):
                 config_data['as-uid'] = sandbox['as-uid']
             if('as-gid' in sandbox):
                 config_data['as-gid'] = sandbox['as-gid']
+                
+            if 'g++' in bin_path:
+                ld_path = get_ld_library_path("g++")
+            else:
+                ld_path = get_ld_library_path("gcc")
 
             config_data.setdefault('tasks', [])
             config_data['tasks'].append(sandbox)
@@ -166,7 +182,7 @@ def run_task(task, results):
             config_data['tasks'][-1].setdefault('cmd', {})['bin'] = bin_path
             config_data['tasks'][-1]['cmd']['args'] = args
             config_data['tasks'][-1]['stats-yaml'] = f"{sandbox_res_in}"
-            config_data['env']['vars'].append(f"LD_LIBRARY_PATH={get_ld_library_path()}")
+            config_data['env']['vars'].append(f"LD_LIBRARY_PATH={ld_path}")
             config_data['env']['vars'].append(f"PATH={get_container_path()}")
             config_data['env']['vars'].append(f"JAVA_HOME={find_java_home()}")
             config_data['env']['vars'].append(f"HOME=/{workdir}")
@@ -181,7 +197,7 @@ def run_task(task, results):
 
             config_data['box-fs']['dir-rules'].append(f"{workdir}={dirs['SOURCE_DIR']}/{workdir}:rw")
             config_data['tasks'][-1]['chdir'] = workdir
-
+            config_data['id'] = instance_id
             # Write modified YAML back to file
             with open(config_file, 'w') as f:
                 yaml.dump(config_data, f)
@@ -194,24 +210,42 @@ def run_task(task, results):
                 
             isolate_cmd = [ISOLATE_SANDBOX] + [f"--yaml={config_file}"]
 
-            print(f"Running isolate command: {isolate_cmd}")
             result = subprocess.run(isolate_cmd, capture_output=True, text=True)
-            print(result.stdout)
+            print(f"Isolate command: {isolate_cmd}")
+            print(f"Outer workdir: {dirs['SOURCE_DIR']}/{workdir}")
+            print(f"Inner workdir: {workdir}")
+            print(f"Inner cmd: {full_cmd}\n")
+            print(f"Stdout: {result.stdout}")
+
+            if "/bin/diff" in bin_path:
+                if result.stdout != "":
+                    diff_failed_tests += 1
+                    print(f"Test {task_id} failed with diff output: {result.stdout}")
+                    failed_tests.append(task_id)
+                else:
+                    diff_successful_tests += 1
+            if "token-judge" in bin_path:
+                if not result.stdout.strip() == "1":
+                    token_failed_tests += 1
+                    print(f"Test {task_id} failed with token judge output: {result.stdout}")
+                    failed_tests.append(task_id)
+                else:
+                    token_successful_tests += 1
             taskresults = {}
             # print(f"sandbox_res: {sandbox_res}")
-            with open(sandbox_res_out, 'r') as f:
-                taskresults['sandbox_results'] = yaml.safe_load(f)
+            # with open(sandbox_res_out, 'r') as f:
+            #     taskresults['sandbox_results'] = yaml.safe_load(f)
             if result.returncode == 0:
                 taskresults["status"] = "OK"
                 taskresults["task-id"] = task_id
             if result.stderr:
                 print(result.stderr)
             results['results'].append(taskresults)
+            cleanup_box(instance_id)
             
         except Exception as e:
             print(f"Exception while running the isolator command: {e}")
     else:
-        print(f"Running normal command: {task['task-id']}")
         try:
             result = subprocess.run(full_cmd, capture_output=True, text=True)
             taskresults = {}
@@ -223,8 +257,24 @@ def run_task(task, results):
             if result.stderr:
                 print(result.stderr)
             results['results'].append(taskresults)
+
+            print(f"Command: {full_cmd}")
+            print(f"Return code: {result.returncode}")
+            print(f"Stdout: {result.stdout}")
         except Exception as e:
             print(f"Exception while running the command: {e}")
+
+def cleanup_box(box_id):
+    """Clean up isolate box directories"""
+    try:
+        # Remove cgroup directories
+        subprocess.run(['find', f"/sys/fs/cgroup/isolate_boxes/{box_id}", '-type', 'd', '-depth', '-exec', 'rmdir', '{}', ';'], 
+                      stderr=subprocess.PIPE)
+        # Remove isolate box directories  
+        subprocess.run(['rm', '-rf', f"/isolate_boxes/{box_id}"],
+                      stderr=subprocess.PIPE)
+    except Exception as e:
+        print(f"Error cleaning up isolate box: {e}")
 
 def main():
     job_configs = ["job-config.yml", "job.yaml", "job.yml"]
@@ -250,8 +300,158 @@ def main():
     for task in tasks:
         print(f"--- Running {task['task-id']} ---")
         run_task(task,results)
+        print(f"---------------------------------------------\n")
     with open(f"{dirs['SOURCE_DIR']}/my_results.yml", 'w') as f:
         yaml.dump(results, f)
+        
+    print(f"--- Summary ---")
+    print(f"Total tasks: {len(tasks)}")
+    print(f"Total tests: {len(test_ids)}")
+    print(f"Successful tests: {token_successful_tests + diff_successful_tests}")
+    print(f"Failed tests: {token_failed_tests + diff_failed_tests}")
+    print(f"Token judge successful tests: {token_successful_tests}")
+    print(f"Token judge failed tests: {token_failed_tests}")
+    print(f"Diff successful tests: {diff_successful_tests}")
+    print(f"Diff failed tests: {diff_failed_tests}")
+    if len(failed_tests) > 0:
+        print(f"Failed tests: {', '.join(failed_tests)}")
+        
+def get_dir_state(source_dir):
+    """Get the state of the directory before running the submission."""
+    orig_files = set()
+    for root, dirs, files in os.walk(source_dir):
+        for name in files:
+            orig_files.add(os.path.join(root, name))
+        for name in dirs:
+            orig_files.add(os.path.join(root, name))
+    return orig_files
+def run_submission(source_dir):
+    # Save list of filenames and directories before running
+    orig_files = get_dir_state(source_dir)
 
+    stats = {}
+    global token_failed_tests, token_successful_tests, diff_failed_tests, diff_successful_tests, failed_tests, test_ids
+    test_ids = {}
+    token_failed_tests = 0
+    token_successful_tests = 0
+    diff_failed_tests = 0
+    diff_successful_tests = 0
+    dirs['SOURCE_DIR'] = source_dir
+    job_configs = ["job-config.yml", "job.yaml", "job.yml"]
+    job_config = None
+
+    for config in job_configs:
+        if os.path.exists(f"{source_dir}/{config}"):
+            job_config = config
+            break
+
+    if job_config is None:
+        print(f"No job config file found in {source_dir}/. Tried: {', '.join(job_configs)}")
+        sys.exit(1)
+
+    with open(f"{source_dir}/{job_config}") as f:
+        data = yaml.safe_load(f)
+    
+    data = substitute_variables(data, dirs)
+
+    tasks = data.get('tasks', [])
+    results = {}
+    results.setdefault('results', [])
+    for task in tasks:
+        print(f"--- Running {task['task-id']} ---")
+        run_task(task,results)
+        print(f"---------------------------------------------\n")
+    with open(f"{source_dir}/my_results.yml", 'w') as f:
+        yaml.dump(results, f)
+        
+    # print(f"--- Summary ---")
+    # print(f"Total tasks: {len(tasks)}")
+    # print(f"Total tests: {len(test_ids)}")
+    # print(f"Successful tests: {token_successful_tests + diff_successful_tests}")
+    # print(f"Failed tests: {token_failed_tests + diff_failed_tests}")
+    # print(f"Token judge successful tests: {token_successful_tests}")
+    # print(f"Token judge failed tests: {token_failed_tests}")
+    # print(f"Diff successful tests: {diff_successful_tests}")
+    # print(f"Diff failed tests: {diff_failed_tests}")
+    # if len(failed_tests) > 0:
+    #     print(f"Failed tests: {', '.join(failed_tests)}")
+    #     failed_submissions.append(source_dir)
+    stats["token_successful_tests"] = token_successful_tests
+    stats["token_failed_tests"] = token_failed_tests
+    stats["diff_successful_tests"] = diff_successful_tests
+    stats["diff_failed_tests"] = diff_failed_tests
+    stats["failed_tests"] = token_failed_tests + diff_failed_tests
+    restore_dir(source_dir, orig_files)
+    return stats
+
+def restore_dir(source_dir, orig_files):
+    # Delete any new files or directories that weren't there originally
+    current_files = set()
+    for root, dirs, files in os.walk(source_dir):
+        for name in files:
+            current_files.add(os.path.join(root, name))
+        for name in dirs:
+            current_files.add(os.path.join(root, name))
+            
+    files_to_delete = current_files - orig_files
+    for path in sorted(files_to_delete, reverse=True):  # Reverse sort to handle nested paths
+        if os.path.isdir(path):
+            os.rmdir(path)
+        else:
+            os.remove(path)
+
+def run_groups(submissions_csv, groups=["C#", "Python", "C++", "AdvC++"]):
+    stats = {}
+    failed_submissions = []
+    known_groups = {"882cb969-45d4-4e0d-833c-c3c8f3ade833" : "C#", 
+                    "7f6e8f4f-0318-4f5c-befc-be52db78ebda" : "Python", 
+                    "2ec6b0ef-268c-41af-b568-70d796e7dba4" : "C++",
+                    "7fc24e34-d7e9-4f1f-bcc0-7aded7701de4" : "AdvC++",}
+    # Read CSV and sort by group_id
+    df = pd.read_csv(submissions_csv)
+    df_sorted = df.sort_values('group_id')
+    found = 0
+    not_found = 0
+    # Group by group_id
+    for group_id, group_data in df_sorted.groupby('group_id'):
+        if group_id in known_groups and known_groups[group_id] in groups:
+            print(f"Running submissions from group \"{known_groups[group_id]}\"")
+        else:
+            print(f"skipping group {group_id}")
+            continue
+        
+        stats[group_id] = {'successful_submissions': [], 'failed_submissions': []}
+
+        
+        # Check each reference submission
+        for _, row in group_data.iterrows():
+            submission_dir = f"{SCRIPT_DIR}/test-data/download/{str(row['reference_submission_id'])}"
+            if os.path.isdir(submission_dir):
+                # print(f"Found submission directory: {submission_dir}")
+                found += 1
+                submission_stats = run_submission(submission_dir)
+                print(f"Stats for submission {submission_dir}: {stats}")
+                if submission_stats['failed_tests'] <= 0:
+                    stats[group_id]['successful_submissions'].append(submission_dir)
+                else:
+                    stats[group_id]['failed_submissions'].append(submission_dir)
+            else:
+                # print(f"Warning: Directory not found for submission {submission_dir}")
+                not_found += 1
+
+        
+    print(f"\n--- Summary ---")
+    # print(f"Total groups processed: {len(stats)}")
+    print(f"Total submissions found: {found}")
+    # print(f"Total submissions not found: {not_found}")
+    for group_id, group_stats in stats.items():
+        print(f"Group {group_id} ({known_groups.get(group_id, 'Unknown')}):")
+        print(f" Successful submissions: {len(group_stats.get('successful_submissions', []))}")
+        print(f" Failed submissions: {group_stats.get('failed_submissions', [])}")
 if __name__ == "__main__":
-    main()
+    # main()
+    # run_submission(sys.argv[1])
+    # Initialize and clean up system before running tests
+    subprocess.run([f"{SCRIPT_DIR}/../../cleanup_system.sh"], shell=True)
+    subprocess.run([f"{SCRIPT_DIR}/../../initialize_system"], shell=True)
+    run_groups(f"{SCRIPT_DIR}/ref-solutions.csv", groups=sys.argv[1:])
