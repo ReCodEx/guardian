@@ -12,6 +12,15 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 ISOLATE_SANDBOX = f"{SCRIPT_DIR}/../../build/src/container"
 CWD = os.getcwd()
 
+dotnet_versions = {
+    6: ("6.0.420", "6.0.28"),
+    7: ("7.0.400", "7.0.10"),
+    8: ("8.0.100", "8.0.0")
+}
+dotnet_version_files = {
+    "0076854220a16837db1d9ed03c15bd95f473d992": 6,
+    "4d877a1f7ee1685ff7f3b5bacb5be28e2a4f6b09": 8,
+}
 MAVEN_REPO = "/opt/maven-repo"
 
 dirs = {
@@ -36,7 +45,7 @@ def mvn_init():
     if not os.path.exists(f"{MAVEN_REPO}/.m2"):
         print("Initializing Maven repository with an online compilation")
         os.makedirs(f"{MAVEN_REPO}/.m2", exist_ok=True)
-        subprocess.run([f"{SCRIPT_DIR}/recodex_mock.py", "mvn_init_job"])
+        subprocess.run("sudo", [f"{SCRIPT_DIR}/recodex_mock.py", "mvn_init_job"])
 
 def get_container_path():
     paths = set()
@@ -216,7 +225,7 @@ def run_task(task, results):
         # os.makedirs(workdir, exist_ok=True)
         try:
                 
-            isolate_cmd = [ISOLATE_SANDBOX] + [f"--yaml={config_file}"]
+            isolate_cmd = ["sudo"] + [ISOLATE_SANDBOX] + [f"--yaml={config_file}"]
 
             result = subprocess.run(isolate_cmd, capture_output=True, text=True)
             print(f"Isolate command: {isolate_cmd}")
@@ -255,7 +264,7 @@ def run_task(task, results):
             print(f"Exception while running the isolator command: {e}")
     else:
         try:
-            result = subprocess.run(full_cmd, capture_output=True, text=True)
+            result = subprocess.run(["sudo"] + full_cmd, capture_output=True, text=True)
             taskresults = {}
             if result.returncode == 0:
                 taskresults["task-id"] = task_id
@@ -276,10 +285,10 @@ def cleanup_box(box_id):
     """Clean up isolate box directories"""
     try:
         # Remove cgroup directories
-        subprocess.run(['find', f"/sys/fs/cgroup/isolate_boxes/{box_id}", '-type', 'd', '-depth', '-exec', 'rmdir', '{}', ';'], 
+        subprocess.run(['sudo','find', f"/sys/fs/cgroup/isolate_boxes/{box_id}", '-type', 'd', '-depth', '-exec', 'rmdir', '{}', ';'], 
                       stderr=subprocess.PIPE)
         # Remove isolate box directories  
-        subprocess.run(['rm', '-rf', f"/isolate_boxes/{box_id}"],
+        subprocess.run(['sudo','rm', '-rf', f"/isolate_boxes/{box_id}"],
                       stderr=subprocess.PIPE)
     except Exception as e:
         print(f"Error cleaning up isolate box \"{box_id}\": {e}")
@@ -349,14 +358,6 @@ def run_submission(source_dir, verbose=False, group="C#"):
 
     if group == "C#" and os.path.exists(f"/opt/dotnet/dotnet"):
         switch_dotnet_version(source_dir)
-        # for file_hash, version in dotnet_version_files.items():
-        #     version_file = os.path.join(source_dir, file_hash)
-        #     if os.path.exists(version_file):
-        #         print(f"Switching to .NET {version} for submission {source_dir}")
-        #         switch_dotnet_symlinks(version, dotnet_versions)
-        #         break
-        #     else:
-        #         switch_dotnet_symlinks(7, dotnet_versions)
 
     stats = {}
     global token_failed_tests, token_successful_tests, diff_failed_tests, diff_successful_tests, failed_tests, test_ids
@@ -412,18 +413,12 @@ def run_submission(source_dir, verbose=False, group="C#"):
     stats["diff_successful_tests"] = diff_successful_tests
     stats["diff_failed_tests"] = diff_failed_tests
     stats["failed_tests"] = token_failed_tests + diff_failed_tests
+    
+
+
     restore_dir(source_dir, orig_files)
     return stats
 
-dotnet_versions = {
-    6: ("6.0.420", "6.0.28"),
-    7: ("7.0.400", "7.0.10"),
-    8: ("8.0.100", "8.0.0")
-}
-dotnet_version_files = {
-    "0076854220a16837db1d9ed03c15bd95f473d992": 6,
-    "4d877a1f7ee1685ff7f3b5bacb5be28e2a4f6b09": 8,
-}
 def switch_dotnet_symlinks(version: int, versions: dict):
     """
     Switch the 'latest' symlinks for the specified .NET major version.
@@ -455,11 +450,10 @@ def switch_dotnet_symlinks(version: int, versions: dict):
     for target, link in [(sdk_path, sdk_latest), (runtime_path, runtime_latest)]:
         # Remove the old symlink if it exists
         if os.path.islink(link) or os.path.exists(link):
-            print(f"Removing old symlink: {link}")
-            os.remove(link)
+            subprocess.run(['sudo', 'rm', '-f', link])
         # Create the new symlink
         print(f"Creating symlink: {link} -> {target}")
-        os.symlink(target, link)
+        subprocess.run(['sudo', 'ln', '-s', target, link])
 
 def convert_csc_to_dotnet(csc_args, sdk_root="/opt/dotnet"):
     """
@@ -498,10 +492,7 @@ def restore_dir(source_dir, orig_files):
             
     files_to_delete = current_files - orig_files
     for path in sorted(files_to_delete, reverse=True):  # Reverse sort to handle nested paths
-        if os.path.isdir(path):
-            os.rmdir(path)
-        else:
-            os.remove(path)
+        subprocess.run(['sudo', 'rm', '-rf', path])
 
 def run_groups(submissions_csv, groups=["C#", "Python", "C++", "AdvC++"]):
     stats = {}
@@ -530,19 +521,6 @@ def run_groups(submissions_csv, groups=["C#", "Python", "C++", "AdvC++"]):
         for _, row in group_data.iterrows():
             submission_dir = f"{SCRIPT_DIR}/test-data/download/{str(row['reference_submission_id'])}"
             if os.path.isdir(submission_dir):
-                # print(f"Found submission directory: {submission_dir}")
-
-                # For C# group, check and switch dotnet version if needed
-                # if known_groups[group_id] == "C#":
-                #     for file_hash, version in dotnet_version_files.items():
-                #         version_file = os.path.join(submission_dir, file_hash)
-                #         if os.path.exists(version_file):
-                #             print(f"Switching to .NET {version} for submission {submission_dir}")
-                #             switch_dotnet_symlinks(version, dotnet_versions)
-                #             break
-                #         else:
-                #             switch_dotnet_symlinks(7, dotnet_versions)
-
                 found += 1
                 submission_stats = run_submission(submission_dir, verbose=False, group=known_groups[group_id])
                 # print(f"Stats for submission {submission_dir}: {stats}")
