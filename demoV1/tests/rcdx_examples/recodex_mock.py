@@ -76,11 +76,11 @@ def get_ld_library_path(CC="gcc"):
         pass
 
     # 2. Standard lib paths
-    standard_paths = ["/lib", "/lib64", "/usr/lib", "/usr/lib64"]
-    paths.update(standard_paths)
+    #standard_paths = ["/lib", "/lib64", "/usr/lib", "/usr/lib64"]
+    #paths.update(standard_paths)
 
     # 5. Remove duplicates and empty entries
-    return ":".join(sorted(p for p in paths if p))
+    return ":".join(paths)
 
 print("LD_LIBRARY_PATH=" + get_ld_library_path())
 print("PATH=" + get_container_path())
@@ -180,6 +180,7 @@ def run_task(task, results):
                 
             if 'g++' in bin_path:
                 ld_path = get_ld_library_path("g++")
+
             else:
                 ld_path = get_ld_library_path("gcc")
 
@@ -333,18 +334,18 @@ def get_dir_state(source_dir):
             orig_files.add(os.path.join(root, name))
     return orig_files
 
-def run_submission(source_dir, verbose=False):
+def run_submission(source_dir, verbose=False, group="C++"):
     # Save list of filenames and directories before running
     orig_files = get_dir_state(source_dir)
 
     for file_hash, version in dotnet_version_files.items():
-        version_file = os.path.join(source_dir, file_hash)
-        if os.path.exists(version_file):
-            print(f"Switching to .NET {version} for submission {source_dir}")
-            switch_dotnet_symlinks(version, dotnet_versions)
-            break
-        else:
-            switch_dotnet_symlinks(7, dotnet_versions)
+	version_file = os.path.join(source_dir, file_hash)
+	if os.path.exists(version_file):
+	    print(f"Switching to .NET {version} for submission {source_dir}")
+	    switch_dotnet_symlinks(version, dotnet_versions)
+	    break
+	else:
+	    switch_dotnet_symlinks(7, dotnet_versions)
 
     stats = {}
     global token_failed_tests, token_successful_tests, diff_failed_tests, diff_successful_tests, failed_tests, test_ids
