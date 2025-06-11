@@ -20,7 +20,6 @@ env:
 
 box-fs:
   dir-rules:
-    - run
     - tmp:tmp
     - var/recodex-worker-python-venv:maybe
     - opt/worker:maybe
@@ -32,6 +31,7 @@ box-fs:
     - opt/dotnet:maybe
     - opt/Picat:maybe
     - opt/intel:maybe
+    - opt/rh/gcc-toolset-14:maybe
     - etc/java:maybe
     - etc/OpenCL:maybe
     - etc/alternatives=/etc/alternatives:maybe
