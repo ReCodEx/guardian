@@ -84,11 +84,8 @@ def get_ld_library_path(CC="gcc"):
     except subprocess.CalledProcessError:
         pass
 
-    # 2. Standard lib paths
-    #standard_paths = ["/lib", "/lib64", "/usr/lib", "/usr/lib64"]
-    #paths.update(standard_paths)
-
-    # 5. Remove duplicates and empty entries
+    paths = sorted(paths, key=len, reverse=True)
+    paths = [p for p in paths if p]  # Remove empty entries
     return ":".join(paths)
 
 print("LD_LIBRARY_PATH=" + get_ld_library_path())
