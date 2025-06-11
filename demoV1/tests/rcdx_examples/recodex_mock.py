@@ -146,7 +146,7 @@ def run_task(task, results):
 
     elif "/bin/mono" in bin_path:
         # Convert csc command to dotnet invocation
-        bin_path = "/usr/bin/dotnet"
+        bin_path = "/opt/dotnet/dotnet"
         
     elif "maven" in bin_path:
         mvn_init()
@@ -334,18 +334,29 @@ def get_dir_state(source_dir):
             orig_files.add(os.path.join(root, name))
     return orig_files
 
-def run_submission(source_dir, verbose=False, group="C++"):
+def switch_dotnet_version(source_dir):
+    for file_hash, version in dotnet_version_files.items():
+        version_file = os.path.join(source_dir, file_hash)
+        if os.path.exists(version_file):
+            print(f"Switching to .NET {version} for submission {source_dir}")
+            switch_dotnet_symlinks(version, dotnet_versions)
+            return
+    switch_dotnet_symlinks(7, dotnet_versions)
+
+def run_submission(source_dir, verbose=False, group="C#"):
     # Save list of filenames and directories before running
     orig_files = get_dir_state(source_dir)
 
-    for file_hash, version in dotnet_version_files.items():
-	version_file = os.path.join(source_dir, file_hash)
-	if os.path.exists(version_file):
-	    print(f"Switching to .NET {version} for submission {source_dir}")
-	    switch_dotnet_symlinks(version, dotnet_versions)
-	    break
-	else:
-	    switch_dotnet_symlinks(7, dotnet_versions)
+    if group == "C#" and os.path.exists(f"/opt/dotnet/dotnet"):
+        switch_dotnet_version(source_dir)
+        # for file_hash, version in dotnet_version_files.items():
+        #     version_file = os.path.join(source_dir, file_hash)
+        #     if os.path.exists(version_file):
+        #         print(f"Switching to .NET {version} for submission {source_dir}")
+        #         switch_dotnet_symlinks(version, dotnet_versions)
+        #         break
+        #     else:
+        #         switch_dotnet_symlinks(7, dotnet_versions)
 
     stats = {}
     global token_failed_tests, token_successful_tests, diff_failed_tests, diff_successful_tests, failed_tests, test_ids
@@ -462,7 +473,7 @@ def convert_csc_to_dotnet(csc_args, sdk_root="/opt/dotnet"):
         dict: Dictionary with 'bin' and 'args' for the dotnet command.
     """
     dotnet_cmd = {
-        "bin": "/usr/bin/dotnet",
+        "bin": "/opt/dotnet/dotnet",
         "args": [str(Path(sdk_root) / "sdk/latest/Roslyn/bincore/csc.dll")]
     }
 
@@ -533,7 +544,7 @@ def run_groups(submissions_csv, groups=["C#", "Python", "C++", "AdvC++"]):
                 #             switch_dotnet_symlinks(7, dotnet_versions)
 
                 found += 1
-                submission_stats = run_submission(submission_dir)
+                submission_stats = run_submission(submission_dir, verbose=False, group=known_groups[group_id])
                 # print(f"Stats for submission {submission_dir}: {stats}")
                 if submission_stats['failed_tests'] <= 0:
                     stats[group_id]['successful_submissions'].append(submission_dir)
