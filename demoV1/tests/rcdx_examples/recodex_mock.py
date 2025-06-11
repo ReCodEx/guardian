@@ -21,9 +21,6 @@ dirs = {
     # "RESULT_DIR": f"{CWD}/results/{sys.argv[1]}",
     "JUDGES_DIR": f"worker/judges/build",
 }
-if len(sys.argv) > 1:
-    dirs["SOURCE_DIR"] = f"{CWD}/{sys.argv[1]}"
-    dirs["RESULT_DIR"] = f"{CWD}/results/{sys.argv[1]}"
 print(f"Directories: {dirs}")
 
 def find_java_home():
@@ -140,6 +137,16 @@ def run_task(task, results):
     
     elif "gcc" in bin_path:
         bin_path = subprocess.getoutput("which gcc")
+    
+    elif "/bin/csc" in bin_path:
+        # Convert csc command to dotnet invocation
+        dotnet_cmd = convert_csc_to_dotnet(args)
+        bin_path = dotnet_cmd['bin']
+        args = dotnet_cmd['args']
+
+    elif "/bin/mono" in bin_path:
+        # Convert csc command to dotnet invocation
+        bin_path = "/usr/bin/dotnet"
         
     elif "maven" in bin_path:
         mvn_init()
@@ -274,7 +281,7 @@ def cleanup_box(box_id):
         subprocess.run(['rm', '-rf', f"/isolate_boxes/{box_id}"],
                       stderr=subprocess.PIPE)
     except Exception as e:
-        print(f"Error cleaning up isolate box: {e}")
+        print(f"Error cleaning up isolate box \"{box_id}\": {e}")
 
 def main():
     job_configs = ["job-config.yml", "job.yaml", "job.yml"]
@@ -325,9 +332,19 @@ def get_dir_state(source_dir):
         for name in dirs:
             orig_files.add(os.path.join(root, name))
     return orig_files
-def run_submission(source_dir):
+
+def run_submission(source_dir, verbose=False):
     # Save list of filenames and directories before running
     orig_files = get_dir_state(source_dir)
+
+    for file_hash, version in dotnet_version_files.items():
+        version_file = os.path.join(source_dir, file_hash)
+        if os.path.exists(version_file):
+            print(f"Switching to .NET {version} for submission {source_dir}")
+            switch_dotnet_symlinks(version, dotnet_versions)
+            break
+        else:
+            switch_dotnet_symlinks(7, dotnet_versions)
 
     stats = {}
     global token_failed_tests, token_successful_tests, diff_failed_tests, diff_successful_tests, failed_tests, test_ids
@@ -337,6 +354,7 @@ def run_submission(source_dir):
     diff_failed_tests = 0
     diff_successful_tests = 0
     dirs['SOURCE_DIR'] = source_dir
+    print(f"Running submission in {source_dir}")
     job_configs = ["job-config.yml", "job.yaml", "job.yml"]
     job_config = None
 
@@ -364,18 +382,19 @@ def run_submission(source_dir):
     with open(f"{source_dir}/my_results.yml", 'w') as f:
         yaml.dump(results, f)
         
-    # print(f"--- Summary ---")
-    # print(f"Total tasks: {len(tasks)}")
-    # print(f"Total tests: {len(test_ids)}")
-    # print(f"Successful tests: {token_successful_tests + diff_successful_tests}")
-    # print(f"Failed tests: {token_failed_tests + diff_failed_tests}")
-    # print(f"Token judge successful tests: {token_successful_tests}")
-    # print(f"Token judge failed tests: {token_failed_tests}")
-    # print(f"Diff successful tests: {diff_successful_tests}")
-    # print(f"Diff failed tests: {diff_failed_tests}")
-    # if len(failed_tests) > 0:
-    #     print(f"Failed tests: {', '.join(failed_tests)}")
-    #     failed_submissions.append(source_dir)
+    if verbose:
+        print(f"--- Summary ---")
+        print(f"Total tasks: {len(tasks)}")
+        print(f"Total tests: {len(test_ids)}")
+        print(f"Successful tests: {token_successful_tests + diff_successful_tests}")
+        print(f"Failed tests: {token_failed_tests + diff_failed_tests}")
+        print(f"Token judge successful tests: {token_successful_tests}")
+        print(f"Token judge failed tests: {token_failed_tests}")
+        print(f"Diff successful tests: {diff_successful_tests}")
+        print(f"Diff failed tests: {diff_failed_tests}")
+        if len(failed_tests) > 0:
+            print(f"Failed tests: {', '.join(failed_tests)}")
+            failed_submissions.append(source_dir)
     stats["token_successful_tests"] = token_successful_tests
     stats["token_failed_tests"] = token_failed_tests
     stats["diff_successful_tests"] = diff_successful_tests
@@ -383,6 +402,78 @@ def run_submission(source_dir):
     stats["failed_tests"] = token_failed_tests + diff_failed_tests
     restore_dir(source_dir, orig_files)
     return stats
+
+dotnet_versions = {
+    6: ("6.0.420", "6.0.28"),
+    7: ("7.0.400", "7.0.10"),
+    8: ("8.0.100", "8.0.0")
+}
+dotnet_version_files = {
+    "0076854220a16837db1d9ed03c15bd95f473d992": 6,
+    "4d877a1f7ee1685ff7f3b5bacb5be28e2a4f6b09": 8,
+}
+def switch_dotnet_symlinks(version: int, versions: dict):
+    """
+    Switch the 'latest' symlinks for the specified .NET major version.
+
+    Args:
+        version (int): The major .NET version (6, 7, or 8).
+        versions (dict): Dictionary with major version keys (int)
+                         and values as tuples of (sdk_version, runtime_version).
+
+    Example:
+        versions = {
+            6: ("6.0.400", "6.0.10"),
+            7: ("7.0.400", "7.0.10"),
+            8: ("8.0.200", "8.0.1")
+        }
+        switch_dotnet_symlinks(7, versions)
+    """
+    if version not in versions:
+        raise ValueError(f"No versions provided for .NET {version}")
+
+    sdk_version, runtime_version = versions[version]
+
+    sdk_path = f"/opt/dotnet/sdk/{sdk_version}"
+    runtime_path = f"/opt/dotnet/shared/Microsoft.NETCore.App/{runtime_version}"
+
+    sdk_latest = "/opt/dotnet/sdk/latest"
+    runtime_latest = "/opt/dotnet/shared/Microsoft.NETCore.App/latest"
+
+    for target, link in [(sdk_path, sdk_latest), (runtime_path, runtime_latest)]:
+        # Remove the old symlink if it exists
+        if os.path.islink(link) or os.path.exists(link):
+            print(f"Removing old symlink: {link}")
+            os.remove(link)
+        # Create the new symlink
+        print(f"Creating symlink: {link} -> {target}")
+        os.symlink(target, link)
+
+def convert_csc_to_dotnet(csc_args, sdk_root="/opt/dotnet"):
+    """
+    Converts csc command-line args to dotnet invocation of Roslyn csc.dll.
+
+    Parameters:
+        csc_args (list): List of csc arguments (e.g., ['Program.cs', '-main:MyApp.Main', '-out:app.exe']).
+        sdk_root (str): Path to .NET SDK root containing `sdk/latest/Roslyn/bincore/csc.dll` and runtime.
+
+    Returns:
+        dict: Dictionary with 'bin' and 'args' for the dotnet command.
+    """
+    dotnet_cmd = {
+        "bin": "/usr/bin/dotnet",
+        "args": [str(Path(sdk_root) / "sdk/latest/Roslyn/bincore/csc.dll")]
+    }
+
+    # Add the original arguments as-is, but normalize paths if needed
+    dotnet_cmd["args"] += csc_args
+
+    # Add required .NET runtime references
+    runtime_dir = Path(sdk_root) / "shared/Microsoft.NETCore.App/latest"
+    for dll in sorted(runtime_dir.glob("*.dll")):
+        dotnet_cmd["args"].append(f"-r:{dll}")
+
+    return dotnet_cmd
 
 def restore_dir(source_dir, orig_files):
     # Delete any new files or directories that weren't there originally
@@ -428,9 +519,21 @@ def run_groups(submissions_csv, groups=["C#", "Python", "C++", "AdvC++"]):
             submission_dir = f"{SCRIPT_DIR}/test-data/download/{str(row['reference_submission_id'])}"
             if os.path.isdir(submission_dir):
                 # print(f"Found submission directory: {submission_dir}")
+
+                # For C# group, check and switch dotnet version if needed
+                # if known_groups[group_id] == "C#":
+                #     for file_hash, version in dotnet_version_files.items():
+                #         version_file = os.path.join(submission_dir, file_hash)
+                #         if os.path.exists(version_file):
+                #             print(f"Switching to .NET {version} for submission {submission_dir}")
+                #             switch_dotnet_symlinks(version, dotnet_versions)
+                #             break
+                #         else:
+                #             switch_dotnet_symlinks(7, dotnet_versions)
+
                 found += 1
                 submission_stats = run_submission(submission_dir)
-                print(f"Stats for submission {submission_dir}: {stats}")
+                # print(f"Stats for submission {submission_dir}: {stats}")
                 if submission_stats['failed_tests'] <= 0:
                     stats[group_id]['successful_submissions'].append(submission_dir)
                 else:
@@ -450,8 +553,11 @@ def run_groups(submissions_csv, groups=["C#", "Python", "C++", "AdvC++"]):
         print(f" Failed submissions: {group_stats.get('failed_submissions', [])}")
 if __name__ == "__main__":
     # main()
-    # run_submission(sys.argv[1])
     # Initialize and clean up system before running tests
-    subprocess.run([f"{SCRIPT_DIR}/../../cleanup_system.sh"], shell=True)
-    subprocess.run([f"{SCRIPT_DIR}/../../initialize_system"], shell=True)
-    run_groups(f"{SCRIPT_DIR}/ref-solutions.csv", groups=sys.argv[1:])
+    subprocess.run([f"{SCRIPT_DIR}/../../scripts/cleanup_system.sh"], shell=True)
+    subprocess.run([f"{SCRIPT_DIR}/../../scripts/initialize_system.sh"], shell=True)
+    if len(sys.argv) > 2 and sys.argv[1] == "-d":
+        run_submission(f"{SCRIPT_DIR}/test-data/download/{sys.argv[2]}", verbose=True)
+        sys.exit(0)
+    else:
+        run_groups(f"{SCRIPT_DIR}/ref-solutions.csv", groups=sys.argv[1:])
