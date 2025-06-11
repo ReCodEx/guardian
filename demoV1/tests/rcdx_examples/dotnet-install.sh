@@ -4,8 +4,9 @@ set -e
 # === Configuration ===
 DOTNET_DIR="/opt/dotnet"
 DOTNET_VERSIONS="6.0.420 7.0.400 8.0.100"
-LATEST_RUNTIME="7.0.10"  # Set the latest version to be used
-LATEST_SDK="7.0.400"  # Set the latest version to be used
+
+LATEST_RUNTIME="7.0.10"  # The 'latest' symlinks for ReCoDex
+LATEST_SDK="7.0.400"
 
 ARCH="x64"
 
@@ -34,9 +35,9 @@ RUNTIME_DIR="$DOTNET_DIR/shared/Microsoft.NETCore.App/$LATEST_RUNTIME"
 if [[ -d "$SDK_DIR" && -d "$RUNTIME_DIR" ]]; then
     ln -sfn "$SDK_DIR" "$DOTNET_DIR/sdk/latest"
     ln -sfn "$RUNTIME_DIR" "$DOTNET_DIR/shared/Microsoft.NETCore.App/latest"
-    echo "🔗 Created 'latest' symlinks for SDK and runtime"
+    echo "Created 'latest' symlinks for SDK and runtime"
 else
-    echo "⚠️ Could not create 'latest' links — check if $LATEST was installed correctly"
+    echo "Could not create 'latest' links — check if $LATEST was installed correctly"
 fi
 
-echo "✅ Finished installing: $DOTNET_VERSIONS"
+echo "Finished installing: $DOTNET_VERSIONS"
