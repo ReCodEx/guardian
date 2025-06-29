@@ -88,7 +88,7 @@ def get_ld_library_path(CC="gcc"):
     paths = [p for p in paths if p]  # Remove empty entries
     return ":".join(paths)
 
-print("LD_LIBRARY_PATH=" + get_ld_library_path())
+print("GCC LD_LIBRARY_PATH=" + get_ld_library_path())
 print("PATH=" + get_container_path())
 print("JAVA_HOME=" + find_java_home())
 
@@ -531,9 +531,7 @@ def run_groups(submissions_csv, groups=["C#", "Python", "C++", "AdvC++"]):
 
         
     print(f"\n--- Summary ---")
-    # print(f"Total groups processed: {len(stats)}")
     print(f"Total submissions found: {found}")
-    # print(f"Total submissions not found: {not_found}")
     for group_id, group_stats in stats.items():
         print(f"Group {group_id} ({known_groups.get(group_id, 'Unknown')}):")
         print(f" Successful submissions: {len(group_stats.get('successful_submissions', []))}")

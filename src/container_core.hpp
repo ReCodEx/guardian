@@ -93,24 +93,13 @@ namespace container_core
         void pivot_root()
         {
             auto& box_root = credentials_mngr_.box_root();
-            auto put_old = box_root / fs::path("old_root");
-
-            if(!fs::is_directory(put_old))
-            { 
-                logs::debug("Creating directory: {}", put_old.string());
-
-                if(!fs::create_directories(put_old))
-                    { terminate("Failed to create put_old directory for pivot_root"); } 
-            } 
-
-            if(syscall(SYS_pivot_root, box_root.c_str(), put_old.c_str()))
-                { terminate("pivot_root failed, errno: {}", errno); }
-            chdir("/");
+            chdir(box_root.c_str());
+            if(syscall(SYS_pivot_root, ".", "."))
+                { terminate("pivot_root() failed, errno: {}", errno); }
             
-            // !!!
-            /// MNT_DETACH to get around busy error.
-            if(umount2("/old_root", MNT_DETACH))
-                { logs::error("umount on old root failed, errno: {}", errno); }
+            /// MNT_DETACH ensures we don't get a busy error.
+            if(umount2(".", MNT_DETACH))
+                { terminate("umount() on old root failed, errno: {}", errno); }
         } 
     };
     

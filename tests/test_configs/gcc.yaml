@@ -3,12 +3,14 @@ root-cg: /sys/fs/cgroup/isolate_boxes
 box-fs:
   dir-rules:
     - "tmp:tmp"
-    - "tests=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests"
+    - "tests=/home/simonkurz/mff/rcdx_cntnr/tests"
 env:
-  inherit-all: true
+  # inherit-all: true
   vars:
     # - GCC_EXEC_PREFIX=/usr/libexec/gcc/x86_64-redhat-linux/14/
     # - HOME=
+    - PATH
+    - LD_LIBRARY_PATH=
     - JAVA_HOME=/usr/lib/jvm/jre-openjdk
     - PPC_CONFIG_PATH=/usr/etc
     - PYTHONHASHSEED=0
@@ -19,19 +21,19 @@ env:
     - MAVEN_HOME=/opt/maven
     - M2_HOME=/opt/maven-repo
 tasks:
-    - task-id: "echo env"
-      cmd:
-        bin: "/bin/env"
+    # - task-id: "echo env"
+    #   cmd:
+    #     bin: "/bin/env"
     - task-id: "gcc-test"
       chdir: tmp
       stats-yaml: "/result.yaml"
       cmd:
         bin: "/usr/bin/gcc"
         args:
-            - "-B/usr/libexec/gcc/x86_64-redhat-linux/14/"
-            - "-B/usr/lib/gcc/x86_64-redhat-linux/14/"
-            - "-I/usr/lib/gcc/x86_64-redhat-linux/14/include/"
-            - "-v"
+            # - "-B/usr/libexec/gcc/x86_64-redhat-linux/14/"
+            # - "-B/usr/lib/gcc/x86_64-redhat-linux/14/"
+            # - "-I/usr/lib/gcc/x86_64-redhat-linux/14/include/"
+            # - "-v"
             - "-Wall"
             - "-std=gnu11"
             - "-O3"

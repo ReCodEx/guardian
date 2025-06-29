@@ -13,7 +13,7 @@ tasks:
       cmd:
         bin: "/tests/test_binaries/bsearch"
       limits:
-          mem: 5000
+          # mem: 5000
           cpu-time: 1
           # wall-time: 2
           extra-time: 2
