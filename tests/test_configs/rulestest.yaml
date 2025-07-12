@@ -1,5 +1,0 @@
-box-root: "/box"
-tasks:
-box-fs:
-env:
-  dir-rules:

@@ -1,6 +1,0 @@
-tasks:
-    - task-id: "helloworld"
-      path: "/tests/helloworld"
-box-fs:
-  dir-rules:
-    - "tests=/home/kurzs/rcdx_cntnr/demoV1/build/tests"

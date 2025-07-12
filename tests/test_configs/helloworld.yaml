@@ -1,5 +1,0 @@
-tasks:
-    - task-id: "helloworld"
-      path: "/tests/build/helloworld"
-env:
-    
