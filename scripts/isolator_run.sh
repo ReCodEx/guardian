@@ -3,12 +3,18 @@ set -eu
 
 usage() {
         cat <<EOF
-        Wrong usage
+Usage: $(basename "$0") [OPTIONS] [YAML_FILE]
+
+Options:
+  -y, --yaml YAML_FILE    Path to YAML configuration file
+  -h, --help              Display this help message and exit
+
+The YAML file can be specified either with -y/--yaml option or as an unnamed argument.
 EOF
 }
 
 use_yaml=false
-yaml=
+yaml=""
 options=$(getopt -o y:h --long yaml:,help -- "$@")
 eval set -- "$options"
 
@@ -35,14 +41,19 @@ while true; do
     shift
 done
 
+# If YAML wasn't provided with -y option, check for unnamed argument
+if [ "$use_yaml" = false ] && [ $# -gt 0 ]; then
+    yaml="$1"
+    use_yaml=true
+    shift
+fi
+
+# Check if YAML file is provided
+if [ "$use_yaml" = false ] || [ -z "$yaml" ]; then
+    echo "Error: YAML configuration file is required." >&2
+    usage
+    exit 1
+fi
+
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
-CWD=$(pwd)
-
-mkdir $SCRIPT_DIR/../build || true
-cd $SCRIPT_DIR/../build
-cmake ..
-cmake --build .
-cd $CWD
-
-sudo cgdelete -r memory:container_instance || true
-sudo $SCRIPT_DIR/../build/src/container "--yaml=$yaml"
+sudo $SCRIPT_DIR/../build/src/isolator "--yaml=$yaml"

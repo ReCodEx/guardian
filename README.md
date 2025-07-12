@@ -1,6 +1,6 @@
 # ReCoDex Isolator
 
-Lightweight Linux containerization tool written "from scratch", primarily intended for evaluation of programming assignments in isolated environments.
+Lightweight Linux containerization tool written from scratch for the ReCoDex assignment evaluation system. 
 
 ---
 
@@ -39,22 +39,73 @@ An instance runs three different processes with distinct responsibilities:
 ### 1. System Setup
 First, initialize the required system resources:
 ```sh
-scripts/initialize_system.sh
+scripts/isolator_init.sh
 ```
-This script creates the necessary cgroup directories and sets up permissions. It only needs to be run once (not needed after reboot).
+This script creates the necessary cgroups and directories common for all instances.
 
 ### 2. Build the Isolator
 ```sh
-scripts/build.sh
+scripts/isolator_build.sh
 ```
 
 ### 3. Run with Configuration
 ```sh
-scripts/run.sh --yaml=<path_to_yaml_configuration_file>
+scripts/isolator_run.sh <path_to_yaml_configuration_file>
 ```
-The script cleans up previous resources, rebuilds if necessary, and runs the isolator with your configuration.
+or
+```sh
+scripts/isolator_run.sh --yaml=<path_to_yaml_configuration_file>
+```
+The script runs the isolator with your configuration.
+
+### 4. Cleanup
+To clean up resources used by the isolator:
+```sh
+scripts/isolator_cleanup.sh
+```
 
 ---
+
+## 🧪 Test suites
+
+The repository includes two test suites:
+
+### Basic Test Suite (`tests/test_suite`)
+
+A lightweight test suite that verifies core functionality:
+
+- **Isolation Tests**: Verify namespace isolation features
+- **Resource Limits Tests**: Check that resource limits are properly enforced
+
+To run the basic tests:
+```sh
+cd tests/test_suite
+python3 run_tests.py
+```
+
+This test suite is quick to run and doesn't require extensive setup.
+
+### ReCodEx Integration Tests (`tests/recodex`)
+
+⚠️ **WARNING**: This test suite requires extensive setup and downloads!
+
+Running these tests will:
+- Clone the ReCodEx worker repository from GitHub
+- Install Python dependencies (pandas)
+- Install .NET runtime (requires sudo)
+- Download approximately 1GB of test data from an external server
+- Build additional components
+
+These tests are primarily intended for integration with the ReCodEx evaluation system.
+
+To run the ReCodEx tests:
+```sh
+cd tests/recodex
+python3 recodex_init.py  # Setup (downloads ~1GB data)
+python3 recodex_mock.py  # Run tests
+```
+
+Only run these tests if you need to verify ReCodEx integration and have sufficient bandwidth and storage available.
 
 ## 📝 Configuration Reference
 
@@ -193,62 +244,3 @@ Possible status values:
 - `memory`: Memory limit exceeded
 
 ---
-
-## 🧪 Testing
-
-The repository includes two test suites:
-
-### Basic Test Suite (`tests/test_suite`)
-
-A lightweight test suite that verifies core functionality:
-
-- **Isolation Tests**: Verify namespace isolation features
-- **Resource Limits Tests**: Check that resource limits are properly enforced
-
-To run the basic tests:
-```sh
-cd tests/test_suite
-python3 run_tests.py
-```
-
-This test suite is quick to run and doesn't require extensive setup.
-
-### ReCodEx Integration Tests (`tests/recodex`)
-
-⚠️ **WARNING**: This test suite requires extensive setup and downloads!
-
-Running these tests will:
-- Clone the ReCodEx worker repository from GitHub
-- Install Python dependencies (pandas)
-- Install .NET runtime (requires sudo)
-- Download approximately 1GB of test data from an external server
-- Build additional components
-
-These tests are primarily intended for integration with the ReCodEx evaluation system.
-
-To run the ReCodEx tests:
-```sh
-cd tests/recodex
-python3 recodex_init.py  # Setup (downloads ~1GB data)
-python3 recodex_mock.py  # Run tests
-```
-
-Only run these tests if you need to verify ReCodEx integration and have sufficient bandwidth and storage available.
-
----
-
-## 🛡️ Security Considerations
-
-The isolator provides security through:
-
-- Process isolation via Linux namespaces
-- Resource limiting via cgroups
-- Filesystem isolation with bind mounts
-- User/group ID mapping
-- Restricted filesystem access
-
-For production use, ensure that:
-1. The host system is properly secured
-2. The isolator runs with appropriate privileges
-3. Resource limits are set appropriately
-
