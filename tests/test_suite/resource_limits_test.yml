@@ -1,0 +1,65 @@
+box-fs:
+  dir-rules:
+    - "build=/home/simonkurz/mff/rcdx_cntnr/tests/test_suite/build"
+    - "tmp=tmp:rw"
+    - "res=/home/simonkurz/mff/rcdx_cntnr/tests/test_suite/res:rw"
+tasks:
+  - task-id: "memory-test"
+    chdir: "/res"
+    stats-yaml: "/res/memory-test.result.yaml"
+    cmd:
+      bin: "/build/memory_many_allocations"
+      args: ["10737410"]  # Try to allocate 10MB
+    limits:
+      mem: 1048576  # 1MB limit
+      wall-time: 10
+
+  - task-id: "fd-limit-test"
+    chdir: "/res"
+    stats-yaml: "/res/fd-limit-test.result.yaml"
+    cmd:
+      bin: "/build/fd_limit_test"
+    limits:
+      open-files: 5  # Set very low file descriptor limit
+      wall-time: 10
+
+  - task-id: "process-limit-test"
+    cmd:
+      bin: "/build/process_limit_test"
+    chdir: "/res"
+    stats-yaml: "/res/process-limit-test.result.yaml"
+    limits:
+      processes: 3  # Set very low process limit
+      wall-time: 10
+
+  - task-id: "file-size-test"
+    cmd:
+      bin: "/build/file_size_test"
+    chdir: "/res"
+    stats-yaml: "/res/file-size-test.result.yaml"
+    limits:
+      fsize: 1024  # 1KB file size limit
+
+  - task-id: "wall-time-test"
+    cmd:
+      bin: "/build/wall_time_test"
+    chdir: "/res"
+    stats-yaml: "/res/wall-time-test.result.yaml"
+    limits:
+      wall-time: 1  # Set a 2 second wall time limit
+
+  - task-id: "cpu-time-test"
+    cmd:
+      bin: "/build/cpu_time_test"
+    chdir: "/res"
+    stats-yaml: "/res/cpu-time-test.result.yaml"
+    limits:
+      cpu-time: 1  # Set a 1 second CPU time limit
+
+  - task-id: "stack-size-test"
+    cmd:
+      bin: "/build/stack_size_test"
+    chdir: "/res"
+    stats-yaml: "/res/stack-size-test.result.yaml"
+    limits:
+      stack: 10000  # 10 kB stack size limit

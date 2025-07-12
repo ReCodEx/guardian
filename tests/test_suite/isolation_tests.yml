@@ -1,0 +1,28 @@
+box-fs:
+  use-defaults: true
+  dir-rules:
+    - "build=/home/simonkurz/mff/rcdx_cntnr/tests/test_suite/build"
+    - "allowed=/home/simonkurz/mff/rcdx_cntnr/tests/test_suite/res:rw"
+    - "res=/home/simonkurz/mff/rcdx_cntnr/tests/test_suite/res:rw"
+env:
+  vars:
+    - "TEST_VAR=test_value"
+
+tasks:
+  - task-id: "env-vars-test"
+    chdir: "/res"
+    cmd:
+      bin: "/build/env_vars_test"
+    stats-yaml: "/res/env-vars-test.result.yaml"
+
+  - task-id: "dir-access-test"
+    chdir: "/res"
+    cmd:
+      bin: "/build/dir_access_test"
+    stats-yaml: "/res/dir-access-test.result.yaml"
+
+  - task-id: "network-isolation-test"
+    chdir: "/res"
+    cmd:
+      bin: "/build/network_isolation_test"
+    stats-yaml: "/res/network-isolation-test.result.yaml"
