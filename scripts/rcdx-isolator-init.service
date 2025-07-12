@@ -1,0 +1,11 @@
+[Unit]
+Description=ReCodEx Container Isolator Initialization Service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/share/rcdx_cntnr/scripts/isolator_init.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

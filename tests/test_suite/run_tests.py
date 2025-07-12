@@ -12,7 +12,7 @@ CONTAINER_BIN = f"{SCRIPT_DIR}/../../build/src/container"
 LIMITS_TEST_CONFIG = f"{SCRIPT_DIR}/resource_limits_test.yml"
 ISOLATION_TEST_CONFIG = f"{SCRIPT_DIR}/isolation_tests.yml"
 
-def cleanup_results():
+def cleanup():
     """Clean up result files from the res directory"""
     res_dir = SCRIPT_DIR / "res"
     if res_dir.exists():
@@ -176,8 +176,8 @@ def run_limits_test(capture_output=True):
 if __name__ == "__main__":
     # Initialize and clean up system before running tests
     build()
-    subprocess.run([f"{SCRIPT_DIR}/../../scripts/cleanup_system.sh"], shell=True)
-    subprocess.run([f"{SCRIPT_DIR}/../../scripts/initialize_system.sh"], shell=True)
+    subprocess.run([f"{SCRIPT_DIR}/../../scripts/isolator_cleanup.sh"], shell=True)
+    subprocess.run([f"{SCRIPT_DIR}/../../scripts/isolator_init.sh"], shell=True)
     res_dir = SCRIPT_DIR / "res"
     res_dir.mkdir(exist_ok=True)
     try:
@@ -185,5 +185,4 @@ if __name__ == "__main__":
         run_isolation_test()
         run_limits_test()
     finally:
-        # Clean up result files regardless of test outcome
-        cleanup_results()
+        cleanup()

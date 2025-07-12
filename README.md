@@ -1,227 +1,254 @@
 # ReCoDex Isolator
 
-Lightweight Linux containerization tool written "from scratch", primarily intended for evaluation of programming assignments.
+Lightweight Linux containerization tool written "from scratch", primarily intended for evaluation of programming assignments in isolated environments.
 
 ---
 
-### 📚 Reading this README
-This project uses advanced Linux concepts (namespaces, cgroups, UID/GID mappings, etc.). For an overview, see my thesis (link placeholder).
+## 📚 Overview
 
-Terminology used throughout this README and the codebase:
+This project uses advanced Linux kernel features (namespaces, cgroups, UID/GID mappings, etc.) to create secure sandboxes for running untrusted code. It provides fine-grained control over system resources and filesystem access. To get more insight into the details, you can take a look at my thesis.(TODO)
 
-#### 🧠 Terminology
+### 🧠 Terminology
 
-- **Isolator** — This tool as a whole.
-- **Instance** — One run of the isolator, from parsing the configuration file to creating a file with metadata about the run.
-- **Sandbox** — The isolated environment that is created based on the configuration file. Includes namespaces, cgroups, UID/GID, environment variables, ...
-- **Task** — A single unit of execution of the isolator, runs an executable with specified arguments in a sandbox.
+- **Isolator** — This tool as a whole, providing containerization capabilities.
+- **Instance** — One run of the isolator, from parsing the configuration file to executing tasks and generating metadata.
+- **Sandbox** — The isolated environment created based on configuration, including namespaces, cgroups, UID/GID mappings, environment variables, and filesystem mounts.
+- **Task** — A single unit of execution within the sandbox, running an executable with specified arguments and resource limits.
 
-#### 🧵 Processes
-An instance runs three different processes:
-- **Root process** — Reserves necessary global resources.
-- **Proxy process** — Prepares a sandbox.
-- **Task process** — Runs the isolated executable itself.
+### 🧵 Process Architecture
 
----
+An instance runs three different processes with distinct responsibilities:
 
-### 🛠️ System prerequisites
-
-- You need a kernel with cgroupv2 enabled. Check with:
-  ```sh
-  mount | grep cgroup
-  ```
-- CMake 3.20 and a compiler capable of C++23.
-- Boost `program_options` package.
-- For using limits on disk usage, the sandbox has to be located on a filesystem that supports `QUOTACTL(2)` (e.g. ext4).
+- **Root process** — Reserves necessary global resources (directories, cgroups) and prepares the environment.
+- **Proxy process** — Creates and configures the sandbox environment (namespaces, filesystem mounts, cgroups).
+- **Task process** — Executes the isolated program with the specified resource limits.
 
 ---
 
-### ⚡ Quickstart guide
+## 🛠️ System Requirements
 
-After installing everything required, run:
+- Linux kernel with cgroupv2 enabled.
+- CMake 3.20+ and a compiler supporting C++23
+- Boost `program_options` library
+- For disk usage quotas, the sandbox must be on a filesystem supporting `QUOTACTL(2)` (e.g., ext4)
+
+---
+
+## ⚡ Quickstart Guide
+
+### 1. System Setup
+First, initialize the required system resources:
 ```sh
 scripts/initialize_system.sh
 ```
-It shouldn't be necessary to run it again after reboot.
+This script creates the necessary cgroup directories and sets up permissions. It only needs to be run once (not needed after reboot).
 
-Build with:
+### 2. Build the Isolator
 ```sh
 scripts/build.sh
 ```
 
-Run the container with:
+### 3. Run with Configuration
 ```sh
 scripts/run.sh --yaml=<path_to_yaml_configuration_file>
 ```
-The script cleans up and recompiles before running again.
+The script cleans up previous resources, rebuilds if necessary, and runs the isolator with your configuration.
 
 ---
 
-### 📝 Example configuration file
+## 📝 Configuration Reference
+
+The isolator uses YAML configuration files to define sandbox environments and tasks.
+
+### Example Configuration:
 
 ```yaml
+credentials:
+  id: "unique-instance-id"   # Optional unique identifier for this instance
+
 env:
-  dir-rules:                                 # optional user specified list of directory rules declaring the directories that will exist
-                                            # inside the sandbox, the syntax is described [here]()
-    - "tests=/home/user/project/tests"
-  use-defaults: false                        # mount a default list of directories into the sandbox (like /lib, /lib64, /bin, ...), true is the default if not specified 
+  vars:                     # Environment variables visible in the sandbox
+    - "PATH=/usr/bin"       # Set a specific variable
+    - "HOME"                # Inherit HOME from parent environment
+    - "full-env=false"      # Whether to inherit all environment variables
+  inherit-all: false        # Alternative way to inherit all variables
+
+box-fs:
+  dir-rules:                # Directories visible in the sandbox
+    - "tests=/home/user/project/tests"    # Mount external directory
+    - "tmp:tmp"                          # Create temporary directory
+    - "proc=proc:fs"                     # Mount proc filesystem
+  use-defaults: true        # Mount standard directories (/bin, /lib, etc.)
 
 tasks:
-  - task-id: "example"                    # (mandatory) name of the task (has to be unique within one run of the container), is used in output files of the sandbox
-    path: "tests/example"                 # (mandatory) path to the executable inside of the sandbox - you have to use a directory rule to get it there.
-
-    args:                                   # Optional list of arguments passed to the executable in an execve call.
-      - "Hello"
-      - "World" 
-
-    rlims:                                  # Optional node with specification of resource limits for the task. Times are in seconds and memory sizes in bytes.
-      mem: 5000000                          # If any of these is not specified, no limit will be set. The exception is a default wall time limit of 20s.
-      cpu-time: 3
-      wall-time: 5
-      disk-usage: 1000000
+  - task-id: "example"      # Name for this task (used in output files)
+    cmd:
+      bin: "tests/example"  # Path to the executable inside the sandbox
+      args:                 # Optional arguments for the executable
+        - "Hello"
+        - "World"
+    stdin: "input.txt"      # Redirect stdin from file (optional)
+    stdout: "output.txt"    # Redirect stdout to file (optional)
+    stderr: "error.txt"     # Redirect stderr to file (optional)
+    stderr-to-stdout: false # Redirect stderr to stdout (optional)
+    chdir: "tests"          # Change directory before execution (optional)
+    
+    limits:                 # Resource limits for this task
+      mem: 5000000          # Memory limit (bytes)
+      cpu-time: 3           # CPU time limit (seconds)
+      wall-time: 5          # Wall clock time limit (seconds)
+      extra-time: 0.5       # Grace period after CPU limit (seconds)
+      disk-usage: 1000000   # Disk quota (blocks)
+      processes: 10         # Maximum number of processes/threads
+      open-files: 64        # Maximum open file descriptors
+      fsize: 1024           # Maximum file size (KB)
+      core: 0               # Maximum core dump size (KB)
 ```
 
 ---
 
-## ⚙️ Configuration overview
+## ⚙️ Configuration Details
 
-The configuration file comprises of YAML nodes organised hierarchically into smaller units.
+### Credentials and Global Settings
 
-### Basic options
+- `id`: Unique identifier for this sandbox instance
+- `root-dir`: Root directory for all sandboxes (default: `/isolate_boxes`)
+- `root-cgroup`: Root cgroup path (default: `/sys/fs/cgroup/isolate_boxes`)
+- `as-uid`/`as-gid`: User/group ID for running processes in the sandbox
+- `share-net`: Whether to share the network namespace with the parent process
 
-name: 'id'::
-	When you run multiple sandboxes in parallel, you should assign unique
-	IDs to them by this option. A fallback is a randomly assigned ID, which might collide anyway.
+### Environment Variables
 
-### 🌿 Environment
-Contains configuration of the environment variables that will be visible in the sandbox environment. It comprises of a list of environment rules:
+Rules for environment variables:
 
-- `'var'`:
-  Inherit the variable `var` from the parent.
+- `'var'`: Inherit the variable `var` from the parent
+- `'var=value'`: Set the variable `var` to `value`
+- `'var='`: Remove the variable from the environment
+- `'full-env=true'`: Inherit all variables from the parent
 
-- `'var=value'`:
-  Set the variable `var` to `value`. When the `value` is empty, the variable is removed from the environment.
+### Sandbox Filesystem
 
-- `full-env`:
-  Inherit all variables from the parent.
+Directory rules format:
 
-### 📁 Sandbox-fs
-Contains configuration of the directory tree visible in the sandbox. It contains only subtrees
-requested by directory rules in a list:
+- `'in'='out'[:'options']`: Bind the directory `out` to path `in` inside the sandbox
+- `'dir'[:'options']`: Bind the directory `/dir` to `dir` inside the sandbox
 
-- `'in'='out'[:'options']`:
-  Bind the directory `out` as seen by the caller to the path `in` inside the sandbox.
-  If there already was a directory rule for `in`, it is replaced.
+Available options:
 
-- `'dir'[:'options']`:
-  Bind the directory `/dir` to `dir` inside the sandbox.
-  If there already was a directory rule for `in`, it is replaced.
+- `rw`: Allow read-write access (default is read-only)
+- `dev`: Allow access to character and block devices
+- `noexec`: Disallow execution of binaries
+- `maybe`: Silently ignore if source directory doesn't exist
+- `fs`: Mount a filesystem (e.g., `proc`, `sysfs`) instead of binding a directory
+- `tmp`: Create a fresh temporary directory (implies `rw`)
+- `norec`: Do not bind recursively (don't propagate mount points)
 
-By default, all directories are mounted read-only and restricted (no devices,
-no setuid binaries). This behavior can be modified using the 'options':
+Default directories mounted (when `use-defaults: true`):
+- `/bin`, `/lib`, `/lib64` (if exists), `/usr`
+- `/dev` (with devices allowed)
+- `/proc` filesystem
 
-* `rw` — Allow read-write access.
+### Tasks Configuration
 
-* `dev` — Allow access to character and block devices.
+Task execution settings:
 
-* `noexec` — Disallow execution of binaries.
+- `stdin`/`stdout`/`stderr`: Redirect standard streams to files
+- `stderr-to-stdout`: Redirect stderr to stdout
+- `chdir`: Change working directory before execution
 
-* `maybe` — Silently ignore the rule if the directory to be bound does not exist.
+### Resource Limits
 
-* `fs` — Instead of binding a directory, mount a device-less filesystem called `in`. For example, this can be `proc` or `sysfs`.
+- `cpu-time`: CPU time limit in seconds (process execution time)
+- `wall-time`: Wall clock time limit in seconds (real-world time)
+- `extra-time`: Grace period after CPU time limit is exceeded
+- `memory`: Memory usage limit in bytes
+- `stack`: Stack size limit in kilobytes
+- `processes`: Maximum number of processes/threads
+- `open-files`: Maximum number of open file descriptors
+- `fsize`: Maximum file size in kilobytes
+- `core`: Maximum core dump size in kilobytes
+- `disk-usage`: Disk quota in blocks (requires filesystem quota support)
 
-* `tmp` — Bind a freshly created temporary directory writable for the sandbox user. Accepts no `out`, implies `rw`.
+---
 
-* `norec` — Do not bind recursively. Without this option, mount points in the outside directory tree are automatically propagated to the sandbox.
+## 📊 Output Information
 
+After execution, the isolator generates metadata in YAML format with information about the run:
 
+```yaml
+status: OK                   # Status: OK, killed, memory, wall-time, cpu-time
+exitcode: 0                  # Process exit code
+exitsig: 0                   # Signal that terminated the process (if any)
+time: 0.125                  # CPU time used (seconds)
+memory: 8520                 # Memory usage (KB)
+wall-time: 0.135             # Wall clock time (seconds)
+```
 
-Unless *--no-default-dirs* is specified, the default set of directory rules binds +/bin+,
-+/dev+ (with devices allowed), +/lib+, +/lib64+ (if it exists), and +/usr+. It also mounts the proc filesystem at +/proc+.
+Possible status values:
+- `OK`: Task completed successfully
+- `killed`: Task was terminated by a signal
+- `non zero exit code`: Task exited with non-zero code
+- `wall-time`: Wall time limit exceeded
+- `cpu-time`: CPU time limit exceeded
+- `memory`: Memory limit exceeded
 
-### 🚦 Task
-Contains configuration of a task.
+---
 
-- `stdin: 'file'`:
-  Redirect standard input from `'file'`. The `'file'` is a path relative to the root of the sandbox. 
-  If not specified, standard input is inherited from the launch of this instance.
+## 🧪 Testing
 
-- `stdout: 'file'`:
-  Redirect standard output to `'file'`. The `'file'` has to be accessible
-  inside the sandbox (which means that the sandboxed program can manipulate
-  it arbitrarily). If not specified, standard output is inherited from the launch of this instance, and the sandbox manager does not write anything to it.
+The repository includes two test suites:
 
-- `stderr: 'file'`:
-  Redirect standard error output to `'file'`. The `'file'` has to be accessible
-  inside the sandbox (which means that the sandboxed program can manipulate
-  it arbitrarily). If not specified, standard error output is inherited from the
-  parent process. See also `--stderr-to-stdout`.
+### Basic Test Suite (`tests/test_suite`)
 
-- `stderr-to-stdout: 'true'\'false'`:
-  Redirect standard error output to standard output. This is performed after
-  the standard output is redirected by `--stdout`. Mutually exclusive with `--stderr`.
+A lightweight test suite that verifies core functionality:
 
-- `chdir: 'dir'`:
-  Change directory to `'dir'` before executing the program. This path must be
-  relative to the root of the sandbox.
+- **Isolation Tests**: Verify namespace isolation features
+- **Resource Limits Tests**: Check that resource limits are properly enforced
 
-### 📊 Resource limits
+To run the basic tests:
+```sh
+cd tests/test_suite
+python3 run_tests.py
+```
 
-- `cpu-time: 'time'`  
-  Limit run time of the program to `'time'` seconds. Fractional numbers are allowed.
-  Time in which the OS assigns the processor to other tasks is not counted.
-  If this limit is exceeded, the program is killed (after `--extra-time`, if set).
+This test suite is quick to run and doesn't require extensive setup.
 
-- `wall-time: 'time'`  
-  Limit wall-clock time to `'time'` seconds. Fractional values are allowed.
-  This clock measures the time from the start of the task to its exit,
-  so it does not stop when the program has lost the CPU or when it is waiting
-  for an external event. We recommend to use `--time` as the main limit,
-  but set `--wall-time` to a much higher value as a precaution against
-  sleeping programs.
-  If this limit is exceeded, the program is killed.
+### ReCodEx Integration Tests (`tests/recodex`)
 
-- `extra-time: 'time'`  
-  When the `--time` limit is exceeded, do not kill the program immediately,
-  but wait until `--extra-time` seconds elapse since the start of the program.
-  This allows to report the real execution time, even if it exceeds the limit
-  slightly.
+⚠️ **WARNING**: This test suite requires extensive setup and downloads!
 
-- `memory: 'bytes'`  
-  Limit total utilization of memory as measured by cgroups accounting to `'bytes'`.
-  If the limit is exceeded, the task is killed.
+Running these tests will:
+- Clone the ReCodEx worker repository from GitHub
+- Install Python dependencies (pandas)
+- Install .NET runtime (requires sudo)
+- Download approximately 1GB of test data from an external server
+- Build additional components
 
-- `stack: 'size'`  
-  Limit the process stack to `'size'` kilobytes.  
-  By default, the entire address space is available for the stack, but it's still subject to the `--mem` limit.  
-  If this limit is exceeded, the program receives the `SIGSEGV` signal.
+These tests are primarily intended for integration with the ReCodEx evaluation system.
 
-- `open-files: 'max'`  
-  <!-- TODO: check semantics -->
-  Limit the number of simultaneously open file descriptors to `'max'`.  
-  Default: `64`.  
-  Setting this to `0` disables the limit (unlimited open files).  
-  If the limit is reached, system calls that create file descriptors will fail with error `EMFILE`.  
+To run the ReCodEx tests:
+```sh
+cd tests/recodex
+python3 recodex_init.py  # Setup (downloads ~1GB data)
+python3 recodex_mock.py  # Run tests
+```
 
-- `fsize: 'size'`  
-  Limit the size of each file created (or modified) by the program to `'size'` kilobytes.  
-  Typically, it’s better to control disk usage with a disk quota (see `disk-usage`), but this is helpful when quotas aren’t available on the underlying filesystem.  
-  If the limit is reached, system calls trying to grow the file fail with `EFBIG` and the program receives the `SIGXFSZ` signal.
+Only run these tests if you need to verify ReCodEx integration and have sufficient bandwidth and storage available.
 
-- `core: 'size'`  
-  Limit the size of core dumps created when a process crashes to `'size'` kilobytes.  
-  Default: `0` (no core dumps are created inside the sandbox).
+---
 
-- `disk-usage: 'blocks'`
-<!-- TODO: implement semantics -->
-  Set disk quota to a given number of blocks and inodes. This requires the
-  filesystem to be mounted with support for quotas. Please note that this
-  currently works only on the ext family of filesystems (other filesystems
-  use other interfaces for setting quotas).
-  If the quota is reached, system calls expanding files fail with error `EDQUOT`.
+## 🛡️ Security Considerations
 
-- `processes: 'max'`
-  Permit the program to create up to `'max'` processes and/or threads.
-  If this limit is exceeded, system calls creating processes fail with error
-  `EAGAIN`.
+The isolator provides security through:
+
+- Process isolation via Linux namespaces
+- Resource limiting via cgroups
+- Filesystem isolation with bind mounts
+- User/group ID mapping
+- Restricted filesystem access
+
+For production use, ensure that:
+1. The host system is properly secured
+2. The isolator runs with appropriate privileges
+3. Resource limits are set appropriately
 

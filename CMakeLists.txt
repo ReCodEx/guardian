@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(TESTING OFF)
+option(ENABLE_SYSTEMD_SERVICE "Enable the systemd service during installation" OFF)
 include(FetchContent)
 
 FIND_PACKAGE( Boost 1.75 COMPONENTS program_options REQUIRED )
@@ -28,3 +29,12 @@ FetchContent_MakeAvailable(yaml-cpp)
 
 add_subdirectory(tests)
 add_subdirectory(src)
+
+# Installation configuration
+include(GNUInstallDirs)
+
+# Install the main executable from src directory
+install(TARGETS isolator
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
