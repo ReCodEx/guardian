@@ -9,7 +9,7 @@ import re
 import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-ISOLATE_SANDBOX = f"{SCRIPT_DIR}/../../build/src/container"
+ISOLATE_SANDBOX = f"{SCRIPT_DIR}/../../build/src/isolator"
 CWD = os.getcwd()
 
 dotnet_versions = {
