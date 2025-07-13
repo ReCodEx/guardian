@@ -533,14 +533,13 @@ def run_groups(submissions_csv, groups=["C#", "Python", "C++", "AdvC++"]):
     print(f"\n--- Summary ---")
     print(f"Total submissions found: {found}")
     for group_id, group_stats in stats.items():
-        print(f"Group {group_id} ({known_groups.get(group_id, 'Unknown')}):")
+        print(f"\nGroup {group_id} ({known_groups.get(group_id, 'Unknown')}):")
         print(f" Successful submissions: {len(group_stats.get('successful_submissions', []))}")
         print(f" Failed submissions: {group_stats.get('failed_submissions', [])}")
 if __name__ == "__main__":
-    # main()
-    # Initialize and clean up system before running tests
-    subprocess.run([f"{SCRIPT_DIR}/../../scripts/cleanup_system.sh"], shell=True)
-    subprocess.run([f"{SCRIPT_DIR}/../../scripts/initialize_system.sh"], shell=True)
+    # Initialize before running tests
+    subprocess.run([f"{SCRIPT_DIR}/../../scripts/isolator_cleanup.sh"], shell=True)
+    subprocess.run([f"{SCRIPT_DIR}/../../scripts/isolator_init.sh"], shell=True)
     if len(sys.argv) > 2 and sys.argv[1] == "-d":
         run_submission(f"{SCRIPT_DIR}/test-data/download/{sys.argv[2]}", verbose=True)
         sys.exit(0)

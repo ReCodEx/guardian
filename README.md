@@ -68,7 +68,7 @@ scripts/isolator_cleanup.sh
 
 ## 🧪 Test suites
 
-The repository includes two test suites:
+The repository includes two test suites, they serve as good examples of how the tool can be used:
 
 ### Basic Test Suite (`tests/test_suite`)
 
@@ -87,7 +87,7 @@ This test suite is quick to run and doesn't require extensive setup.
 
 ### ReCodEx Integration Tests (`tests/recodex`)
 
-⚠️ **WARNING**: This test suite requires extensive setup and downloads!
+⚠️ **Warning**: This test suite performs extensive setup and downloads!
 
 Running these tests will:
 - Clone the ReCodEx worker repository from GitHub
@@ -111,118 +111,80 @@ Only run these tests if you need to verify ReCodEx integration and have sufficie
 
 The isolator uses YAML configuration files to define sandbox environments and tasks.
 
-### Example Configuration:
-
 ```yaml
+# Global settings and credentials
+root-dir: "/isolate_boxes"                  # Root directory for all sandboxes
+root-cgroup: "/sys/fs/cgroup/isolate_boxes" # Root cgroup path
+share-net: false                            # Whether to share network namespace with parent
+
 credentials:
-  id: "unique-instance-id"   # Optional unique identifier for this instance
+  id: "unique-instance-id"                  # Unique identifier for this instance
+  name: "example-container"                 # Descriptive name for this container
+  as-uid: 1000                              # User ID for running processes in the sandbox
+  as-gid: 1000                              # Group ID for running processes in the sandbox
 
+# Environment variables configuration
 env:
-  vars:                     # Environment variables visible in the sandbox
-    - "PATH=/usr/bin"       # Set a specific variable
-    - "HOME"                # Inherit HOME from parent environment
-    - "full-env=false"      # Whether to inherit all environment variables
-  inherit-all: false        # Alternative way to inherit all variables
+  vars:                                     # Environment variables visible in the sandbox
+    - "PATH=/usr/bin"                       # Set a specific variable
+    - "HOME"                                # Inherit HOME from parent environment
+    - "TEMP=/tmp"                           # Define a new variable
+    - "LANG="                               # Remove variable from environment
+  inherit-all: false                        # Whether to inherit environment from the host
 
+# Filesystem configuration
 box-fs:
-  dir-rules:                # Directories visible in the sandbox
-    - "tests=/home/user/project/tests"    # Mount external directory
-    - "tmp:tmp"                          # Create temporary directory
-    - "proc=proc:fs"                     # Mount proc filesystem
-  use-defaults: true        # Mount standard directories (/bin, /lib, etc.)
+  use-defaults: true                        # Mount standard directories (/bin, /lib, etc.)
+  dir-rules:                                # Directories visible in the sandbox
+    - "tests=/home/user/project/tests"      # Mount external directory
+    - "tests=/home/user/project/tests:rw"   # Mount with read-write permissions
+    - "tmp:tmp"                             # Create temporary directory
+    - "proc:fs"                             # Mount /proc
+    - "dev:dev"                             # Mount /dev with device access
+    - "lib64:maybe"                         # Mount only if exists
+    - "data:rw,noexec"                      # Multiple options (rw, noexec)
+    - "custom=/path/to/dir:norec"           # Do not bind mount recursively
 
+# Tasks to execute in the sandbox
 tasks:
-  - task-id: "example"      # Name for this task (used in output files)
+  - task-id: "example1"                     # Name for this task (used in output files)
+    stats-yaml: "results1.yml"              # Path to output results file
     cmd:
-      bin: "tests/example"  # Path to the executable inside the sandbox
-      args:                 # Optional arguments for the executable
+      bin: "tests/example"                  # Path to the executable inside the sandbox
+      args:                                 # Optional arguments for the executable
         - "Hello"
         - "World"
-    stdin: "input.txt"      # Redirect stdin from file (optional)
-    stdout: "output.txt"    # Redirect stdout to file (optional)
-    stderr: "error.txt"     # Redirect stderr to file (optional)
-    stderr-to-stdout: false # Redirect stderr to stdout (optional)
-    chdir: "tests"          # Change directory before execution (optional)
+    stdin: "input.txt"                      # Redirect stdin from file (optional)
+    stdout: "output.txt"                    # Redirect stdout to file (optional)
+    stderr: "error.txt"                     # Redirect stderr to file (optional)
+    stderr-to-stdout: false                 # Redirect stderr to stdout (optional)
+    chdir: "tests"                          # Change directory before execution (optional)
     
-    limits:                 # Resource limits for this task
-      mem: 5000000          # Memory limit (bytes)
-      cpu-time: 3           # CPU time limit (seconds)
-      wall-time: 5          # Wall clock time limit (seconds)
-      extra-time: 0.5       # Grace period after CPU limit (seconds)
-      disk-usage: 1000000   # Disk quota (blocks)
-      processes: 10         # Maximum number of processes/threads
-      open-files: 64        # Maximum open file descriptors
-      fsize: 1024           # Maximum file size (KB)
-      core: 0               # Maximum core dump size (KB)
+    limits:                                 # Resource limits for this task
+      mem: 5000000                          # Memory limit in bytes
+      as-size: 10000000                     # Address space size limit in bytes
+      stack: 8192                           # Stack size limit in KB
+      cpu-time: 3                           # CPU time limit in seconds
+      wall-time: 5                          # Wall clock time limit in seconds
+      extra-time: 0.5                       # Grace period after CPU limit in seconds
+      disk-usage: 1000000                   # Disk quota in blocks
+      processes: 10                         # Maximum number of processes/threads
+      open-files: 64                        # Maximum open file descriptors
+      fsize: 1024                           # Maximum file size in KB
+      core: 0                               # Maximum core dump size in KB
+
+  - task-id: "example2"                     # A second task in the same sandbox
+    cmd:
+      bin: "/bin/echo"
+      args:
+        - "Another task"
+    stdout: "output2.txt"
+    limits:
+      mem: 1000000
+      cpu-time: 1
 ```
 
----
-
-## ⚙️ Configuration Details
-
-### Credentials and Global Settings
-
-- `id`: Unique identifier for this sandbox instance
-- `root-dir`: Root directory for all sandboxes (default: `/isolate_boxes`)
-- `root-cgroup`: Root cgroup path (default: `/sys/fs/cgroup/isolate_boxes`)
-- `as-uid`/`as-gid`: User/group ID for running processes in the sandbox
-- `share-net`: Whether to share the network namespace with the parent process
-
-### Environment Variables
-
-Rules for environment variables:
-
-- `'var'`: Inherit the variable `var` from the parent
-- `'var=value'`: Set the variable `var` to `value`
-- `'var='`: Remove the variable from the environment
-- `'full-env=true'`: Inherit all variables from the parent
-
-### Sandbox Filesystem
-
-Directory rules format:
-
-- `'in'='out'[:'options']`: Bind the directory `out` to path `in` inside the sandbox
-- `'dir'[:'options']`: Bind the directory `/dir` to `dir` inside the sandbox
-
-Available options:
-
-- `rw`: Allow read-write access (default is read-only)
-- `dev`: Allow access to character and block devices
-- `noexec`: Disallow execution of binaries
-- `maybe`: Silently ignore if source directory doesn't exist
-- `fs`: Mount a filesystem (e.g., `proc`, `sysfs`) instead of binding a directory
-- `tmp`: Create a fresh temporary directory (implies `rw`)
-- `norec`: Do not bind recursively (don't propagate mount points)
-
-Default directories mounted (when `use-defaults: true`):
-- `/bin`, `/lib`, `/lib64` (if exists), `/usr`
-- `/dev` (with devices allowed)
-- `/proc` filesystem
-
-### Tasks Configuration
-
-Task execution settings:
-
-- `stdin`/`stdout`/`stderr`: Redirect standard streams to files
-- `stderr-to-stdout`: Redirect stderr to stdout
-- `chdir`: Change working directory before execution
-
-### Resource Limits
-
-- `cpu-time`: CPU time limit in seconds (process execution time)
-- `wall-time`: Wall clock time limit in seconds (real-world time)
-- `extra-time`: Grace period after CPU time limit is exceeded
-- `memory`: Memory usage limit in bytes
-- `stack`: Stack size limit in kilobytes
-- `processes`: Maximum number of processes/threads
-- `open-files`: Maximum number of open file descriptors
-- `fsize`: Maximum file size in kilobytes
-- `core`: Maximum core dump size in kilobytes
-- `disk-usage`: Disk quota in blocks (requires filesystem quota support)
-
----
-
-## 📊 Output Information
+## 📊 Metadata file
 
 After execution, the isolator generates metadata in YAML format with information about the run:
 

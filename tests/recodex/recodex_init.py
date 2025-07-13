@@ -3,7 +3,7 @@ import subprocess
 import os
 
 def run_build_script(current_dir):
-    build_script = os.path.join(current_dir, "..", "..", "scripts", "build.sh")
+    build_script = os.path.join(current_dir, "..", "..", "scripts", "isolator_build.sh")
     try:
         subprocess.run(["bash", build_script], check=True)
         return True
