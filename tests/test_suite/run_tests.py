@@ -6,9 +6,11 @@ import sys
 from pathlib import Path
 import copy
 import shutil
+import tempfile
+import re
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-CONTAINER_BIN = f"{SCRIPT_DIR}/../../build/src/container"
+CONTAINER_BIN = f"{SCRIPT_DIR}/../../build/src/isolator"
 LIMITS_TEST_CONFIG = f"{SCRIPT_DIR}/resource_limits_test.yml"
 ISOLATION_TEST_CONFIG = f"{SCRIPT_DIR}/isolation_tests.yml"
 
@@ -31,11 +33,31 @@ def build():
         print(f"Failed to build test binaries: {e}")
         return False
 
+def replace_file_dir_variable(config_path):
+    """Replace ${FILE_DIR} with absolute path in a config file"""
+    # Read the original config file
+    with open(config_path, 'r') as f:
+        config_content = f.read()
+    
+    # Replace ${FILE_DIR} with the absolute path of the script directory
+    modified_content = config_content.replace("${FILE_DIR}", str(SCRIPT_DIR))
+    
+    # Create a temporary file with the modified content
+    fd, temp_config_file = tempfile.mkstemp(suffix='.yml')
+    with os.fdopen(fd, 'w') as f:
+        f.write(modified_content)
+    
+    return temp_config_file
+
 def run_isolation_test(capture_output=True):
     print("\n===== ISOLATION TESTS =====")
+    temp_config_file = None
     try:
-        # Run tests
-        cmd = ["sudo", CONTAINER_BIN, f"--yaml={ISOLATION_TEST_CONFIG}"]
+        # Replace ${FILE_DIR} with absolute path
+        temp_config_file = replace_file_dir_variable(ISOLATION_TEST_CONFIG)
+
+        # Run tests with the modified config
+        cmd = ["sudo", CONTAINER_BIN, f"--yaml={temp_config_file}"]
         result = subprocess.run(cmd, capture_output=capture_output, text=True)
         
         # Load config to get task IDs
@@ -66,6 +88,10 @@ def run_isolation_test(capture_output=True):
     except Exception as e:
         print(f"Error running tests: {e}")
         return False
+    finally:
+        # Clean up the temporary config file
+        if temp_config_file and os.path.exists(temp_config_file):
+            os.unlink(temp_config_file)
         
     print("\nTest Summary:")
     print(f"Passed: {len(passed_tests)} tests")
@@ -74,7 +100,6 @@ def run_isolation_test(capture_output=True):
         print("Failed tests:", ", ".join(failed_tests))
         
     return len(failed_tests) == 0
-
 
 def run_test_without_limits(config, capture_output=True):
     # Create a copy of config without resource limits
@@ -90,9 +115,12 @@ def run_test_without_limits(config, capture_output=True):
     with open(no_limits_config, 'w') as f:
         yaml.dump(config_no_limits, f)
 
+    # Replace ${FILE_DIR} with absolute path
+    temp_config_file = replace_file_dir_variable(no_limits_config)
+
     try:
         # Run without limits
-        cmd = ["sudo", CONTAINER_BIN, f"--yaml={no_limits_config}"]
+        cmd = ["sudo", CONTAINER_BIN, f"--yaml={temp_config_file}"]
         result = subprocess.run(cmd, capture_output=capture_output, text=True)
         
         # Check results
@@ -112,16 +140,18 @@ def run_test_without_limits(config, capture_output=True):
                 print(f"❌ {task_id}: No result file found for unlimited run")
                 return False
     finally:
-        # Clean up temporary config
+        # Clean up temporary configs
         try:
             os.remove(no_limits_config)
+            if temp_config_file and os.path.exists(temp_config_file):
+                os.unlink(temp_config_file)
         except:
             pass
     return True
 
 def run_limits_test(capture_output=True):
     print("\n===== RESOURCE LIMITS TESTS =====")
-    # First make sure the test binaries are built
+    temp_config_file = None
     try:
         # Load config
         with open(LIMITS_TEST_CONFIG) as f:
@@ -134,8 +164,12 @@ def run_limits_test(capture_output=True):
             return False
 
         print("\nRunning tests with resource limits...")
-        # Run the container with our test configuration
-        cmd = ["sudo", CONTAINER_BIN, f"--yaml={LIMITS_TEST_CONFIG}"]
+        
+        # Replace ${FILE_DIR} with absolute path
+        temp_config_file = replace_file_dir_variable(LIMITS_TEST_CONFIG)
+            
+        # Run the container with our modified test configuration
+        cmd = ["sudo", CONTAINER_BIN, f"--yaml={temp_config_file}"]
         result = subprocess.run(cmd, capture_output=capture_output, text=True)
         
         passed_tests = []
@@ -164,6 +198,10 @@ def run_limits_test(capture_output=True):
     except Exception as e:
         print(f"Error running tests: {e}")
         return False
+    finally:
+        # Clean up the temporary config file
+        if temp_config_file and os.path.exists(temp_config_file):
+            os.unlink(temp_config_file)
         
     print("\nTest Summary:")
     print(f"Passed: {len(passed_tests)} tests")

@@ -1,9 +1,9 @@
 box-fs:
   use-defaults: true
   dir-rules:
-    - "build=/home/simonkurz/mff/rcdx_cntnr/tests/test_suite/build"
-    - "allowed=/home/simonkurz/mff/rcdx_cntnr/tests/test_suite/res:rw"
-    - "res=/home/simonkurz/mff/rcdx_cntnr/tests/test_suite/res:rw"
+    - "build=${FILE_DIR}/build"
+    - "allowed=${FILE_DIR}/res:rw"
+    - "res=${FILE_DIR}/res:rw"
 env:
   vars:
     - "TEST_VAR=test_value"

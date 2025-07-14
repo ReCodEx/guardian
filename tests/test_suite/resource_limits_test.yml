@@ -1,8 +1,7 @@
 box-fs:
   dir-rules:
-    - "build=/home/simonkurz/mff/rcdx_cntnr/tests/test_suite/build"
-    - "tmp=tmp:rw"
-    - "res=/home/simonkurz/mff/rcdx_cntnr/tests/test_suite/res:rw"
+    - "build=${FILE_DIR}/build"
+    - "res=${FILE_DIR}/res:rw"
 tasks:
   - task-id: "memory-test"
     chdir: "/res"
