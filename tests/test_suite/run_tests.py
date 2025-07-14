@@ -28,7 +28,7 @@ def setup_dirs():
 def build():
     try:
         # Build test binaries
-        subprocess.run(['cmake', '--build', f"{SCRIPT_DIR}/../../build"], check=True)
+        subprocess.run(f"{SCRIPT_DIR}/../../scripts/isolator_build.sh", check=True)
     except subprocess.CalledProcessError as e:
         print(f"Failed to build test binaries: {e}")
         return False
