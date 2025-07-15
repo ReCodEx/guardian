@@ -6,7 +6,7 @@ Lightweight Linux containerization tool written from scratch for the ReCoDex ass
 
 ## 📚 Overview
 
-This project uses advanced Linux kernel features (namespaces, cgroups, UID/GID mappings, etc.) to create secure sandboxes for running untrusted code. It provides fine-grained control over system resources and filesystem access. To get more insight into the details, you can take a look at my thesis.(TODO)
+This project uses advanced Linux kernel features (namespaces, cgroups, UID/GID mappings, etc.) to create secure sandboxes for running untrusted code. It provides fine-grained control over system resources and filesystem access. To get more insight into the details, you can take a look at my thesis in the `docs/thesis.pdf` file.
 
 ### 🧠 Terminology
 
