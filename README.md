@@ -39,7 +39,8 @@ An instance runs three different processes with distinct responsibilities:
 ### 1. System Setup
 First, initialize the required system resources:
 ```sh
-scripts/isolator_init.sh
+sudo scripts/isolator_cleanup.sh
+sudo scripts/isolator_init.sh
 ```
 This script creates the necessary cgroups and directories common for all instances.
 
@@ -50,20 +51,13 @@ scripts/isolator_build.sh
 
 ### 3. Run with Configuration
 ```sh
-scripts/isolator_run.sh <path_to_yaml_configuration_file>
+sudo ./build/src/isolator --yaml=/path/to/config.yml
 ```
-or
-```sh
-scripts/isolator_run.sh --yaml=<path_to_yaml_configuration_file>
-```
-The script runs the isolator with your configuration.
-
 ### 4. Cleanup
-To clean up resources used by the isolator:
+To clean up resources used by Isolator instances:
 ```sh
-scripts/isolator_cleanup.sh
+sudo scripts/isolator_cleanup.sh
 ```
-
 ---
 
 ## 🧪 Test suites
@@ -80,8 +74,15 @@ A lightweight test suite that verifies core functionality:
 To run the basic tests:
 ```sh
 cd tests/test_suite
-python3 run_tests.py
+./run_tests.py
 ```
+
+This script will:
+- Build the necessary binaries
+- Clean up previous test artifacts
+- Initialize the isolation environment
+- Run both isolation and resource limits tests
+- Report detailed test results
 
 This test suite is quick to run and doesn't require extensive setup.
 
@@ -101,13 +102,27 @@ These tests are primarily intended for integration with the ReCodEx evaluation s
 To run the ReCodEx tests:
 ```sh
 cd tests/recodex
-python3 recodex_init.py  # Setup (downloads ~1GB data)
-python3 recodex_mock.py  # Run tests
+sudo ./recodex_init.py  # Setup (downloads ~1GB data)
+./recodex_mock.py [language_groups]  # Run tests for specified language groups
 ```
 
-Only run these tests if you need to verify ReCodEx integration and have sufficient bandwidth and storage available.
+Where language_groups is a subset of [C#, Python, C++, AdvC++]
 
-## 📝 Configuration Reference
+### Variable Substitution
+
+The test suites use variable substitution with the `${VARIABLE}` syntax to run without additional setup. For example, the test scripts use this feature to replace `${FILE_DIR}` with the absolute path to the test directory:
+
+```yaml
+box-fs:
+  dir-rules:
+    - "build=${FILE_DIR}/build"
+    - "res=${FILE_DIR}/res:rw"
+```
+
+When creating manual configuration files, you should either replace these variables with absolute paths or implement similar substitution logic.
+
+
+##  Configuration Reference
 
 The isolator uses YAML configuration files to define sandbox environments and tasks.
 
@@ -184,6 +199,60 @@ tasks:
       cpu-time: 1
 ```
 
+## 📁 Directory Rules and Sandboxed Paths
+
+The isolator creates a secure sandbox environment with a strictly controlled filesystem. The `box-fs` section in the configuration defines how the filesystem should be structured within the sandbox.
+
+### Directory Rules Syntax
+
+Directory rules use the following syntax:
+```yaml
+box-fs:
+  dir-rules:
+    - "target=/host/path[:options]"
+```
+
+Where:
+- `target` is the path inside the sandbox (relative to sandbox root)
+- `/host/path` is the absolute path on the host system
+- `options` are optional access modifiers described in the above example, separated by commas
+
+For example:
+```yaml
+box-fs:
+  dir-rules:
+    - "bin=/bin"                        # Mount /bin as read-only
+    - "tmp=/tmp/mytmp:rw, dev"          # Mount with read-write access and allow devices
+```
+
+### Important Note About Paths
+
+**All paths specified within a task configuration are relative to the sandbox root, not the host filesystem.** This is crucial to understand when configuring:
+
+- `chdir` - Working directory for the command (relative to sandbox root)
+- `cmd.bin` - Path to the executable (relative to sandbox root)
+- `stats-yaml` - Output file for statistics (relative to sandbox root)
+- `stdin/stdout/stderr` - I/O file paths (relative to sandbox root)
+
+For example, if you have the following directory rule:
+```yaml
+box-fs:
+  dir-rules:
+    - "build=/home/user/myproject/build"
+    - "res=/home/user/myproject/results:rw"
+```
+
+Then your task configuration would reference these paths as:
+```yaml
+tasks:
+  - task-id: "example-task"
+    chdir: "/res"                     # Inside the sandbox at /res
+    stats-yaml: "/res/stats.yaml"     # Save results to /res/stats.yaml
+    cmd:
+      bin: "/build/myprogram"         # Run /build/myprogram
+      args: ["input.txt"]
+```
+
 ## 📊 Metadata file
 
 After execution, the isolator generates metadata in YAML format with information about the run:
@@ -204,5 +273,14 @@ Possible status values:
 - `wall-time`: Wall time limit exceeded
 - `cpu-time`: CPU time limit exceeded
 - `memory`: Memory limit exceeded
+
+## 🔍 Troubleshooting
+
+- Running the tool and most of the helper scripts requires root privileges.
+- If tests fail with filesystem errors, ensure that the directories specified in the configuration exist and have appropriate permissions.
+- Check that the isolation environment has been properly initialized with `isolator_cleanup.sh` and `isolator_init.sh`.
+- Always use absolute paths in host filesystem references but remember that paths inside the task configuration are relative to the sandbox root.
+- When testing, inspect the content of `/isolate_boxes/` to see the actual sandbox structure.
+- Run the isolator binary with --debug to see detailed logs.
 
 ---
