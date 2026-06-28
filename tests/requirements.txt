@@ -1,0 +1,4 @@
+# Python dependencies for the workload-test tier (tests/workload).
+# Materialize into a local venv with scripts/workload_tests.sh.
+pytest>=8.0
+pyyaml>=6.0

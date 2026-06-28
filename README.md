@@ -84,14 +84,17 @@ end-to-end, running **workloads** (small in-box payload programs under
 isolation boundaries actually bite. These need **root** (cgroups + namespaces):
 
 ```sh
-pip install pytest pyyaml
 cmake -S . -B build -DTESTING=ON && cmake --build build  # builds the workloads
-cd tests/workload
-sudo $(which pytest)            # or run pytest as root
+scripts/workload_tests.sh                                 # venv + sudo pytest
 ```
 
-The suite skips itself cleanly when the binary isn't built or root isn't
-available, so a plain `pytest` is a safe no-op.
+`scripts/workload_tests.sh` is idempotent: on first run it creates a local
+`.venv` (gitignored) from `tests/requirements.txt`, then runs pytest under
+`sudo`. Pass pytest args through (`scripts/workload_tests.sh -k limits`, or
+`--co` to collect without root). The suite skips itself cleanly when the binary
+isn't built or root isn't available, so collection off a root host is a safe
+no-op. (System Python on Arch/PEP-668 distros is externally managed, hence the
+venv rather than a global `pip install`.)
 
 ### ReCodEx Integration Tests (`tests/recodex`)
 
