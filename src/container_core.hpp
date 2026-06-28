@@ -18,6 +18,7 @@
 #include "config.hpp"
 #include "credentials.hpp"
 #include "environment.hpp"
+#include "lock.hpp"
 #include "logs.hpp"
 #include "tasks.hpp"
 #include "terminate.hpp"
