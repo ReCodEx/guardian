@@ -239,7 +239,11 @@ namespace cli {
         // Leading ':' distinguishes a missing required argument (':') from an
         // unknown option ('?'); silence getopt's own messages, we print ours.
         opterr = 0;
-        optind = 1;
+        // `optind = 0` (not 1) is glibc's full reset: it reinitializes getopt's
+        // internal scan state so repeated parses in one process (the unit tests)
+        // start clean. For production's single call the behavior is identical
+        // (glibc sets optind to 1 and scans from argv[1]).
+        optind = 0;
 
         int id = 0;
         while ((id = getopt_long(argc, argv, ":", long_opts, nullptr)) != -1) {

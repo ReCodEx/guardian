@@ -37,13 +37,13 @@ namespace file_utils
 {
     namespace fs = std::filesystem;
     
-    bool is_prefix(const fs::path& prefix, const fs::path& path) 
+    inline bool is_prefix(const fs::path& prefix, const fs::path& path)
     {
         fs::path rel = path.lexically_relative(prefix);
         return !rel.empty() && rel.string()[0] != '.';
     }
 
-    bool is_valid_path(const fs::path& p) 
+    inline bool is_valid_path(const fs::path& p)
     {
         try 
         {
@@ -56,18 +56,18 @@ namespace file_utils
         }
     }
 
-    bool is_subdirectory(const std::filesystem::path& relative) 
+    inline bool is_subdirectory(const std::filesystem::path& relative)
     {
         return relative.lexically_relative(".") == relative.string();
     }
 
-    void list_directory(const fs::path& path)
+    inline void list_directory(const fs::path& path)
     {
         for (const auto & entry : fs::directory_iterator(path))
             std::cout << entry.path() << std::endl;
     }
 
-    bool append_text(const fs::path& path, const std::string& data)
+    inline bool append_text(const fs::path& path, const std::string& data)
     {
         std::ofstream file(path, std::ios_base::app);
         file << data;
@@ -75,7 +75,7 @@ namespace file_utils
         return file.good();
     }
 
-    bool write_text(const fs::path& path, const std::string& data)
+    inline bool write_text(const fs::path& path, const std::string& data)
     {
         std::ofstream file(path);
         file << data;
@@ -95,7 +95,7 @@ namespace file_utils
         return append_text(path, std::vformat(fmt.get(), std::make_format_args(args...)));
     }
 
-    void print_file(const fs::path& path)
+    inline void print_file(const fs::path& path)
     {
         std::fstream f(path);
         
@@ -105,7 +105,7 @@ namespace file_utils
         }
     }
 
-    void print_lines(const fs::path& path)
+    inline void print_lines(const fs::path& path)
     {
         std::fstream f(path);
         std::string line;
@@ -116,7 +116,7 @@ namespace file_utils
         }
     }
 
-    std::ifstream& skip_lines(std::ifstream &is, std::streamsize n)
+    inline std::ifstream& skip_lines(std::ifstream &is, std::streamsize n)
     {
         while(is.good() && n--)
         {
@@ -125,7 +125,7 @@ namespace file_utils
         return is;
     }
 
-    std::string read_row_col(std::ifstream& f, size_t row, unsigned int col)
+    inline std::string read_row_col(std::ifstream& f, size_t row, unsigned int col)
     {
         auto& s = skip_lines(f, row);
 

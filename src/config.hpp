@@ -8,7 +8,6 @@
 #include <tuple>
 #include <vector>
 
-#include "cgrps.hpp"
 #include "cli_options.hpp"
 #include "terminate.hpp"
 #include "utils.hpp"
@@ -343,7 +342,8 @@ namespace config {
                 terminate("Missing task id");
             }
 
-            if (!task_node[config_options::task::CMD]
+            if (!task_node[config_options::task::CMD] ||
+                !task_node[config_options::task::CMD]
                           [config_options::task::EXEC_PATH]) {
                 terminate("Missing path to executable for task \"{}\"", id_);
             }
