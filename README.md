@@ -62,29 +62,36 @@ sudo scripts/isolator_cleanup.sh
 
 ## 🧪 Test suites
 
-The repository includes two test suites, they serve as good examples of how the tool can be used:
+The repository has two tiers of test plus the ReCodEx integration suite:
 
-### Basic Test Suite (`tests/test_suite`)
+### Unit tests (`tests/unit`)
 
-A lightweight test suite that verifies core functionality:
+Host-side [GoogleTest](https://github.com/google/googletest) tests of pure
+logic — CLI/config parsing and the box lock — needing **no root**. Fetched via
+CMake only when `-DTESTING=ON`, and run with `ctest`:
 
-- **Isolation Tests**: Verify namespace isolation features
-- **Resource Limits Tests**: Check that resource limits are properly enforced
-
-To run the basic tests:
 ```sh
-cd tests/test_suite
-./run_tests.py
+cmake -S . -B build -DTESTING=ON
+cmake --build build
+cd build && ctest --output-on-failure
 ```
 
-This script will:
-- Build the necessary binaries
-- Clean up previous test artifacts
-- Initialize the isolation environment
-- Run both isolation and resource limits tests
-- Report detailed test results
+### Workload tests (`tests/workload`)
 
-This test suite is quick to run and doesn't require extensive setup.
+[pytest](https://pytest.org) tests that drive the whole `isolator` binary
+end-to-end, running **workloads** (small in-box payload programs under
+`tests/workload/workloads/`) inside the sandbox to verify resource limits and
+isolation boundaries actually bite. These need **root** (cgroups + namespaces):
+
+```sh
+pip install pytest pyyaml
+cmake -S . -B build -DTESTING=ON && cmake --build build  # builds the workloads
+cd tests/workload
+sudo $(which pytest)            # or run pytest as root
+```
+
+The suite skips itself cleanly when the binary isn't built or root isn't
+available, so a plain `pytest` is a safe no-op.
 
 ### ReCodEx Integration Tests (`tests/recodex`)
 
