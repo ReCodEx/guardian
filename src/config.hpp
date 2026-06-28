@@ -1,9 +1,6 @@
 #ifndef CONFIG
 #define CONFIG
 
-#include <boost/program_options/options_description.hpp>
-#include <boost/program_options/parsers.hpp>
-#include <boost/program_options/variables_map.hpp>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -12,13 +9,13 @@
 #include <vector>
 
 #include "cgrps.hpp"
+#include "cli_options.hpp"
 #include "terminate.hpp"
 #include "utils.hpp"
 #include "yaml-cpp/yaml.h"
 
 namespace config {
     namespace fs = std::filesystem;
-    namespace options = boost::program_options;
 
     class task_config;
 
@@ -184,46 +181,39 @@ namespace config {
             }
         }
 
-        resource_limits(const options::variables_map& options_map) {
-            if (options_map.contains(config_options::task::CPU_TIME)) {
-                cpu_time_ =
-                    options_map[config_options::task::CPU_TIME].as<size_t>();
+        resource_limits(const cli::cli_options& opts) {
+            if (opts.cpu_time) {
+                cpu_time_ = *opts.cpu_time;
             }
-            if (options_map.contains(config_options::task::MEMORY)) {
-                memory_usage_ =
-                    options_map[config_options::task::MEMORY].as<size_t>();
+            if (opts.memory) {
+                memory_usage_ = *opts.memory;
             }
-            if (options_map.contains(config_options::task::STACK)) {
-                stack_size_ =
-                    options_map[config_options::task::STACK].as<size_t>();
+            if (opts.stack) {
+                stack_size_ = *opts.stack;
             }
-            if (options_map.contains(config_options::task::WALL_TIME)) {
-                wall_time_ =
-                    options_map[config_options::task::WALL_TIME].as<size_t>();
+            if (opts.wall_time) {
+                wall_time_ = *opts.wall_time;
             }
-            if (options_map.contains(config_options::task::EXTRA_TIME)) {
-                wall_time_ =
-                    options_map[config_options::task::EXTRA_TIME].as<size_t>();
+            if (opts.extra_time) {
+                extra_time_ = *opts.extra_time;
             }
-            if (options_map.contains(config_options::task::PROCESSES)) {
-                processes_ =
-                    options_map[config_options::task::PROCESSES].as<size_t>();
+            if (opts.processes) {
+                processes_ = *opts.processes;
             }
-            if (options_map.contains(config_options::task::AS_SIZE)) {
-                as_size_bytes_ =
-                    options_map[config_options::task::AS_SIZE].as<size_t>();
+            if (opts.as_size) {
+                as_size_bytes_ = *opts.as_size;
             }
-            if (options_map.contains(config_options::task::OPEN_FILES)) {
-                open_files_ =
-                    options_map[config_options::task::OPEN_FILES].as<size_t>();
+            if (opts.open_files) {
+                open_files_ = *opts.open_files;
             }
-            if (options_map.contains(config_options::task::FILE_SIZE)) {
-                file_size_ =
-                    options_map[config_options::task::FILE_SIZE].as<size_t>();
+            if (opts.file_size) {
+                file_size_ = *opts.file_size;
             }
-            if (options_map.contains(config_options::task::CORE_DUMP_SIZE)) {
-                core_size_ = options_map[config_options::task::CORE_DUMP_SIZE]
-                                 .as<size_t>();
+            if (opts.core) {
+                core_size_ = *opts.core;
+            }
+            if (opts.disk_usage) {
+                disk_usage_ = *opts.disk_usage;
             }
         }
 
@@ -407,58 +397,37 @@ namespace config {
             }
         }
 
-        task_config(const options::variables_map& options_map)
-            : rlimits_(options_map) {
-            if (!options_map.contains(config_options::task::EXEC_PATH)) {
+        /// @brief Construct the single task of a compatibility-mode `--run`
+        /// from the flat CLI options. The program and its arguments come from
+        /// the positionals after `--`; there is no task id or stats-yaml in
+        /// compat mode (the meta-file is written by the root process, ADR
+        /// 0005).
+        task_config(const cli::cli_options& opts) : rlimits_(opts) {
+            if (opts.program.empty()) {
                 terminate("No path to executable provided");
             }
 
-            exec_ = fs::path(
-                options_map[config_options::task::EXEC_PATH].as<std::string>());
+            exec_ = fs::path(opts.program);
+            args_ = opts.args;
+            args_.insert(args_.begin(), exec_.string());
 
-            if (options_map.contains(config_options::task::EXEC_ARGS)) {
-                args_ = options_map[config_options::task::EXEC_ARGS]
-                            .as<std::vector<std::string>>();
+            if (opts.stdin_file) {
+                stdin_file_ = fs::path(*opts.stdin_file);
             }
 
-            if (options_map.contains(config_options::task::STDIN_FILE)) {
-                stdin_file_ =
-                    fs::path(options_map[config_options::task::STDIN_FILE]
-                                 .as<std::string>());
+            if (opts.stdout_file) {
+                stdout_file_ = fs::path(*opts.stdout_file);
             }
 
-            if (options_map.contains(config_options::task::STDOUT_FILE)) {
-                stdout_file_ =
-                    fs::path(options_map[config_options::task::STDOUT_FILE]
-                                 .as<std::string>());
+            if (opts.stderr_file) {
+                stderr_file_ = fs::path(*opts.stderr_file);
             }
 
-            if (options_map.contains(config_options::task::STDERR_FILE)) {
-                stdout_file_ =
-                    fs::path(options_map[config_options::task::STDERR_FILE]
-                                 .as<std::string>());
+            if (opts.chdir) {
+                chdir_ = fs::path(*opts.chdir);
             }
 
-            if (options_map.contains(config_options::task::CHDIR)) {
-                chdir_ = fs::path(
-                    options_map[config_options::task::CHDIR].as<std::string>());
-            }
-
-            if (options_map.contains(config_options::task::TASK_ID)) {
-                id_ = options_map[config_options::task::TASK_ID]
-                          .as<std::string>();
-            }
-
-            if (options_map.contains(config_options::STATS_YAML)) {
-                results_file_ = fs::path(
-                    options_map[config_options::STATS_YAML].as<std::string>());
-            }
-
-            if (options_map.contains(config_options::task::STDERR_TO_STDOUT)) {
-                stderr_to_stdout_ =
-                    options_map[config_options::task::STDERR_TO_STDOUT]
-                        .as<bool>();
-            }
+            stderr_to_stdout_ = opts.stderr_to_stdout;
         }
 
         auto& exec_args() { return args_; }
@@ -579,8 +548,8 @@ namespace config {
             }
         }
 
-        tasks_config(const options::variables_map& options_map) {
-            tasks_.emplace_back(std::make_unique<task_config>(options_map));
+        tasks_config(const cli::cli_options& opts) {
+            tasks_.emplace_back(std::make_unique<task_config>(opts));
         }
 
         /// @brief Getter for task configurations.
@@ -870,16 +839,13 @@ namespace config {
             }
         }
 
-        env_config(const options::variables_map& options_map) {
-            if (options_map.contains(config_options::env::INHERIT_ALL)) {
-                inherit_all_ =
-                    options_map[config_options::env::INHERIT_ALL].as<bool>();
-            }
-            if (options_map.contains(config_options::env::ENV_VARS)) {
-                auto rules_list = options_map[config_options::env::ENV_VARS]
-                                      .as<std::vector<std::string>>();
-                for (const auto& rule : rules_list) {
-                    rules_.emplace_back(env_rule(rule));
+        env_config(const cli::cli_options& opts) {
+            for (const auto& rule_str : opts.env_rules) {
+                env_rule rule(rule_str);
+                if (rule.full_env()) {
+                    inherit_all_ = true;
+                } else {
+                    rules_.emplace_back(std::move(rule));
                 }
             }
         }
@@ -953,35 +919,13 @@ namespace config {
             }
         }
 
-        credentials_config(const options::variables_map& options_map) {
-            if (options_map.contains(config_options::BOXES_DIR)) {
-                boxes_dir_ = fs::path(
-                    options_map[config_options::BOXES_DIR].as<std::string>());
-            }
-            if (options_map.contains(config_options::BOXES_CGROUP)) {
-                boxes_cgroup_ =
-                    fs::path(options_map[config_options::BOXES_CGROUP]
-                                 .as<std::string>());
-            }
-            if (options_map.contains(
-                    config_options::credentials::INSTANCE_NAME)) {
-                instance_name_ =
-                    options_map[config_options::credentials::INSTANCE_NAME]
-                        .as<std::string>();
-            }
-            if (options_map.contains(
-                    config_options::credentials::INSTANCE_ID)) {
-                instance_id_ =
-                    options_map[config_options::credentials::INSTANCE_ID]
-                        .as<size_t>();
-            }
-            if (options_map.contains(config_options::credentials::BOX_UID)) {
-                box_uid_ = options_map[config_options::credentials::BOX_UID]
-                               .as<size_t>();
-            }
-            if (options_map.contains(config_options::credentials::BOX_GID)) {
-                box_gid_ = options_map[config_options::credentials::BOX_GID]
-                               .as<size_t>();
+        /// @brief Construct from the flat CLI options. In compatibility mode
+        /// the only caller-supplied identity is `--box-id`; the box UID/GID and
+        /// the boxes_dir/cgroup paths are derived from it by the credentials
+        /// manager (ADR 0001).
+        credentials_config(const cli::cli_options& opts) {
+            if (opts.box_id) {
+                instance_id_ = *opts.box_id;
             }
         }
 
@@ -1033,11 +977,11 @@ namespace config {
             }
         }
 
-        proxy_config(const options::variables_map& options_map) {
-            tasks_ = tasks_config(options_map);
-            env_ = env_config(options_map);
-            // box_fs_ = box_fs_config(options_map);
-            share_net_ = options_map[config_options::SHARE_NET].as<bool>();
+        proxy_config(const cli::cli_options& opts) {
+            tasks_ = tasks_config(opts);
+            env_ = env_config(opts);
+            // box_fs_ wired from --dir rules later (issue #11).
+            share_net_ = opts.share_net;
         }
 
         const auto& get_tasks_config() const { return tasks_; }
@@ -1075,91 +1019,32 @@ namespace config {
        private:
         credentials_config creds_config_;
         proxy_config proxy_config_;
-        std::vector<std::unique_ptr<task_config>> tasks_;
 
         void parse_options(int argc, char** argv) {
-            options::options_description general("General options");
-            general.add_options()("help", "produce a help message")(
-                "help-module", options::value<std::string>(),
-                "produce a help for a given module")(
-                "version", "output the version number")("debug",
-                                                        "enable debug output")(
-                config_options::CONFIG_YAML, options::value<std::string>(),
-                "read the configuration from a yaml config file");
+            cli::cli_options opts = cli::parse(argc, argv);
 
-            options::options_description exec(
-                "Options to specify the executable and arguments");
-            exec.add_options()(config_options::task::EXEC_PATH,
-                               options::value<std::string>(),
-                               "path to the program")(
-                config_options::task::EXEC_ARGS,
-                options::value<std::vector<std::string>>(),
-                "list of arguments for the program");
-
-            options::options_description rsrcs(
-                "Options for resource limitation");
-            rsrcs.add_options()(config_options::task::MEMORY,
-                                options::value<size_t>(),
-                                "maximum amount of used virtual memory")(
-                config_options::task::AS_SIZE, options::value<size_t>(),
-                "address space size limit")(
-                config_options::task::CPU_TIME, options::value<size_t>(),
-                "cpu time limit")(config_options::task::WALL_TIME,
-                                  options::value<size_t>(), "wall time limit");
-
-            options::options_description results(
-                "Options for generating files with task results");
-            results.add_options()(config_options::STATS_YAML,
-                                  options::value<std::string>(),
-                                  "path to yaml file with task results");
-
-            // Declare an options description instance which will include
-            // all the options
-            options::options_description all("Allowed options");
-            all.add(general).add(rsrcs).add(exec).add(results);
-
-            options::variables_map options_map;
-            options::store(options::parse_command_line(argc, argv, all),
-                           options_map);
-
-            if (options_map.contains("help")) {
-                std::cout << all;
-                return;
-            }
-            if (options_map.contains("help-module")) {
-                const std::string& s =
-                    options_map["help-module"].as<std::string>();
-                if (s == "rsrcs") {
-                    std::cout << rsrcs;
-                } else {
-                    std::cout << "Unknown module '" << s
-                              << "' in the --help-module option\n";
-                    return;
-                }
-                return;
-            }
-
-            if (options_map.contains("debug")) {
+            if (opts.debug) {
                 logs::set_level(logs::level::debug);
                 logs::debug("Debug output enabled");
             } else {
                 logs::set_level(logs::level::critical);
             }
 
-            if (options_map.contains(config_options::CONFIG_YAML)) {
-                auto f = fs::path(
-                    options_map[config_options::CONFIG_YAML].as<std::string>());
+            if (opts.mode == cli::run_mode::standalone) {
+                auto f = fs::path(opts.yaml.value());
                 try {
                     logs::debug("Reading configuration from file: {}",
                                 f.string());
                     configure_from_yaml(f);
-                } catch (YAML::BadFile& bf) {
+                } catch (YAML::BadFile&) {
                     terminate("Bad configuration file: {}", f.string());
                 }
             } else {
-                tasks_.emplace_back(std::make_unique<task_config>(options_map));
-                proxy_config_ = proxy_config(options_map);
-                creds_config_ = credentials_config(options_map);
+                // Compatibility three-phase mode (--init/--run/--cleanup): the
+                // config is built from the flat options here; selecting and
+                // running the phase is wired up in B2 (mode dispatch).
+                proxy_config_ = proxy_config(opts);
+                creds_config_ = credentials_config(opts);
             }
         }
 

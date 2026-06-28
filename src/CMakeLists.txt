@@ -14,6 +14,5 @@ target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE
-  Boost::program_options
   yaml-cpp::yaml-cpp
 )

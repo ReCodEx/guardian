@@ -3,40 +3,34 @@
 
 #include <string>
 #include <vector>
-#include <boost/tokenizer.hpp>
-#include <boost/optional.hpp>
 #include <set>
 #include <fstream>
 #include <filesystem>
 #include <iostream>
+#include <sstream>
 #include <format>
-
-namespace type_utils
-{
-    template<typename T>
-    inline constexpr auto to_std_optional(boost::optional<T> opt) 
-    {
-        if (opt.has_value())
-            { return std::make_optional(std::forward<decltype(opt)>(opt).value()); }
-        else 
-            { return std::optional<T>(); }
-    };
-}
 
 namespace string_utils
 {
 
+    /// @brief Split a directory-rule option list on ':' (e.g. "rw:noexec"),
+    /// dropping empty tokens. This is the only delimiter Isolate's dir-rule
+    /// options use.
     inline std::vector<std::string> split(const std::string& str)
     {
-        boost::tokenizer<> tok(str);
         std::vector<std::string> res;
-        for(boost::tokenizer<>::iterator it = tok.begin(); it != tok.end(); ++it)
+        std::stringstream ss(str);
+        std::string token;
+        while (std::getline(ss, token, ':'))
         {
-            res.emplace_back(*it);
+            if (!token.empty())
+            {
+                res.emplace_back(token);
+            }
         }
         return res;
     }
-    
+
 }
 
 namespace file_utils

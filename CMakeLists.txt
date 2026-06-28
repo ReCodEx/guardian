@@ -11,8 +11,6 @@ option(TESTING OFF)
 option(ENABLE_SYSTEMD_SERVICE "Enable the systemd service during installation" OFF)
 include(FetchContent)
 
-FIND_PACKAGE( Boost 1.75 COMPONENTS program_options REQUIRED )
-
 #Fetch yaml-cpp yaml parsing library
 include(FetchContent)
 FetchContent_Declare(
