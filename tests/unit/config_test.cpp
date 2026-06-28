@@ -97,11 +97,14 @@ namespace {
     }
 
     TEST(task_config_yaml, missing_cmd_rejected) {
+        // `cmd` entirely absent: the `!cmd` branch must short-circuit before
+        // indexing into it (which would throw YAML::InvalidNode) and report the
+        // same single "missing executable" error as a present-but-empty cmd.
         YAML::Node t;
-        t[config::config_options::task::TASK_ID] = "x";  // no cmd at all
+        t[config::config_options::task::TASK_ID] = "x";
         EXPECT_EXIT(
             { config::task_config tc(t); }, ::testing::ExitedWithCode(2),
-            "Missing cmd");
+            "Missing path to executable");
     }
 
     TEST(task_config_yaml, missing_exec_rejected) {
