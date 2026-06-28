@@ -20,6 +20,18 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
+# Unit-test tier (host-side, no root): GoogleTest, fetched only when TESTING is
+# ON so normal/production builds stay gtest-free. Mirrors the yaml-cpp block.
+if(TESTING)
+  enable_testing()
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.16.0
+  )
+  FetchContent_MakeAvailable(googletest)
+endif()
+
 add_subdirectory(tests)
 add_subdirectory(src)
 

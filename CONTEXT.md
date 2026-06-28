@@ -44,6 +44,12 @@ An instance is three processes with distinct privilege/responsibility (see [Deci
 - **Disk quota** (`quotactl`) — disk-usage limits via `QUOTACTL(2)`; requires a quota-capable filesystem (e.g. ext4). `devices.hpp` resolves the backing device for a path. *(Implemented in code per the README; not covered by the thesis.)*
 - **Syscalls of note** — `clone3()` (spawn into namespaces+cgroup atomically), `execve()`, `waitpid()` (root waits on proxy; proxy polls tasks with `WNOHANG`), `getrusage()`.
 
+### Testing
+
+- **Unit test** — a host-side test of pure logic (CLI/config parsing, the box lock) that needs no root; sad paths are process-exit assertions (death tests), since errors go through `terminate()`/`usage_error()` → `exit(2)`, not exceptions (ADR 0005).
+- **Workload test** — a test that drives a whole **instance** end-to-end through the binary (needs root + cgroups), covering both the standalone YAML flow and the three-phase compatibility lifecycle.
+- **Workload** — an in-box payload program a workload test runs *inside the sandbox* to verify a resource limit or isolation boundary actually bites (e.g. a program that allocates past the memory cap). Distinct from a **task** (the domain unit of execution): a workload is a task's executable chosen specifically to probe an enforcement boundary.
+
 ---
 
 ## Decisions
@@ -75,7 +81,7 @@ Summarized from `docs/thesis.pdf`. Promote to `docs/adr/NNNN-*.md` when reopened
 - **Worker runs jobs as a task DAG** — compile → run → evaluate ("Judges") with dependencies; some tasks are `fatal-failure`. The "instance = sequential related tasks" model mirrors this.
 - **Shared writable dirs across job phases** — phases run as *separate* Isolator invocations sharing files, which forced writable sandbox dirs to mode `0777`. **Explicitly insecure — the top security item to fix.**
 - **Offline, diverse toolchains** — validated on C++, Python, C# (.NET). Pitfalls baked into config behavior: GCC needs the host `PATH` inherited and a `LD_LIBRARY_PATH` derived from `gcc -print-search-dirs`; C# uses a custom offline `/opt/dotnet` pointing at `Roslyn/csc.dll`.
-- **Testing via a mock Worker** — `tests/recodex` simulates the Worker over real job configs; `tests/test_suite` covers isolation/limit primitives directly.
+- **Three test tiers** — **unit tests** (host-side, no root) cover pure logic: CLI/config parsing and the box lock; **workload tests** drive a whole instance end-to-end through the binary (need root/cgroups), running **workloads** (in-box payload programs) to verify a limit or isolation boundary actually bites; the **mock Worker** (`tests/recodex`) simulates ReCodEx over real job configs. See the [Testing](#testing) glossary.
 
 ---
 
