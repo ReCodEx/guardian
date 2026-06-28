@@ -1,4 +1,5 @@
 
+#include "cli_options.hpp"
 #include "container_core.hpp"
 #include "logs.hpp"
 
