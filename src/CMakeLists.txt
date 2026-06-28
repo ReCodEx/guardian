@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.20)
 
 project("isolator")
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(TESTING OFF)
@@ -15,6 +15,5 @@ target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE
   Boost::program_options
-  spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>
   yaml-cpp::yaml-cpp
 )

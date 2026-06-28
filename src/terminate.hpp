@@ -1,15 +1,17 @@
 #ifndef TERMINATE
 #define TERMINATE
 
+#include <cstdlib>
+#include <format>
+
 #include "logs.hpp"
 
 /// @brief Log a critical error and terminate the current process.
-/// @tparam ...Args 
+/// @tparam ...Args
 /// @param fmt Formatted string with the message.
 /// @param ...args Args for the formatted string.
-template<typename ... Args>
-inline void terminate(logs::format_string_t<Args...> fmt, Args&& ... args)
-{
+template <typename... Args>
+inline void terminate(std::format_string<Args...> fmt, Args&&... args) {
     logs::critical(fmt, std::forward<Args>(args)...);
     exit(1);
 }

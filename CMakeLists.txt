@@ -4,19 +4,14 @@ project("rcdx_cntnr")
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Emit compile_commands.json for clangd / clang-tidy.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 option(TESTING OFF)
 option(ENABLE_SYSTEMD_SERVICE "Enable the systemd service during installation" OFF)
 include(FetchContent)
 
 FIND_PACKAGE( Boost 1.75 COMPONENTS program_options REQUIRED )
-
-# Fetch spdlog logging library
-FetchContent_Declare(
-    spdlog
-    GIT_REPOSITORY https://github.com/gabime/spdlog.git
-    GIT_TAG v1.15.1
-)
-FetchContent_MakeAvailable(spdlog)
 
 #Fetch yaml-cpp yaml parsing library
 include(FetchContent)
