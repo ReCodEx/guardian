@@ -123,12 +123,10 @@ def test_meta_file_nonzero_exit_is_re(tmp_path):
         _run("--cleanup")
 
 
-@pytest.mark.skip(reason="status:XX meta needs the terminate() meta-sink (C2)")
 def test_meta_file_internal_error_is_xx(tmp_path):
     # A --run on an un-init'd box is an Isolator-internal error: exit 2 and a
-    # status:XX meta with a message. Exit 2 is already covered by
-    # test_run_before_init_is_box_not_found; the meta write lands in C2, where
-    # root's own terminate() gains the meta-sink (ADR 0005 C2).
+    # status:XX meta with a message, written by root's terminate() meta-sink
+    # (ADR 0005 C2).
     meta = tmp_path / "meta.txt"
     _run("--cleanup")  # ensure no prior state
     run = _run("--run", "--", "/bin/true", meta=str(meta))

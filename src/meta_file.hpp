@@ -7,14 +7,13 @@
 #include <cstddef>
 #include <filesystem>
 #include <format>
-#include <fstream>
-#include <ios>
 #include <string>
 #include <string_view>
 #include <type_traits>
 
 #include "config.hpp"
 #include "logs.hpp"
+#include "meta_sink.hpp"
 
 /// @brief Compatibility-mode result channel (ADR 0005, C1): the fixed-size
 /// `task_stats` record the proxy pushes up the pipe, and the Isolate
@@ -77,24 +76,6 @@ namespace meta {
         return classify(s) == result_code::ok ? 0 : 1;
     }
 
-    namespace detail {
-        /// @brief Write @p body to @p path, best-effort. On failure it logs and
-        /// returns — it must never `terminate()`, which (once the C2 meta-sink
-        /// exists) would re-enter the writer and recurse.
-        inline void write_file(const fs::path& path, std::string_view body) {
-            std::ofstream f(path, std::ios::binary | std::ios::trunc);
-            if (!f) {
-                logs::error("Could not open meta-file {} for writing",
-                            path.string());
-                return;
-            }
-            f.write(body.data(), static_cast<std::streamsize>(body.size()));
-            if (!f) {
-                logs::error("Failed writing meta-file {}", path.string());
-            }
-        }
-    }  // namespace detail
-
     /// @brief Write the Isolate-format meta-file for a completed task.
     /// @details Emits `status:` (omitted on OK), `exitcode:` (when the task
     /// exited normally) and `exitsig:` (when it died on a signal). The metric
@@ -113,14 +94,6 @@ namespace meta {
             out += std::format("exitsig:{}\n", s.signal);
         }
         detail::write_file(path, out);
-    }
-
-    /// @brief Write the Isolate internal-error meta-file (`status:XX`).
-    /// @details Used by the root process when the proxy reports no result
-    /// (empty/partial pipe) and, once C2 lands, by the `terminate()` meta-sink.
-    inline void write_internal_error(const fs::path& path,
-                                     std::string_view message) {
-        detail::write_file(path, std::format("status:XX\nmessage:{}\n", message));
     }
 
     /// @brief Push one task's result up the meta pipe (proxy side).

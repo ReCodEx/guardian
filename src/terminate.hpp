@@ -3,8 +3,10 @@
 
 #include <cstdlib>
 #include <format>
+#include <string>
 
 #include "logs.hpp"
+#include "meta_sink.hpp"
 
 /// @brief Log a critical error and terminate the current process.
 /// @details Exits with code 2 — the Isolator's "internal error" code per
@@ -17,7 +19,13 @@
 template <typename... Args>
 [[noreturn]] inline void terminate(std::format_string<Args...> fmt,
                                    Args&&... args) {
-    logs::critical(fmt, std::forward<Args>(args)...);
+    // Format once, then send the same text to two sinks: stderr (always) and,
+    // in compat mode, the Isolate meta-file as status:XX (ADR 0005 C2). The
+    // meta-sink is a no-op unless root armed it, so standalone and the proxy
+    // (which disables it right after clone3) keep the plain exit(2) behavior.
+    std::string msg = std::format(fmt, std::forward<Args>(args)...);
+    logs::critical("{}", msg);
+    meta::fire_sink(msg);
     exit(2);
 }
 

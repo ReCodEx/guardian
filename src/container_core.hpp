@@ -26,6 +26,7 @@
 #include "lock.hpp"
 #include "logs.hpp"
 #include "meta_file.hpp"
+#include "meta_sink.hpp"
 #include "tasks.hpp"
 #include "terminate.hpp"
 
@@ -228,6 +229,11 @@ namespace container_core {
 
             else if (!outside_pid) {
                 // we are in the proxy process
+                // Disable the meta-sink first thing: only root writes the host
+                // meta-file. A proxy-side terminate() from here on just logs +
+                // exit(2), which root reads as an empty pipe -> status:XX (ADR
+                // 0005 C2).
+                meta::disarm_sink();
                 cg_mngr_->close_proxy_fd();
                 proxy_core proxy(proxy_conf, *credentials_, meta_write_fd_);
                 proxy.run();
@@ -308,6 +314,15 @@ namespace container_core {
         /// so the phases stay methods on root_core and main() need not see the
         /// mode.
         void run() {
+            // Arm the internal-error meta-sink for any compat phase given
+            // --meta, so a root-side terminate() leaves a status:XX meta (ADR
+            // 0005 C2). meta() is unset in standalone, so it stays disarmed
+            // there (and until this point, so parse-time failures are
+            // meta-less).
+            if (root_config_.meta()) {
+                meta::arm_sink(*root_config_.meta());
+            }
+
             switch (root_config_.mode()) {
                 case cli::run_mode::standalone:
                     run_standalone();
@@ -435,6 +450,10 @@ namespace container_core {
                 if (meta_path) {
                     meta::write_result(*meta_path, result.stats);
                 }
+                // Authoritative result written: disarm so a later teardown
+                // terminate() cannot clobber it with status:XX (ADR 0005 C2,
+                // write-once).
+                meta::disarm_sink();
                 exit(meta::result_exit_code(result.stats));
             }
 
@@ -446,6 +465,7 @@ namespace container_core {
                 meta::write_internal_error(
                     *meta_path, "sandbox terminated before reporting a result");
             }
+            meta::disarm_sink();
             exit(2);
         }
 
