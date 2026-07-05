@@ -400,8 +400,7 @@ namespace config {
         /// @brief Construct the single task of a compatibility-mode `--run`
         /// from the flat CLI options. The program and its arguments come from
         /// the positionals after `--`; there is no task id or stats-yaml in
-        /// compat mode (the meta-file is written by the root process, ADR
-        /// 0005).
+        /// compat mode (the meta-file is written by the root process).
         task_config(const cli::cli_options& opts) : rlimits_(opts) {
             if (opts.program.empty()) {
                 terminate("No path to executable provided");
@@ -1016,12 +1015,18 @@ namespace config {
 
         auto& get_credentials_config() const { return creds_config_; }
 
+        /// @brief The lifecycle phase selected on the command line. `root_core`
+        /// dispatches on this to pick standalone / --init / --run / --cleanup.
+        cli::run_mode mode() const { return mode_; }
+
        private:
+        cli::run_mode mode_ = cli::run_mode::none;
         credentials_config creds_config_;
         proxy_config proxy_config_;
 
         void parse_options(int argc, char** argv) {
             cli::cli_options opts = cli::parse(argc, argv);
+            mode_ = opts.mode;
 
             if (opts.debug) {
                 logs::set_level(logs::level::debug);
@@ -1030,7 +1035,7 @@ namespace config {
                 logs::set_level(logs::level::critical);
             }
 
-            if (opts.mode == cli::run_mode::standalone) {
+            if (mode_ == cli::run_mode::standalone) {
                 auto f = fs::path(opts.yaml.value());
                 try {
                     logs::debug("Reading configuration from file: {}",
@@ -1040,11 +1045,16 @@ namespace config {
                     terminate("Bad configuration file: {}", f.string());
                 }
             } else {
-                // Compatibility three-phase mode (--init/--run/--cleanup): the
-                // config is built from the flat options here; selecting and
-                // running the phase is wired up in B2 (mode dispatch).
-                proxy_config_ = proxy_config(opts);
+                // Compatibility three-phase mode (--init/--run/--cleanup). All
+                // three phases derive their box identity from --box-id, so
+                // creds_config_ is always built. Only --run carries a program to
+                // run, so proxy_config_ (which builds a task from the positional
+                // program) is built for --run alone: building it for --init /
+                // --cleanup would hit task_config's empty-program terminate().
                 creds_config_ = credentials_config(opts);
+                if (mode_ == cli::run_mode::run) {
+                    proxy_config_ = proxy_config(opts);
+                }
             }
         }
 

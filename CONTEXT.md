@@ -87,9 +87,9 @@ Summarized from `docs/thesis.pdf`. Promote to `docs/adr/NNNN-*.md` when reopened
 
 ## Conventions
 
-- C++23, header-heavy (`src/*.hpp`), built with CMake (`scripts/isolator_build.sh`); logging via spdlog (`logs::`).
+- C++23, header-heavy (`src/*.hpp`), built with CMake (`scripts/isolator_build.sh`); logging via a thin `logs::` wrapper over `std::format`, writing to **stderr** (stdout is reserved for `--init`'s box-root path) — see `docs/adr/0002`.
 - Class names are snake_case: `root_core`, `proxy_core`, `proxy_connector`, `proxy_mount_manager`, `dir_rule_supervisor`, `task_supervisor`, `cgroupv2_t`, `*_credentials_manager`.
-- Fatal errors go through `terminate(...)` (log + abort the current process).
+- Fatal errors go through `terminate(...)` (log + `exit(2)`, the Isolator's internal-error code — ADR 0005).
 - Requires root; needs a cgroupv2-enabled kernel. Initialize with `scripts/isolator_init.sh`, clean up with `scripts/isolator_cleanup.sh`.
 
 When you name a domain concept in an issue, refactor, or test, use the term as defined above. If a concept isn't here yet, that's a signal — either reconsider the wording or note the gap (e.g. via `/grill-with-docs`).

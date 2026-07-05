@@ -11,10 +11,13 @@
 
 #include <cerrno>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <string>
 
 #include "cgrps.hpp"
+#include "cli_options.hpp"
 #include "config.hpp"
 #include "credentials.hpp"
 #include "environment.hpp"
@@ -231,12 +234,30 @@ namespace container_core {
             logs::info("Hello world from the Isolator!");
         }
 
-        /// @brief The "main" function of an instance.
+        /// @brief The "main" function of an instance. Dispatches to the phase
+        /// selected on the command line: the single-shot standalone flow, or one
+        /// of the three isolate-compatibility phases (ADR 0005). The enum is
+        /// owned by root_configuration (the parser); the switch lives here so
+        /// the phases stay methods on root_core and main() need not see the mode.
         void run() {
-            credentials_.run();
-            create_sandbox_root_dir();
-            cg_mngr_.run();
-            proxy_connector_.run_and_wait_for_proxy();
+            switch (root_config_.mode()) {
+                case cli::run_mode::standalone:
+                    run_standalone();
+                    break;
+                case cli::run_mode::init:
+                    init();
+                    break;
+                case cli::run_mode::run:
+                    run_command();
+                    break;
+                case cli::run_mode::cleanup:
+                    cleanup();
+                    break;
+                case cli::run_mode::none:
+                    // cli::parse() already exits 2 on a missing mode, so this is
+                    // unreachable; guard it rather than fall through silently.
+                    terminate("No lifecycle mode selected");
+            }
         }
 
        private:
@@ -255,12 +276,99 @@ namespace container_core {
         /// its exit.
         proxy_connector proxy_connector_;
 
-        /// @brief Reserve and prepare identifiers ( box ID, ...) and global
-        /// resources ( root directory, cgroup, ...)
-        void setup() {
+        /// @brief The single-shot YAML flow: derive ids, create the root dir,
+        /// set up the cgroup, then launch and wait for the proxy. Unchanged from
+        /// the pre-compat monolithic path.
+        void run_standalone() {
             credentials_.run();
             create_sandbox_root_dir();
             cg_mngr_.run();
+            proxy_connector_.run_and_wait_for_proxy();
+        }
+
+        /// @brief `--init`: create the persistent box directory tree keyed by
+        /// `--box-id` and print its root, so the Worker can stage job files
+        /// before a later `--run` (ADR 0005). No cgroup, no mounts.
+        /// @details Derives the box identity, then sequences the lock around the
+        /// build as reset-first / set-last: the `is_initialized` bit is cleared
+        /// before any on-disk change and set only once the tree is complete, so a
+        /// crashed `--init` leaves the box marked uninitialized. A box that is
+        /// already initialized is refused (exit 2) rather than silently rebuilt
+        /// (our divergence from upstream Isolate — a double `--init` without an
+        /// intervening `--cleanup` is a caller bug); a stray tree left by a
+        /// crashed prior `--init` (bit already 0) is wiped and rebuilt.
+        [[noreturn]] void init() {
+            credentials_.run();
+
+            lock::box_lock lk(credentials_.box_id());
+            if (lk.is_initialized()) {
+                terminate("Box {} is already initialized; --cleanup it first",
+                          credentials_.box_id());
+            }
+            // reset-first: the box reads uninitialized until the build completes.
+            lk.clear();
+
+            const fs::path& box_root = credentials_.box_root();
+            std::error_code ec;
+            fs::remove_all(box_root, ec);  // absorb crashed-init debris; else no-op
+            if (ec) {
+                terminate("Failed to clear stale box root {}: {}",
+                          box_root.string(), ec.message());
+            }
+
+            init_box_dir();
+
+            // stdout carries only the box-root path (the Worker appends /box);
+            // every log byte goes to stderr (ADR 0002).
+            std::fputs(box_root.string().c_str(), stdout);
+            std::fputc('\n', stdout);
+            std::fflush(stdout);
+
+            lk.mark_initialized();  // set-last
+            exit(0);
+        }
+
+        /// @brief `--run`: re-enter an initialized box and run one program.
+        /// @todo B4 — build the instance cgroup, namespaces/mounts, and run the
+        /// single program via the proxy.
+        [[noreturn]] void run_command() {
+            terminate("--run not yet implemented (B4)");
+        }
+
+        /// @brief `--cleanup`: remove the box directory and cgroup, clear the
+        /// lock. Idempotent.
+        /// @todo B3 — rm -rf the box dir, remove the cgroup, ftruncate the lock.
+        [[noreturn]] void cleanup() {
+            terminate("--cleanup not yet implemented (B3)");
+        }
+
+        /// @brief Create the box directory tree for `--init`: `box_root` (left
+        /// root-owned, default perms) and the writable working dir `box_root/box`
+        /// (`0777`, owned `box_uid:box_gid`).
+        /// @note The `0777` mode is the documented insecure status quo — see the
+        /// ReCodEx integration constraints in CONTEXT.md ("the top security item
+        /// to fix"); tightening it is a dedicated security step, not this slice.
+        void init_box_dir() {
+            const fs::path box_dir = credentials_.box_root() / "box";
+
+            std::error_code ec;
+            fs::create_directories(box_dir, ec);  // makes box_root and box/
+            if (ec) {
+                terminate("Failed to create box directory {}: {}",
+                          box_dir.string(), ec.message());
+            }
+
+            fs::permissions(box_dir, fs::perms::all, ec);  // 0777
+            if (ec) {
+                terminate("Failed to set permissions on {}: {}",
+                          box_dir.string(), ec.message());
+            }
+
+            if (::chown(box_dir.c_str(), credentials_.box_uid(),
+                        credentials_.box_gid()) < 0) {
+                terminate("Failed to chown box directory {}: errno {}",
+                          box_dir.string(), errno);
+            }
         }
 
         /// @brief Reserve and create root directory for the box.

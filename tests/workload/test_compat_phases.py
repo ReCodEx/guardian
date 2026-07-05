@@ -4,10 +4,10 @@ Exercises the drop-in path the ReCodEx Worker uses: three independent
 invocations keyed by --box-id, sharing state only on disk, emitting an
 Isolate-format meta-file and 0/1/2 exit codes (ADR 0001, ADR 0005).
 
-SKIPPED for now: B2 mode dispatch is not wired yet — root_core::run() still
-runs the monolithic single-shot flow regardless of --init/--run/--cleanup
-(it ignores cli::run_mode). This module is the executable spec for that work;
-drop the skip when B2 lands.
+SKIPPED for now: B2 wired mode dispatch + --init, but this suite drives the full
+init -> run -> cleanup lifecycle, and --run (B4) / --cleanup (B3) are still stubs
+that exit 2. This module is the executable spec for that work; drop the skip once
+B3 and B4 land.
 """
 
 import subprocess
@@ -19,7 +19,7 @@ import pytest
 from conftest import ISOLATOR_BIN, WORKLOAD_DIR
 
 pytestmark = pytest.mark.skip(
-    reason="B2 mode dispatch not wired: root_core::run() ignores run_mode"
+    reason="needs B3 (--cleanup) + B4 (--run); B2 wired dispatch + --init only"
 )
 
 BOX_ID = 0
