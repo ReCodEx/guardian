@@ -89,8 +89,14 @@ namespace meta {
     inline void write_result(const fs::path& path,
                              const config::task_stats& s) {
         std::string out;
-        if (auto rc = classify(s); rc != result_code::ok) {
+        auto rc = classify(s);
+        if (rc != result_code::ok) {
             out += std::format("status:{}\n", code_str(rc));
+        }
+        // killed:1 — the Isolator SIGKILLed the task (the timeout path). A
+        // discriminator, derived from the TO verdict, not a separate signal.
+        if (rc == result_code::to) {
+            out += "killed:1\n";
         }
         if (s.exited_normally) {
             out += std::format("exitcode:{}\n", s.exit_code);
@@ -106,6 +112,11 @@ namespace meta {
         if (s.cg_mem_measured) {
             out += std::format("cg-mem:{}\n",
                                units::bytes_to_kib(s.cg_total_mem_bytes));
+        }
+        // cg-oom-killed:1 — the kernel OOM-killed a process in the box. A fact
+        // reported independent of the status verdict (can co-occur with TO).
+        if (s.oom_killed) {
+            out += "cg-oom-killed:1\n";
         }
         detail::write_file(path, out);
     }

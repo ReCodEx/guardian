@@ -167,6 +167,16 @@ namespace cgroup {
             return memory_peak_bytes().value_or(0);
         }
 
+        /// @brief Whether the kernel OOM-killed a process in this cgroup, from
+        /// the `oom_kill` counter in memory.events. Authoritative memory-limit
+        /// signal (ADR: memory.events over a peak-vs-limit heuristic). A missing
+        /// memory.events reads as "no OOM".
+        bool oom_killed() const {
+            return file_utils::read_keyed_size(*cgrp_path_ / MEMORY_EVENTS(),
+                                               "oom_kill")
+                       .value_or(0) > 0;
+        }
+
        protected:
         /// @brief Override cntrlr_type() with "memory".
         /// @return "memory"
@@ -182,6 +192,12 @@ namespace cgroup {
         /// @brief Returns the name of the cgroup memory.peak file.
         static const fs::path& MEMORY_PEAK() {
             static fs::path fname("memory.peak");
+            return fname;
+        }
+
+        /// @brief Returns the name of the cgroup memory.events file.
+        static const fs::path& MEMORY_EVENTS() {
+            static fs::path fname("memory.events");
             return fname;
         }
 
@@ -291,6 +307,9 @@ namespace cgroup {
         std::optional<size_t> memory_peak_bytes() const {
             return mem_.memory_peak_bytes();
         }
+
+        /// @brief Whether the kernel OOM-killed a process in this cgroup.
+        bool oom_killed() const { return mem_.oom_killed(); }
 
         /// @brief Setup the memory controller so that processes are killed upon
         /// exceeding a limit on memory utilization.

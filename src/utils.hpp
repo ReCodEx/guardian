@@ -9,6 +9,8 @@
 #include <iostream>
 #include <sstream>
 #include <format>
+#include <optional>
+#include <string_view>
 
 namespace string_utils
 {
@@ -147,6 +149,30 @@ namespace file_utils
             is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         }
         return is;
+    }
+
+    /// @brief Read a numeric value by key from a cgroup "key value" stat file
+    /// (one `key value` pair per line, e.g. memory.events / cpu.stat).
+    /// @return the value for @p key, or nullopt if the file is unreadable or the
+    /// key is absent. Robust to field reordering/additions across kernels —
+    /// unlike a fixed row index. See issue #18 for migrating other readers here.
+    inline std::optional<size_t> read_keyed_size(const fs::path& path, std::string_view key)
+    {
+        std::ifstream f(path);
+        if (!f)
+        {
+            return std::nullopt;
+        }
+        std::string k;
+        size_t v = 0;
+        while (f >> k >> v)
+        {
+            if (k == key)
+            {
+                return v;
+            }
+        }
+        return std::nullopt;
     }
 
     inline std::string read_row_col(std::ifstream& f, size_t row, unsigned int col)

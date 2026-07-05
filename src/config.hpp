@@ -329,6 +329,12 @@ namespace config {
         /// false (e.g. el9 / kernel 5.14 without the backport) the `cg-mem` line
         /// is omitted from the meta-file rather than reported as 0 (ADR 0006).
         bool cg_mem_measured;
+
+        /// @brief Whether the cgroup's `memory.events` `oom_kill` counter was
+        /// non-zero — the kernel OOM-killed a process in the box. Authoritative
+        /// source for `MEMORY_LIMIT_EXCEEDED`; emitted as `cg-oom-killed:1`,
+        /// independent of the status verdict.
+        bool oom_killed;
     };
 
     /// @brief not implemented.

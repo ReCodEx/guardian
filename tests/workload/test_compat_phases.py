@@ -123,6 +123,23 @@ def test_meta_file_nonzero_exit_is_re(tmp_path):
         _run("--cleanup")
 
 
+def test_meta_file_wall_time_exceeded_is_to_killed(tmp_path):
+    # A program that overruns --wall-time is SIGKILLed by the Isolator:
+    # status:TO plus the killed:1 discriminator (slice 3). /bin/sleep is in the
+    # default box (like /bin/echo above), so no dir-rule (#11) is needed.
+    meta = tmp_path / "meta.txt"
+    try:
+        assert _run("--init").returncode == 0
+        run = _run("--wall-time=1", "--run", "--", "/bin/sleep", "5",
+                   meta=str(meta))
+        assert run.returncode == 1, run.stderr
+        parsed = _parse_meta(meta)
+        assert parsed.get("status") == "TO"
+        assert parsed.get("killed") == "1"
+    finally:
+        _run("--cleanup")
+
+
 def test_meta_file_internal_error_is_xx(tmp_path):
     # A --run on an un-init'd box is an Isolator-internal error: exit 2 and a
     # status:XX meta with a message, written by root's terminate() meta-sink

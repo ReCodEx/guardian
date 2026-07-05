@@ -61,6 +61,7 @@ namespace {
                 .csw_voluntary = 10,
                 .csw_forced = 3,
                 .cg_mem_measured = true,
+                .oom_killed = false,
             };
         }
     };
@@ -113,8 +114,8 @@ namespace {
                   "cg-mem:2048\n");
     }
 
-    // Wall-time overrun -> TO (killed:1 discriminator is deferred to slice 3).
-    TEST_F(MetaFileTest, wall_time_exceeded_is_TO) {
+    // Wall-time overrun -> TO, with killed:1 (the Isolator SIGKILLed the task).
+    TEST_F(MetaFileTest, wall_time_exceeded_is_TO_killed) {
         auto s = baseline();
         s.exited_normally = false;
         s.signalled = true;
@@ -123,6 +124,7 @@ namespace {
         meta::write_result(path_, s);
         EXPECT_EQ(read_back(),
                   "status:TO\n"
+                  "killed:1\n"
                   "exitsig:9\n"
                   "time:1.234\n"
                   "time-wall:2.500\n"
@@ -130,6 +132,71 @@ namespace {
                   "csw-voluntary:10\n"
                   "csw-forced:3\n"
                   "cg-mem:2048\n");
+    }
+
+    // CPU-time overrun -> TO, also carries killed:1.
+    TEST_F(MetaFileTest, cpu_time_exceeded_is_TO_killed) {
+        auto s = baseline();
+        s.exited_normally = false;
+        s.signalled = true;
+        s.signal = 9;
+        s.exit = config::exit_status::CPU_TIME_EXCEEDED;
+        meta::write_result(path_, s);
+        EXPECT_EQ(read_back(),
+                  "status:TO\n"
+                  "killed:1\n"
+                  "exitsig:9\n"
+                  "time:1.234\n"
+                  "time-wall:2.500\n"
+                  "max-rss:4096\n"
+                  "csw-voluntary:10\n"
+                  "csw-forced:3\n"
+                  "cg-mem:2048\n");
+    }
+
+    // Memory-limit hit -> SG + cg-oom-killed:1 (kernel OOM-killed the task; it
+    // is signalled by SIGKILL). No killed:1 (the Isolator did not kill it).
+    TEST_F(MetaFileTest, memory_oom_is_SG_cg_oom_killed) {
+        auto s = baseline();
+        s.exited_normally = false;
+        s.signalled = true;
+        s.signal = 9;
+        s.exit = config::exit_status::MEMORY_LIMIT_EXCEEDED;
+        s.oom_killed = true;
+        meta::write_result(path_, s);
+        EXPECT_EQ(read_back(),
+                  "status:SG\n"
+                  "exitsig:9\n"
+                  "time:1.234\n"
+                  "time-wall:2.500\n"
+                  "max-rss:4096\n"
+                  "csw-voluntary:10\n"
+                  "csw-forced:3\n"
+                  "cg-mem:2048\n"
+                  "cg-oom-killed:1\n");
+    }
+
+    // Discriminators are independent facts: a timeout run in which a child was
+    // also OOM-killed carries both killed:1 and cg-oom-killed:1, status stays TO.
+    TEST_F(MetaFileTest, to_with_incidental_oom_carries_both) {
+        auto s = baseline();
+        s.exited_normally = false;
+        s.signalled = true;
+        s.signal = 9;
+        s.exit = config::exit_status::WALL_TIME_EXCEEDED;
+        s.oom_killed = true;
+        meta::write_result(path_, s);
+        EXPECT_EQ(read_back(),
+                  "status:TO\n"
+                  "killed:1\n"
+                  "exitsig:9\n"
+                  "time:1.234\n"
+                  "time-wall:2.500\n"
+                  "max-rss:4096\n"
+                  "csw-voluntary:10\n"
+                  "csw-forced:3\n"
+                  "cg-mem:2048\n"
+                  "cg-oom-killed:1\n");
     }
 
     // memory.peak unavailable: cg-mem line is omitted entirely (ADR 0006); every

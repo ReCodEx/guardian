@@ -88,26 +88,30 @@ namespace tasks {
             auto peak = task_cgroup.memory_peak_bytes();
             auto memory = peak.value_or(0);
             auto cputime = task_cgroup.cpu_usage_usec();
+            bool oom_killed = task_cgroup.oom_killed();
 
-            if (task_config_->rlimits().memory().has_value() &&
-                memory > task_config_->rlimits().memory()) {
-                logs::debug(
-                    "Task \"{}\" exceeded memory limit, cgroup memory usage: "
-                    "{}, limit: {}",
-                    task_config_->name(), task_cgroup.memory_usage_bytes(),
-                    task_config_->rlimits().memory().value());
-                exit = config::exit_status::MEMORY_LIMIT_EXCEEDED;
-            }
-            if (task_config_->rlimits().cpu_time().has_value() &&
+            // Precedence: a timeout verdict (set by wait_for_task on wall
+            // overrun) wins over CPU/memory, and CPU wins over memory. Each
+            // override only fires when no higher-precedence verdict was already
+            // set (guard `exit == OK`), so an incidental later condition can't
+            // clobber the real cause of death.
+            if (exit == config::exit_status::OK &&
+                task_config_->rlimits().cpu_time().has_value() &&
                 (float)cputime / 1000000 >
                     task_config_->rlimits().cpu_time().value()) {
                 logs::debug(
                     "Task \"{}\" exceeded CPU time limit, cgroup CPU time "
                     "usage: {}, limit: {}",
-                    task_config_->name(),
-                    (float)task_cgroup.cpu_usage_usec() / 1000000,
+                    task_config_->name(), (float)cputime / 1000000,
                     task_config_->rlimits().cpu_time().value());
                 exit = config::exit_status::CPU_TIME_EXCEEDED;
+            }
+            // Authoritative memory-limit signal: the kernel OOM-kill counter,
+            // not a peak-vs-limit comparison (which can misfire at the limit).
+            if (exit == config::exit_status::OK && oom_killed) {
+                logs::debug("Task \"{}\" was OOM-killed (memory.events)",
+                            task_config_->name());
+                exit = config::exit_status::MEMORY_LIMIT_EXCEEDED;
             }
 
             return config::task_stats{
@@ -130,6 +134,7 @@ namespace tasks {
                 .csw_forced = static_cast<size_t>(r_usage.ru_nivcsw),
 
                 .cg_mem_measured = peak.has_value(),
+                .oom_killed = oom_killed,
             };
         }
 
