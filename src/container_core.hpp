@@ -15,6 +15,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <string>
+#include <system_error>
 
 #include "cgrps.hpp"
 #include "cli_options.hpp"
@@ -52,10 +53,27 @@ namespace container_core {
         }
 
         /// @brief Run the proxy process and the tasks.
+        /// @details Exits 0 iff every task finished with status OK, else 1 — a
+        /// crude success signal the root process maps onto Isolate's exit-code
+        /// convention for compat `--run`. The meta pipe (ADR 0005, C1) will
+        /// replace this as the result channel; standalone consumers read the
+        /// per-task stats-yaml, not this exit code.
         void run() {
             proxy_env_setup();
             auto task_report = task_runner_.run_all_tasks();
             generate_proxy_report(task_report);
+
+            for (const auto& stats : task_report.tasks()) {
+                // task_stats.exit only records exceeded limits; a plain
+                // non-zero exit or a signal leaves it OK (the stats-yaml
+                // writer derives those from the raw fields the same way).
+                bool ok = stats.exit == config::exit_status::OK &&
+                          stats.exited_normally && !stats.signalled &&
+                          stats.exit_code == 0;
+                if (!ok) {
+                    exit(1);
+                }
+            }
             exit(0);
         }
 
@@ -130,9 +148,12 @@ namespace container_core {
               cg_mngr_(&cg_manager) {}
 
         /// @brief Run the proxy process and wait for its exit.
-        void run_and_wait_for_proxy() {
+        /// @return The proxy's raw waitpid() status (inspect with WIFEXITED /
+        /// WEXITSTATUS). Compat `--run` maps it onto Isolate's exit codes;
+        /// standalone ignores it.
+        int run_and_wait_for_proxy() {
             pid_t proxy_pid = spawn_proxy();
-            wait_for_proxy(proxy_pid);
+            return wait_for_proxy(proxy_pid);
         }
 
        private:
@@ -176,7 +197,8 @@ namespace container_core {
 
         /// @brief Wait for the proxy using waitpid().
         /// @param proxy_pid PID of the proxy as returned by spawn_proxy().
-        static void wait_for_proxy(pid_t proxy_pid) {
+        /// @return The proxy's raw waitpid() status.
+        static int wait_for_proxy(pid_t proxy_pid) {
             int stat{};
             auto p = waitpid(proxy_pid, &stat, 0);
 
@@ -189,6 +211,7 @@ namespace container_core {
 
             logs::debug("Proxy exited. Signal: {}, RV : {}, Errno: {}",
                         WTERMSIG(stat), p, errno);
+            return stat;
         }
 
         /// @brief Generate clone_args struct for cloning the proxy process.
@@ -333,11 +356,41 @@ namespace container_core {
             exit(0);
         }
 
-        /// @brief `--run`: re-enter an initialized box and run one program.
-        /// @todo B4 — build the instance cgroup, namespaces/mounts, and run the
-        /// single program via the proxy.
+        /// @brief `--run`: re-enter an initialized box and run one program
+        /// inside it (ADR 0005).
+        /// @details Takes the box lock for the whole run (a concurrent phase on
+        /// the same box fails on the flock) and refuses a box that was never
+        /// `--init`'d (exit 2). Any cgroup left by a crashed previous `--run`
+        /// is swept before creating a fresh one — the instance cgroup lives
+        /// only within run → cleanup (ADR 0005). The box directory tree is
+        /// NOT created here; `--run` re-enters what `--init` made.
+        ///
+        /// Exit code is the crude bridge until the meta pipe (C1): the proxy
+        /// exits 0 iff the task's status was OK, 1 otherwise, and anything
+        /// else (proxy terminated / signalled) is the Isolator's own failure.
         [[noreturn]] void run_command() {
-            terminate("--run not yet implemented (B4)");
+            credentials_.run();
+
+            lock::box_lock lk(credentials_.box_id());
+            if (!lk.is_initialized()) {
+                terminate("Box {} was not initialized (--init it first)",
+                          credentials_.box_id());
+            }
+
+            remove_instance_cgroup();  // stale cgroup from a crashed --run
+            cg_mngr_.run();
+            int stat = proxy_connector_.run_and_wait_for_proxy();
+
+            if (WIFEXITED(stat)) {
+                int code = WEXITSTATUS(stat);
+                if (code == 0) {
+                    exit(0);  // program ran and exited OK
+                }
+                if (code == 1) {
+                    exit(1);  // program ran but result != OK
+                }
+            }
+            exit(2);  // the proxy itself failed (terminate()d or signalled)
         }
 
         /// @brief `--cleanup`: tear down a box — remove its directory tree and

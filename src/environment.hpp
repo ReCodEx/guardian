@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <system_error>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -82,9 +83,15 @@ namespace env {
 
             logs::debug("Creating directory: {}", box_cg_root.string());
 
-            if (!fs::create_directories(box_cg_root)) {
-                terminate("Failed to create directory for the cgroup fs ({})",
-                          box_cg_root.string());
+            // The directory persists in the box root across compat --run
+            // invocations, so tolerate it already existing (create_directories
+            // returns false for "already there" without setting the error
+            // code) and terminate only on a real error.
+            std::error_code ec;
+            fs::create_directories(box_cg_root, ec);
+            if (ec) {
+                terminate("Failed to create directory for the cgroup fs ({}): {}",
+                          box_cg_root.string(), ec.message());
             }
 
             if (umount(cgroup::CGROUP_FS_PATH().c_str())) {
@@ -243,12 +250,16 @@ namespace env {
         }
 
         /// @brief Create a directory and chmod + chown it to the box
-        /// credentials.
+        /// credentials. Idempotent: mount-point directories persist in the
+        /// box root across compat `--run` invocations (only the mounts die
+        /// with the run's mount namespace), so an existing directory means a
+        /// previous run already set it up and there is nothing to do.
         /// @param dir Path of the directory.
         void create_dir(const fs::path& dir) {
             if (fs::is_directory(dir)) {
-                terminate("Directory ({}) to be created already exists!",
-                          dir.string());
+                logs::debug("Directory {} already exists, skipping creation",
+                            dir.string());
+                return;
             }
 
             logs::debug("Creating directory: {}", dir.string());

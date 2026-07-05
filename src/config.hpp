@@ -399,13 +399,20 @@ namespace config {
 
         /// @brief Construct the single task of a compatibility-mode `--run`
         /// from the flat CLI options. The program and its arguments come from
-        /// the positionals after `--`; there is no task id or stats-yaml in
-        /// compat mode (the meta-file is written by the root process).
+        /// the positionals after `--`; there is no stats-yaml in compat mode
+        /// (the meta-file is written by the root process, ADR 0005).
+        /// @details The task is named "task" — a fixed string, because the name
+        /// becomes the task's cgroup directory (task_supervisor) and must not
+        /// be caller-controlled; it is trivially unique since compat mode runs
+        /// exactly one task. The working directory defaults to `/box` like
+        /// Isolate's (`--chdir` overrides, relative to the sandbox root), so
+        /// relative program/stdio paths resolve in the Worker's staging dir.
         task_config(const cli::cli_options& opts) : rlimits_(opts) {
             if (opts.program.empty()) {
                 terminate("No path to executable provided");
             }
 
+            id_ = "task";
             exec_ = fs::path(opts.program);
             args_ = opts.args;
             args_.insert(args_.begin(), exec_.string());
@@ -422,9 +429,7 @@ namespace config {
                 stderr_file_ = fs::path(*opts.stderr_file);
             }
 
-            if (opts.chdir) {
-                chdir_ = fs::path(*opts.chdir);
-            }
+            chdir_ = opts.chdir ? fs::path(*opts.chdir) : fs::path("/box");
 
             stderr_to_stdout_ = opts.stderr_to_stdout;
         }
@@ -714,6 +719,12 @@ namespace config {
        public:
         box_fs_config() {}
 
+        /// @brief Compatibility-mode (`--run`) box filesystem: the default
+        /// directory rules only, so the program can exec against the host's
+        /// `/bin`, `/lib`, `/usr`, … Parsing `--dir` rules into user rules (and
+        /// auditing the default set against Isolate's exact one) is issue #11.
+        box_fs_config(const cli::cli_options& opts) { define_default_rules(); }
+
         /// @brief
         /// @param box_root
         /// @param env_node
@@ -979,7 +990,7 @@ namespace config {
         proxy_config(const cli::cli_options& opts) {
             tasks_ = tasks_config(opts);
             env_ = env_config(opts);
-            // box_fs_ wired from --dir rules later (issue #11).
+            box_fs_ = box_fs_config(opts);  // defaults only; --dir is issue #11
             share_net_ = opts.share_net;
         }
 
