@@ -197,7 +197,7 @@ namespace container_core {
         /// @return
         clone_args proxy_clone_args(const config::proxy_config& proxy_conf,
                                     uint64_t cgrp_fd) {
-            clone_args args{.flags=0};
+            clone_args args{.flags = 0};
             args.exit_signal = SIGCHLD;
 
             args.flags = CLONE_NEWIPC | CLONE_NEWNS | CLONE_NEWPID |
@@ -235,10 +235,11 @@ namespace container_core {
         }
 
         /// @brief The "main" function of an instance. Dispatches to the phase
-        /// selected on the command line: the single-shot standalone flow, or one
-        /// of the three isolate-compatibility phases (ADR 0005). The enum is
-        /// owned by root_configuration (the parser); the switch lives here so
-        /// the phases stay methods on root_core and main() need not see the mode.
+        /// selected on the command line: the single-shot standalone flow, or
+        /// one of the three isolate-compatibility phases. The enum
+        /// is owned by root_configuration (the parser); the switch lives here
+        /// so the phases stay methods on root_core and main() need not see the
+        /// mode.
         void run() {
             switch (root_config_.mode()) {
                 case cli::run_mode::standalone:
@@ -254,8 +255,9 @@ namespace container_core {
                     cleanup();
                     break;
                 case cli::run_mode::none:
-                    // cli::parse() already exits 2 on a missing mode, so this is
-                    // unreachable; guard it rather than fall through silently.
+                    // cli::parse() already exits 2 on a missing mode, so this
+                    // is unreachable; guard it rather than fall through
+                    // silently.
                     terminate("No lifecycle mode selected");
             }
         }
@@ -277,8 +279,8 @@ namespace container_core {
         proxy_connector proxy_connector_;
 
         /// @brief The single-shot YAML flow: derive ids, create the root dir,
-        /// set up the cgroup, then launch and wait for the proxy. Unchanged from
-        /// the pre-compat monolithic path.
+        /// set up the cgroup, then launch and wait for the proxy. Unchanged
+        /// from the pre-compat monolithic path.
         void run_standalone() {
             credentials_.run();
             create_sandbox_root_dir();
@@ -288,15 +290,16 @@ namespace container_core {
 
         /// @brief `--init`: create the persistent box directory tree keyed by
         /// `--box-id` and print its root, so the Worker can stage job files
-        /// before a later `--run` (ADR 0005). No cgroup, no mounts.
-        /// @details Derives the box identity, then sequences the lock around the
-        /// build as reset-first / set-last: the `is_initialized` bit is cleared
-        /// before any on-disk change and set only once the tree is complete, so a
-        /// crashed `--init` leaves the box marked uninitialized. A box that is
-        /// already initialized is refused (exit 2) rather than silently rebuilt
-        /// (our divergence from upstream Isolate — a double `--init` without an
-        /// intervening `--cleanup` is a caller bug); a stray tree left by a
-        /// crashed prior `--init` (bit already 0) is wiped and rebuilt.
+        /// before a later `--run`. No cgroup, no mounts.
+        /// @details Derives the box identity, then sequences the lock around
+        /// the build as reset-first / set-last: the `is_initialized` bit is
+        /// cleared before any on-disk change and set only once the tree is
+        /// complete, so a crashed `--init` leaves the box marked uninitialized.
+        /// A box that is already initialized is refused (exit 2) rather than
+        /// silently rebuilt (our divergence from upstream Isolate — a double
+        /// `--init` without an intervening `--cleanup` is a caller bug); a
+        /// stray tree left by a crashed prior `--init` (bit already 0) is wiped
+        /// and rebuilt.
         [[noreturn]] void init() {
             credentials_.run();
 
@@ -305,12 +308,14 @@ namespace container_core {
                 terminate("Box {} is already initialized; --cleanup it first",
                           credentials_.box_id());
             }
-            // reset-first: the box reads uninitialized until the build completes.
+            // reset-first: the box reads uninitialized until the build
+            // completes.
             lk.clear();
 
             const fs::path& box_root = credentials_.box_root();
             std::error_code ec;
-            fs::remove_all(box_root, ec);  // absorb crashed-init debris; else no-op
+            fs::remove_all(box_root,
+                           ec);  // absorb crashed-init debris; else no-op
             if (ec) {
                 terminate("Failed to clear stale box root {}: {}",
                           box_root.string(), ec.message());
@@ -319,7 +324,7 @@ namespace container_core {
             init_box_dir();
 
             // stdout carries only the box-root path (the Worker appends /box);
-            // every log byte goes to stderr (ADR 0002).
+            // every log byte goes to stderr.
             std::fputs(box_root.string().c_str(), stdout);
             std::fputc('\n', stdout);
             std::fflush(stdout);
@@ -335,19 +340,72 @@ namespace container_core {
             terminate("--run not yet implemented (B4)");
         }
 
-        /// @brief `--cleanup`: remove the box directory and cgroup, clear the
-        /// lock. Idempotent.
-        /// @todo B3 — rm -rf the box dir, remove the cgroup, ftruncate the lock.
+        /// @brief `--cleanup`: tear down a box — remove its directory tree and
+        /// cgroup, then clear the lock record. Idempotent: a missing
+        /// box, cgroup, or lock is success (exit 0).
+        /// @details Takes the box lock first, so a `--cleanup` racing a live
+        /// `--run` on the same box blocks/fails on the flock (exit 2) rather
+        /// than pulling the box out from under it. The lock is `clear()`ed
+        /// (truncated, never unlinked), leaving the box readable as
+        /// uninitialized so a later `--init` on the same id succeeds.
         [[noreturn]] void cleanup() {
-            terminate("--cleanup not yet implemented (B3)");
+            credentials_.run();
+            lock::box_lock lk(credentials_.box_id());
+
+            const fs::path& box_root = credentials_.box_root();
+            std::error_code ec;
+            fs::remove_all(box_root, ec);  // no-op if already gone
+            if (ec) {
+                terminate("Failed to remove box root {}: {}", box_root.string(),
+                          ec.message());
+            }
+
+            remove_instance_cgroup();
+
+            lk.clear();
+            exit(0);
+        }
+
+        /// @brief Remove this instance's cgroup subtree, if it exists.
+        /// @details Absent cgroup ⇒ nothing to do (idempotent). The subtree is
+        /// created only by `--run`, so this is a no-op after a bare
+        /// `--init`.
+        void remove_instance_cgroup() {
+            const fs::path& cg = credentials_.instance_cgroup();
+            std::error_code ec;
+            if (fs::is_directory(cg, ec)) {
+                rmdir_cgroup_tree(cg);
+            }
+        }
+
+        /// @brief Depth-first `rmdir` of a cgroup-v2 subtree.
+        /// @details cgroupfs entries are either child cgroups (directories,
+        /// removable with `rmdir` once empty of processes and children) or
+        /// kernel control files (which cannot be `unlink`ed and disappear with
+        /// their cgroup). So we recurse into subdirectories only and `rmdir`
+        /// each on the way back up — `fs::remove_all` would fail trying to
+        /// delete the control files.
+        static void rmdir_cgroup_tree(const fs::path& cg) {
+            std::error_code ec;
+            for (const auto& entry : fs::directory_iterator(cg, ec)) {
+                if (entry.is_directory()) {
+                    rmdir_cgroup_tree(entry.path());
+                }
+            }
+            if (::rmdir(cg.c_str()) < 0) {
+                terminate("Failed to remove cgroup {}: errno {}", cg.string(),
+                          errno);
+            }
         }
 
         /// @brief Create the box directory tree for `--init`: `box_root` (left
-        /// root-owned, default perms) and the writable working dir `box_root/box`
+        /// root-owned, default perms) and the writable working dir
+        /// `box_root/box`
         /// (`0777`, owned `box_uid:box_gid`).
-        /// @note The `0777` mode is the documented insecure status quo — see the
-        /// ReCodEx integration constraints in CONTEXT.md ("the top security item
-        /// to fix"); tightening it is a dedicated security step, not this slice.
+        /// @note The `0777` mode is the documented insecure status quo — see
+        /// the ReCodEx integration constraints in CONTEXT.md ("the top security
+        /// item to fix"); tightening it is a dedicated security step, not this
+        /// slice.
         void init_box_dir() {
             const fs::path box_dir = credentials_.box_root() / "box";
 
