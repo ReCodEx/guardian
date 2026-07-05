@@ -1,6 +1,7 @@
 #ifndef CONTAINER_CORE
 #define CONTAINER_CORE
 
+#include <fcntl.h>
 #include <linux/sched.h>
 #include <sched.h>
 #include <signal.h>
@@ -24,6 +25,7 @@
 #include "environment.hpp"
 #include "lock.hpp"
 #include "logs.hpp"
+#include "meta_file.hpp"
 #include "tasks.hpp"
 #include "terminate.hpp"
 
@@ -38,8 +40,13 @@ namespace container_core {
         /// @brief
         /// @param config Proxy node of the configuration.
         /// @param root_creds Called to retrieve assigned credentials.
+        /// @param meta_write_fd Compat-mode result channel (ADR 0005, C1): the
+        /// write end of the pipe to the root process. `-1` in standalone mode,
+        /// where the task writes its own stats-yaml and this exit code is
+        /// ignored — it is a capability, not a mode flag.
         proxy_core(const config::proxy_config& config,
-                   credentials::root_credentials_manager& root_creds)
+                   credentials::root_credentials_manager& root_creds,
+                   int meta_write_fd = -1)
             : proxy_config_(&config),
               credentials_mngr_(root_creds),
               mount_mngr_(config, credentials_mngr_),
@@ -47,32 +54,32 @@ namespace container_core {
               env_manager_(config.get_env_config()),
               cg_mngr_(),
               task_runner_(config.get_tasks_config(), credentials_mngr_,
-                           env_manager_) {
+                           env_manager_),
+              meta_write_fd_(meta_write_fd) {
             logs::info("Hello world from the proxy!");
             init_proxy_logger();
         }
 
-        /// @brief Run the proxy process and the tasks.
-        /// @details Exits 0 iff every task finished with status OK, else 1 — a
-        /// crude success signal the root process maps onto Isolate's exit-code
-        /// convention for compat `--run`. The meta pipe (ADR 0005, C1) will
-        /// replace this as the result channel; standalone consumers read the
-        /// per-task stats-yaml, not this exit code.
-        void run() {
+        /// @brief Run the proxy process and the tasks, then always `exit(0)`.
+        /// @details When a meta pipe was supplied (compat `--run`), the single
+        /// task's `task_stats` is pushed up the pipe; the root process reads it
+        /// and owns the 0/1/2 exit-code decision (ADR 0005, C1). Standalone
+        /// consumers read the per-task stats-yaml the task itself wrote, and
+        /// ignore both the pipe (absent) and this exit code.
+        [[noreturn]] void run() {
             proxy_env_setup();
             auto task_report = task_runner_.run_all_tasks();
             generate_proxy_report(task_report);
 
-            for (const auto& stats : task_report.tasks()) {
-                // task_stats.exit only records exceeded limits; a plain
-                // non-zero exit or a signal leaves it OK (the stats-yaml
-                // writer derives those from the raw fields the same way).
-                bool ok = stats.exit == config::exit_status::OK &&
-                          stats.exited_normally && !stats.signalled &&
-                          stats.exit_code == 0;
-                if (!ok) {
-                    exit(1);
+            if (meta_write_fd_ >= 0) {
+                // Compat `--run` builds exactly one task from the positional
+                // program; the meta pipe carries that one result.
+                const auto& tasks = task_report.tasks();
+                if (tasks.size() != 1) {
+                    terminate("Compat --run expected 1 task, got {}",
+                              tasks.size());
                 }
+                meta::write_record(meta_write_fd_, tasks.front());
             }
             exit(0);
         }
@@ -100,6 +107,9 @@ namespace container_core {
 
         /// @brief Responsible for launching and evaluating tasks.
         tasks::task_manager task_runner_;
+
+        /// @brief Write end of the compat-mode meta pipe, or `-1` (standalone).
+        int meta_write_fd_;
 
         void init_proxy_logger() {}
 
@@ -147,16 +157,50 @@ namespace container_core {
               credentials_(&credentials),
               cg_mngr_(&cg_manager) {}
 
-        /// @brief Run the proxy process and wait for its exit.
-        /// @return The proxy's raw waitpid() status (inspect with WIFEXITED /
-        /// WEXITSTATUS). Compat `--run` maps it onto Isolate's exit codes;
-        /// standalone ignores it.
+        /// @brief Run the proxy process and wait for its exit (standalone).
+        /// @return The proxy's raw waitpid() status. Standalone ignores it (the
+        /// task wrote its own stats-yaml); no meta pipe is opened.
         int run_and_wait_for_proxy() {
             pid_t proxy_pid = spawn_proxy();
             return wait_for_proxy(proxy_pid);
         }
 
+        /// @brief Run the proxy and collect the single task's result over the
+        /// meta pipe (compat `--run`, ADR 0005 C1).
+        /// @return The record read outcome: a complete `task_stats`, or
+        /// empty/partial when the proxy died before/mid-report — which root
+        /// turns into the Isolator's exit-code contract (0/1 vs 2).
+        /// @details Opens a `pipe2(O_CLOEXEC)` before `clone3` so the cloned
+        /// proxy inherits the write end and the task's `execve` auto-closes it
+        /// (a leaked write fd would defeat the EOF-means-failure signal *and*
+        /// hand untrusted code an fd into root's pipe). Root is not a writer,
+        /// so it closes the write end right after `clone3`; the proxy is then
+        /// the sole writer and its exit produces EOF at root's read end.
+        meta::read_result run_and_collect_meta() {
+            int fds[2];
+            if (pipe2(fds, O_CLOEXEC) < 0) {
+                terminate("Failed to open meta pipe, errno: {}", errno);
+            }
+
+            meta_write_fd_ = fds[1];
+            pid_t proxy_pid = spawn_proxy();
+            close(fds[1]);        // root never writes the meta pipe
+            meta_write_fd_ = -1;  // reset (only valid across the clone3)
+
+            int stat = wait_for_proxy(proxy_pid);
+            meta::read_result result = meta::read_record(fds[0]);
+            close(fds[0]);
+
+            logs::debug("Proxy waitpid stat {}, meta read status {}", stat,
+                        static_cast<int>(result.status));
+            return result;
+        }
+
        private:
+        /// @brief Write end of the compat meta pipe, handed to the cloned proxy
+        /// via `spawn_proxy`; `-1` outside a `--run` (standalone).
+        int meta_write_fd_ = -1;
+
         /// @brief Internal representation of container configuration.
         config::root_configuration* root_config_;
 
@@ -185,7 +229,7 @@ namespace container_core {
             else if (!outside_pid) {
                 // we are in the proxy process
                 cg_mngr_->close_proxy_fd();
-                proxy_core proxy(proxy_conf, *credentials_);
+                proxy_core proxy(proxy_conf, *credentials_, meta_write_fd_);
                 proxy.run();
 
                 // We will never get here
@@ -365,9 +409,12 @@ namespace container_core {
         /// only within run → cleanup (ADR 0005). The box directory tree is
         /// NOT created here; `--run` re-enters what `--init` made.
         ///
-        /// Exit code is the crude bridge until the meta pipe (C1): the proxy
-        /// exits 0 iff the task's status was OK, 1 otherwise, and anything
-        /// else (proxy terminated / signalled) is the Isolator's own failure.
+        /// The proxy reports the single task's result over the meta pipe (ADR
+        /// 0005 C1); root owns the exit-code decision. A complete record maps
+        /// to 0 (task OK) or 1 (task ran, result != OK) and, if `--meta` was
+        /// given, an Isolate meta-file; an empty/partial pipe means the proxy
+        /// died before reporting — the Isolator's own failure (exit 2 +
+        /// `status:XX` meta).
         [[noreturn]] void run_command() {
             credentials_.run();
 
@@ -379,18 +426,27 @@ namespace container_core {
 
             remove_instance_cgroup();  // stale cgroup from a crashed --run
             cg_mngr_.run();
-            int stat = proxy_connector_.run_and_wait_for_proxy();
 
-            if (WIFEXITED(stat)) {
-                int code = WEXITSTATUS(stat);
-                if (code == 0) {
-                    exit(0);  // program ran and exited OK
+            meta::read_result result =
+                proxy_connector_.run_and_collect_meta();
+            const auto& meta_path = root_config_.meta();
+
+            if (result.status == meta::read_status::complete) {
+                if (meta_path) {
+                    meta::write_result(*meta_path, result.stats);
                 }
-                if (code == 1) {
-                    exit(1);  // program ran but result != OK
-                }
+                exit(meta::result_exit_code(result.stats));
             }
-            exit(2);  // the proxy itself failed (terminate()d or signalled)
+
+            // Empty/partial pipe: the proxy terminated before reporting a
+            // complete result. Root synthesizes the internal-error meta (the
+            // proxy's specific cause went to stderr; a dedicated error pipe is
+            // deferred — ADR 0005 C1).
+            if (meta_path) {
+                meta::write_internal_error(
+                    *meta_path, "sandbox terminated before reporting a result");
+            }
+            exit(2);
         }
 
         /// @brief `--cleanup`: tear down a box — remove its directory tree and

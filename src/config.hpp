@@ -1030,10 +1030,16 @@ namespace config {
         /// dispatches on this to pick standalone / --init / --run / --cleanup.
         cli::run_mode mode() const { return mode_; }
 
+        /// @brief Host path for the Isolate-format meta-file (`--meta`), if the
+        /// caller supplied one. Compat-mode only; the root process is its sole
+        /// writer (ADR 0005). Absent ⇒ no meta-file is written.
+        const std::optional<fs::path>& meta() const { return meta_; }
+
        private:
         cli::run_mode mode_ = cli::run_mode::none;
         credentials_config creds_config_;
         proxy_config proxy_config_;
+        std::optional<fs::path> meta_;
 
         void parse_options(int argc, char** argv) {
             cli::cli_options opts = cli::parse(argc, argv);
@@ -1063,6 +1069,9 @@ namespace config {
                 // program) is built for --run alone: building it for --init /
                 // --cleanup would hit task_config's empty-program terminate().
                 creds_config_ = credentials_config(opts);
+                if (opts.meta) {
+                    meta_ = fs::path(*opts.meta);
+                }
                 if (mode_ == cli::run_mode::run) {
                     proxy_config_ = proxy_config(opts);
                 }

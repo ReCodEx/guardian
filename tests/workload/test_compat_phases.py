@@ -94,13 +94,45 @@ def test_nonzero_program_exit_is_code_one():
         _run("--cleanup")
 
 
-@pytest.mark.skip(reason="meta-file lands in C1 (meta pipe + writer)")
-def test_meta_file_written(tmp_path):
+def test_meta_file_ok_omits_status(tmp_path):
+    # An OK run writes exitcode:0 and — matching Isolate — no status line
+    # at all (ADR 0005 C1).
     meta = tmp_path / "meta.txt"
     try:
         assert _run("--init").returncode == 0
         run = _run("--run", "--", "/bin/true", meta=str(meta))
         assert run.returncode == 0, run.stderr
-        assert _parse_meta(meta).get("status", "OK") == "OK"
+        parsed = _parse_meta(meta)
+        assert "status" not in parsed
+        assert parsed.get("exitcode") == "0"
     finally:
         _run("--cleanup")
+
+
+def test_meta_file_nonzero_exit_is_re(tmp_path):
+    # A program that exits non-zero: status:RE, exitcode:N, Isolator exit 1.
+    meta = tmp_path / "meta.txt"
+    try:
+        assert _run("--init").returncode == 0
+        run = _run("--run", "--", "/bin/false", meta=str(meta))
+        assert run.returncode == 1, run.stderr
+        parsed = _parse_meta(meta)
+        assert parsed.get("status") == "RE"
+        assert parsed.get("exitcode") == "1"
+    finally:
+        _run("--cleanup")
+
+
+@pytest.mark.skip(reason="status:XX meta needs the terminate() meta-sink (C2)")
+def test_meta_file_internal_error_is_xx(tmp_path):
+    # A --run on an un-init'd box is an Isolator-internal error: exit 2 and a
+    # status:XX meta with a message. Exit 2 is already covered by
+    # test_run_before_init_is_box_not_found; the meta write lands in C2, where
+    # root's own terminate() gains the meta-sink (ADR 0005 C2).
+    meta = tmp_path / "meta.txt"
+    _run("--cleanup")  # ensure no prior state
+    run = _run("--run", "--", "/bin/true", meta=str(meta))
+    assert run.returncode == 2
+    parsed = _parse_meta(meta)
+    assert parsed.get("status") == "XX"
+    assert "message" in parsed
