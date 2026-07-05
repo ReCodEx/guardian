@@ -63,6 +63,17 @@ namespace {
                   4096u);
     }
 
+    TEST(cli_time, fractional_seconds_parse) {
+        // The Worker emits --time=1.000000 (std::to_string of a float), so the
+        // time flags must accept fractional seconds, not exit(2).
+        auto o = parse_args({"--run", "--box-id=0", "--time=1.5",
+                             "--wall-time=2.25", "--extra-time=0.5", "--",
+                             "/bin/true"});
+        EXPECT_DOUBLE_EQ(*o.cpu_time, 1.5);
+        EXPECT_DOUBLE_EQ(*o.wall_time, 2.25);
+        EXPECT_DOUBLE_EQ(*o.extra_time, 0.5);
+    }
+
     TEST(cli_aliases, time_maps_to_cpu_time) {
         auto o =
             parse_args({"--run", "--box-id=0", "--time=10", "--", "/bin/true"});

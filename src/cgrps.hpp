@@ -111,7 +111,7 @@ namespace cgroup {
         /// @brief Set the value in the memory.max file to 'bytes'
         /// @param bytes
         /// @return true if the write succeeded.
-        bool set_memory_max(unsigned int bytes) {
+        bool set_memory_max(size_t bytes) {
             //  Equivalent to "echo $BYTES > memory.max"
 
             fs::path memory_max(*cgrp_path_ / MEMORY_MAX());

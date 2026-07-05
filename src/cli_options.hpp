@@ -58,12 +58,12 @@ namespace cli {
         // --- resource limits (semantic names; compat flags mapped onto them)
         // ---
 
-        std::optional<std::size_t> memory;      ///< `--cg-mem` / `--mem`.
-        std::optional<std::size_t> as_size;     ///< `--as-size`.
-        std::optional<std::size_t> cpu_time;    ///< `--time`.
-        std::optional<std::size_t> wall_time;   ///< `--wall-time`.
-        std::optional<std::size_t> extra_time;  ///< `--extra-time`.
-        std::optional<std::size_t> stack;       ///< `--stack`.
+        std::optional<std::size_t> memory;   ///< `--cg-mem` / `--mem` (KB).
+        std::optional<std::size_t> as_size;  ///< `--as-size`.
+        std::optional<double> cpu_time;      ///< `--time` (fractional seconds).
+        std::optional<double> wall_time;     ///< `--wall-time` (fractional s).
+        std::optional<double> extra_time;    ///< `--extra-time` (fractional s).
+        std::optional<std::size_t> stack;    ///< `--stack` (KB).
         std::optional<std::size_t> file_size;   ///< `--fsize`.
         std::optional<std::size_t> open_files;  ///< `--open-files`.
         std::optional<std::size_t> core;        ///< `--core`.
@@ -116,6 +116,18 @@ namespace cli {
             const char* end = arg + std::strlen(arg);
             auto [ptr, ec] = std::from_chars(arg, end, value);
             if (ec != std::errc{} || ptr != end) {
+                usage_error("Invalid numeric value for --{}: {}", flag, arg);
+            }
+            return value;
+        }
+
+        /// @brief Parse a non-negative fractional value (Isolate's time flags
+        /// allow fractional seconds; the Worker emits e.g. `--time=1.000000`).
+        inline double parse_double(std::string_view flag, const char* arg) {
+            double value = 0;
+            const char* end = arg + std::strlen(arg);
+            auto [ptr, ec] = std::from_chars(arg, end, value);
+            if (ec != std::errc{} || ptr != end || value < 0) {
                 usage_error("Invalid numeric value for --{}: {}", flag, arg);
             }
             return value;
@@ -286,13 +298,13 @@ namespace cli {
                     opts.as_size = parse_size("as-size", optarg);
                     break;
                 case OPT_TIME:
-                    opts.cpu_time = parse_size("time", optarg);
+                    opts.cpu_time = parse_double("time", optarg);
                     break;
                 case OPT_WALL_TIME:
-                    opts.wall_time = parse_size("wall-time", optarg);
+                    opts.wall_time = parse_double("wall-time", optarg);
                     break;
                 case OPT_EXTRA_TIME:
-                    opts.extra_time = parse_size("extra-time", optarg);
+                    opts.extra_time = parse_double("extra-time", optarg);
                     break;
                 case OPT_STACK:
                     opts.stack = parse_size("stack", optarg);

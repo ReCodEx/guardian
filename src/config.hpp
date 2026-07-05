@@ -125,7 +125,7 @@ namespace config {
                 try {
                     if (limits_node[config_options::task::CPU_TIME]) {
                         cpu_time_ = limits_node[config_options::task::CPU_TIME]
-                                        .as<size_t>();
+                                        .as<double>();
                     }
                     if (limits_node[config_options::task::MEMORY]) {
                         memory_usage_ =
@@ -139,12 +139,12 @@ namespace config {
                     if (limits_node[config_options::task::WALL_TIME]) {
                         wall_time_ =
                             limits_node[config_options::task::WALL_TIME]
-                                .as<size_t>();
+                                .as<double>();
                     }
                     if (limits_node[config_options::task::EXTRA_TIME]) {
                         extra_time_ =
                             limits_node[config_options::task::EXTRA_TIME]
-                                .as<size_t>();
+                                .as<double>();
                     }
                     if (limits_node[config_options::task::PROCESSES]) {
                         processes_ =
@@ -180,15 +180,22 @@ namespace config {
             }
         }
 
+        /// @brief Build from compat (`cli_options`) flags, normalizing Isolate's
+        /// units into the canonical form: KB size flags (`cg-mem`/`mem`,
+        /// `stack`, `fsize`, `core`) become bytes; time flags are already
+        /// fractional seconds. Counts (`processes`, `open-files`) and our own
+        /// `as-size` (bytes) pass through unchanged. `--mem` drives the cgroup
+        /// memory limit like `--cg-mem`, not `RLIMIT_AS` (see CONTEXT decisions).
         resource_limits(const cli::cli_options& opts) {
+            constexpr size_t KB = 1024;
             if (opts.cpu_time) {
                 cpu_time_ = *opts.cpu_time;
             }
             if (opts.memory) {
-                memory_usage_ = *opts.memory;
+                memory_usage_ = *opts.memory * KB;
             }
             if (opts.stack) {
-                stack_size_ = *opts.stack;
+                stack_size_ = *opts.stack * KB;
             }
             if (opts.wall_time) {
                 wall_time_ = *opts.wall_time;
@@ -206,10 +213,10 @@ namespace config {
                 open_files_ = *opts.open_files;
             }
             if (opts.file_size) {
-                file_size_ = *opts.file_size;
+                file_size_ = *opts.file_size * KB;
             }
             if (opts.core) {
-                core_size_ = *opts.core;
+                core_size_ = *opts.core * KB;
             }
             if (opts.disk_usage) {
                 disk_usage_ = *opts.disk_usage;
@@ -240,11 +247,12 @@ namespace config {
         void set_core_dump_size(size_t b) { core_size_ = b; }
 
        private:
-        /// @brief Maximum CPU time in seconds.
-        std::optional<size_t> cpu_time_;
+        /// @brief Maximum CPU time in seconds (fractional; Isolate allows
+        /// fractional-second time limits).
+        std::optional<double> cpu_time_;
 
-        /// @brief Extra time, added to cpu_time_s_, in seconds.
-        std::optional<size_t> extra_time_;
+        /// @brief Extra time, added to cpu_time_, in seconds (fractional).
+        std::optional<double> extra_time_;
 
         /// @brief Maximum total memory utilization in bytes.
         std::optional<size_t> memory_usage_;
@@ -272,10 +280,10 @@ namespace config {
         /// isolated program crashes. Longer dumps get truncated to this size.
         std::optional<size_t> core_size_ = 0;
 
-        /// @brief Maximum wall time.
-        size_t wall_time_ = DEFAULT_WALL_TIME;
+        /// @brief Maximum wall time in seconds (fractional).
+        double wall_time_ = DEFAULT_WALL_TIME;
 
-        static constexpr size_t DEFAULT_WALL_TIME = 60;
+        static constexpr double DEFAULT_WALL_TIME = 60;
 
         void set_defaults() {}
     };

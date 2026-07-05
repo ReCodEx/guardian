@@ -12,6 +12,7 @@
 
 #include <cerrno>
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -146,8 +147,8 @@ namespace tasks {
             int stat{};
             pid_t p;
             auto stime = std::chrono::system_clock::now();
-            auto wall_limit =
-                std::chrono::seconds(task_config_->rlimits().wall_time());
+            auto wall_limit = std::chrono::duration<double>(
+                task_config_->rlimits().wall_time());
 
             // Periodically check if the task has terminated and kill() if it
             // exceeds wall time limit.
@@ -422,8 +423,11 @@ namespace tasks {
 
         /// @brief Set a limit on CPU time consumed by the task. Applies to each
         /// process launched (e.g. using fork() or a command in a bash script).
-        /// @param bytes
-        void set_cpu_time(size_t s) {
+        /// @param seconds fractional CPU-second limit. RLIMIT_CPU is
+        /// whole-seconds, so we `ceil` it as a coarse kernel backstop; precise
+        /// sub-second enforcement comes from the cgroup CPU-time compare.
+        void set_cpu_time(double seconds) {
+            rlim_t s = static_cast<rlim_t>(std::ceil(seconds));
             rlimit cpu_time{s, s};
             if (setrlimit(RLIMIT_CPU, &cpu_time) == -1) {
                 terminate(

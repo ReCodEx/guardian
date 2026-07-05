@@ -48,19 +48,24 @@ namespace {
 
     // --- resource_limits from cli_options ------------------------------------
 
-    TEST(resource_limits_cli, maps_optional_fields) {
+    TEST(resource_limits_cli, converts_isolate_units_to_canonical) {
+        // The compat ctor normalizes Isolate's flag units into canonical form:
+        // KB sizes -> bytes, fractional seconds kept as double, counts as-is.
         cli::cli_options o;
-        o.memory = 2048;
-        o.cpu_time = 3;
-        o.open_files = 64;
-        o.file_size = 4096;
+        o.memory = 2048;     // --cg-mem, KB
+        o.file_size = 4096;  // --fsize, KB
+        o.stack = 64;        // --stack, KB
+        o.cpu_time = 1.5;    // --time, seconds
+        o.wall_time = 2.5;   // --wall-time, seconds
+        o.open_files = 64;   // count, not a size
 
         config::resource_limits rl(o);
-        EXPECT_EQ(rl.memory(), 2048u);
-        EXPECT_EQ(rl.cpu_time(), 3u);
-        EXPECT_EQ(rl.open_files(), 64u);
-        EXPECT_EQ(rl.file_size(), 4096u);
-        EXPECT_FALSE(rl.stack_size().has_value());
+        EXPECT_EQ(rl.memory(), 2048u * 1024);  // KB -> bytes
+        EXPECT_EQ(rl.file_size(), 4096u * 1024);
+        EXPECT_EQ(rl.stack_size(), 64u * 1024);
+        EXPECT_DOUBLE_EQ(rl.cpu_time().value(), 1.5);  // fractional seconds
+        EXPECT_DOUBLE_EQ(rl.wall_time(), 2.5);
+        EXPECT_EQ(rl.open_files(), 64u);  // count, unchanged
     }
 
     // --- task_config from a YAML node ----------------------------------------
