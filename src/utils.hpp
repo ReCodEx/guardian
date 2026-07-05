@@ -33,6 +33,30 @@ namespace string_utils
 
 }
 
+/// @brief Metric-unit conversions shared by both metadata writers (the compat
+/// meta-file in meta_file.hpp and the standalone stats-yaml in config.hpp), so
+/// the two output paths can never drift on units again. Isolate's conventions:
+/// times are `seconds.milliseconds` (3 decimals, integer-derived), memory is
+/// binary KB (bytes >> 10).
+namespace units
+{
+    /// @brief Format a millisecond count as Isolate's `S.mmm` seconds string.
+    inline std::string sec_from_ms(size_t ms)
+    {
+        return std::format("{}.{:03}", ms / 1000, ms % 1000);
+    }
+
+    /// @brief Format a microsecond count as Isolate's `S.mmm` seconds string
+    /// (truncating to millisecond resolution, as Isolate does).
+    inline std::string sec_from_usec(size_t usec)
+    {
+        return sec_from_ms(usec / 1000);
+    }
+
+    /// @brief Bytes to binary KB (KiB), matching Isolate's `mem >> 10`.
+    inline size_t bytes_to_kib(size_t bytes) { return bytes >> 10; }
+}
+
 namespace file_utils
 {
     namespace fs = std::filesystem;

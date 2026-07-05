@@ -14,6 +14,7 @@ set(UNIT_TESTS
   env_rule_test
   config_test
   lock_test
+  meta_file_test
 )
 
 foreach(t ${UNIT_TESTS})

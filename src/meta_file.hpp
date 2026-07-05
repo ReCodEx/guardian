@@ -78,9 +78,14 @@ namespace meta {
 
     /// @brief Write the Isolate-format meta-file for a completed task.
     /// @details Emits `status:` (omitted on OK), `exitcode:` (when the task
-    /// exited normally) and `exitsig:` (when it died on a signal). The metric
-    /// lines (`time`, `cg-mem`, `max-rss`, …) are the deferred rows of the same
-    /// table (ADR 0005 C1). Best-effort: never throws, never `terminate()`s.
+    /// exited normally) and `exitsig:` (when it died on a signal), followed by
+    /// the metric superset in Isolate's emission order: `time` (CPU, cgroup),
+    /// `time-wall`, `max-rss` (rusage KB), `csw-voluntary`/`csw-forced`, and
+    /// `cg-mem` (cgroup peak KB). Every metric key is always present except
+    /// `cg-mem`, which is omitted when cgroup memory was unmeasurable — leaving
+    /// `max-rss` as the memory signal (ADR 0006). The `killed` / `cg-oom-killed`
+    /// discriminators are added in a later slice. Best-effort: never throws,
+    /// never `terminate()`s.
     inline void write_result(const fs::path& path,
                              const config::task_stats& s) {
         std::string out;
@@ -92,6 +97,15 @@ namespace meta {
         }
         if (s.signalled) {
             out += std::format("exitsig:{}\n", s.signal);
+        }
+        out += std::format("time:{}\n", units::sec_from_usec(s.cg_total_time_usec));
+        out += std::format("time-wall:{}\n", units::sec_from_ms(s.wall_time_ms));
+        out += std::format("max-rss:{}\n", s.rusage_max_rss_kb);
+        out += std::format("csw-voluntary:{}\n", s.csw_voluntary);
+        out += std::format("csw-forced:{}\n", s.csw_forced);
+        if (s.cg_mem_measured) {
+            out += std::format("cg-mem:{}\n",
+                               units::bytes_to_kib(s.cg_total_mem_bytes));
         }
         detail::write_file(path, out);
     }

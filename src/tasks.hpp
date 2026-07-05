@@ -85,7 +85,8 @@ namespace tasks {
             size_t wall_time_ms,
             config::exit_status exit = config::exit_status::OK) {
             auto r_usage = get_children_rusage();
-            auto memory = task_cgroup.memory_usage_bytes();
+            auto peak = task_cgroup.memory_peak_bytes();
+            auto memory = peak.value_or(0);
             auto cputime = task_cgroup.cpu_usage_usec();
 
             if (task_config_->rlimits().memory().has_value() &&
@@ -117,13 +118,18 @@ namespace tasks {
                 .signal = WTERMSIG(stat),
                 .exit = exit,
 
-                .cg_total_mem_bytes = task_cgroup.memory_usage_bytes(),
-                .cg_total_time_usec = task_cgroup.cpu_usage_usec(),
+                .cg_total_mem_bytes = memory,
+                .cg_total_time_usec = cputime,
                 .wall_time_ms = wall_time_ms,
 
-                .rusage_total_mem_bytes = r_usage.ru_maxrss * 1000,
+                .rusage_max_rss_kb =
+                    static_cast<size_t>(r_usage.ru_maxrss),  // already KB
                 .rusage_total_time_usec = rusage_total_time_usec(r_usage),
 
+                .csw_voluntary = static_cast<size_t>(r_usage.ru_nvcsw),
+                .csw_forced = static_cast<size_t>(r_usage.ru_nivcsw),
+
+                .cg_mem_measured = peak.has_value(),
             };
         }
 
@@ -480,7 +486,7 @@ namespace tasks {
         long rusage_total_time_usec(const rusage& r_usage) {
             return (r_usage.ru_utime.tv_sec + r_usage.ru_stime.tv_sec) *
                        1000000 +
-                   r_usage.ru_utime.tv_usec + r_usage.ru_utime.tv_usec;
+                   r_usage.ru_utime.tv_usec + r_usage.ru_stime.tv_usec;
         }
     };
 

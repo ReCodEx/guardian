@@ -5,9 +5,12 @@
 #include <unistd.h>
 
 #include <chrono>
+#include <cstddef>
+#include <exception>
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
@@ -134,12 +137,34 @@ namespace cgroup {
             return true;
         }
 
-        /// @brief Extractor for the memory usage of a cgroup from the
+        /// @brief Peak memory usage of the cgroup, in bytes, from the
         /// memory.peak file.
-        /// @return memory usage in bytes
-        size_t memory_usage_bytes() const {
+        /// @return the peak in bytes, or nullopt when memory.peak is
+        /// unavailable — absent on kernels without the backport (el9 / 5.14),
+        /// empty, or non-numeric. The caller reports `cg-mem` only when this
+        /// holds a value (ADR 0006); `stoull` (not `stoi`) avoids overflow on
+        /// limits above 2 GB.
+        std::optional<size_t> memory_peak_bytes() const {
             std::ifstream memory_peak(*cgrp_path_ / MEMORY_PEAK());
-            return std::stoi(file_utils::read_row_col(memory_peak, 0, 0));
+            if (!memory_peak) {
+                return std::nullopt;
+            }
+            std::string val = file_utils::read_row_col(memory_peak, 0, 0);
+            if (val.empty()) {
+                return std::nullopt;
+            }
+            try {
+                return std::stoull(val);
+            } catch (const std::exception&) {
+                return std::nullopt;
+            }
+        }
+
+        /// @brief Peak memory usage in bytes, or 0 when unmeasurable. Kept for
+        /// callers that only need a best-effort figure; the meta writer uses
+        /// @ref memory_peak_bytes to distinguish "0 bytes" from "not measured".
+        size_t memory_usage_bytes() const {
+            return memory_peak_bytes().value_or(0);
         }
 
        protected:
@@ -260,6 +285,12 @@ namespace cgroup {
         /// @brief Getter for the amount of memory used by this cgroup.
         /// @return Memory usage in bytes.
         size_t memory_usage_bytes() const { return mem_.memory_usage_bytes(); }
+
+        /// @brief Peak memory in bytes, or nullopt when memory.peak is
+        /// unmeasurable (ADR 0006).
+        std::optional<size_t> memory_peak_bytes() const {
+            return mem_.memory_peak_bytes();
+        }
 
         /// @brief Setup the memory controller so that processes are killed upon
         /// exceeding a limit on memory utilization.

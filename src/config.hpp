@@ -312,11 +312,23 @@ namespace config {
 
         size_t wall_time_ms;
 
-        /// @brief Memory usage in bytes from getrusage().
-        long rusage_total_mem_bytes;
+        /// @brief Peak resident set size in KB from getrusage() (`ru_maxrss`,
+        /// already KB on Linux). Emitted as Isolate's `max-rss`; the honest
+        /// memory signal when cgroup `cg-mem` is unmeasurable (ADR 0006).
+        size_t rusage_max_rss_kb;
 
         /// @brief CPU time in microseconds from getrusage().
         long rusage_total_time_usec;
+
+        /// @brief Voluntary / involuntary context switches from getrusage()
+        /// (`ru_nvcsw` / `ru_nivcsw`). Isolate's `csw-voluntary` / `csw-forced`.
+        size_t csw_voluntary;
+        size_t csw_forced;
+
+        /// @brief Whether cgroup peak memory (`memory.peak`) could be read. When
+        /// false (e.g. el9 / kernel 5.14 without the backport) the `cg-mem` line
+        /// is omitted from the meta-file rather than reported as 0 (ADR 0006).
+        bool cg_mem_measured;
     };
 
     /// @brief not implemented.
@@ -527,7 +539,7 @@ namespace config {
             yaml << YAML::Key << stats_names::CG_TOTAL_TIME_S << YAML::Value
                  << (float)stats.cg_total_time_usec / (float)1000000;
             yaml << YAML::Key << stats_names::CG_TOTAL_MEM_KB << YAML::Value
-                 << stats.cg_total_mem_bytes / 1000;
+                 << units::bytes_to_kib(stats.cg_total_mem_bytes);
             yaml << YAML::Key << stats_names::WALL_TIME_S << YAML::Value
                  << (float)stats.wall_time_ms / 1000;
 

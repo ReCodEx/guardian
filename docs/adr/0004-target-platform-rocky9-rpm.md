@@ -11,3 +11,5 @@ The project is C++23, but the el9 system compiler (GCC 11.5) only partially supp
 ## Open item (pending cluster verification)
 
 `memory.peak` — which gives accurate `cg-mem` / peak-memory reporting — landed in mainline kernel 5.19; el9 runs 5.14 and may or may not backport it. If it is absent on the target nodes, the meta-file's memory reporting needs a documented fallback (sample `memory.current` at task exit, or lean on `getrusage` `max-rss`). The exact gcc-toolset version and `memory.peak` availability are to be confirmed against the actual cluster software.
+
+**Refined by `docs/adr/0006`:** for the `cg-mem` key specifically we do *not* synthesize a fallback value — we omit the line and rely on `max-rss`, because the Worker's `std::stoul` parser makes any sentinel unsafe.
