@@ -246,6 +246,63 @@ def test_default_tmp_strips_setuid():
         _run("--cleanup")
 
 
+def test_setuid_invocation_runs_task_as_box_uid():
+    # #13 acceptance: the binary installed setuid-root (mode 4755, ADR 0002) and
+    # invoked by a NON-root user must complete init/run/cleanup, and the task
+    # must run as box_uid — not root, not the invoking caller. We emulate the
+    # install with a root-owned 4755 copy and drop the child's real uid to the
+    # caller (SUDO_UID) via preexec, so euid becomes 0 only through the setuid
+    # bit — the genuine Worker path. A non-setuid binary would just hit the
+    # require_root gate, so the setuid copy is what makes this real.
+    probe = PROBES_DIR / "euid_probe"
+    if not probe.exists():
+        pytest.skip("euid_probe workload not built")
+    sudo_uid = os.environ.get("SUDO_UID")
+    if os.geteuid() != 0 or not sudo_uid:
+        pytest.skip("need root + a non-root SUDO_UID to emulate a setuid install")
+    caller = int(sudo_uid)
+    box_uid = BOX_ID + 60000
+
+    # Root-owned setuid copy on a suid-capable fs (next to the real binary).
+    suid_bin = ISOLATOR_BIN.parent / "isolator_suid"
+    shutil.copy(ISOLATOR_BIN, suid_bin)
+    os.chown(suid_bin, 0, 0)
+    os.chmod(suid_bin, 0o4755)
+
+    def _suid(*args):
+        return subprocess.run(
+            [str(suid_bin), f"--box-id={BOX_ID}", *args],
+            capture_output=True,
+            text=True,
+            preexec_fn=lambda: os.setuid(caller),  # noqa: E731
+        )
+
+    try:
+        init = _suid("--init")
+        assert init.returncode == 0, init.stderr
+        box_root = Path(init.stdout.strip())
+        assert box_root.is_dir()
+
+        # Plant a plain (non-setuid) probe the box user can exec.
+        box_tmp = box_root / "tmp"
+        box_tmp.mkdir(parents=True, exist_ok=True)
+        planted = box_tmp / "euid_probe"
+        shutil.copy(probe, planted)
+        os.chmod(planted, 0o755)
+
+        run = _suid("--run", "--", "/tmp/euid_probe")
+        assert run.returncode == 0, run.stderr
+        assert run.stdout.strip() == str(box_uid), (
+            f"task must run as box_uid {box_uid} under a setuid invocation, "
+            f"not root or the caller; got {run.stdout.strip()!r}"
+        )
+
+        assert _suid("--cleanup").returncode == 0
+    finally:
+        _run("--cleanup")  # sudo backstop if the setuid cleanup didn't run
+        suid_bin.unlink(missing_ok=True)
+
+
 def test_compat_dir_binds_host_input(tmp_path):
     # #11: a --dir rule makes a host directory readable inside the box (the
     # "read a bound input" acceptance criterion). The box user (60000) reads

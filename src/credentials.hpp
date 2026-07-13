@@ -228,14 +228,23 @@ namespace credentials
             return credentials_root_->box_gid();
         }
 
-        /// @brief Switch back to the UID/GID as which this instance was launched.
-        /// @details Switches real, effective, and saved-set UID and GID. 
+        /// @brief Drop real, effective, and saved-set UID/GID back to the
+        /// invoking caller (orig_uid/orig_gid).
+        /// @details Mirror image of switch_to_box, and the exact counterpart of
+        /// Isolate's setup_orig_credentials (isolate.c). Isolate calls it in
+        /// box_proxy so the supervisor that monitors untrusted code runs
+        /// unprivileged. Our proxy does NOT yet call it — it currently
+        /// supervises the whole task lifecycle as root — because our wall-time
+        /// SIGKILL lives in the proxy and a caller-uid proxy could not signal
+        /// the box_uid task. Wiring this in (retaining CAP_KILL, or relocating
+        /// the kill to root) is tracked in issue #20; the method is kept here as
+        /// the ready call site rather than deleted-and-re-added.
         void switch_to_user()
         {
             auto orig_gid = credentials_root_->orig_gid();
             if(setresgid(orig_gid, orig_gid, orig_gid) < 0)
                 { terminate("Couldn't switch to original GID, errno: {}", errno); }
-            
+
             if(setgroups(0, NULL) < 0)
                 { terminate("Setgroups failed, errno: {}", errno); }
 
@@ -244,15 +253,27 @@ namespace credentials
                 { terminate("Couldn't switch to original UID, errno: {}", errno); }
         }
 
-        /// @brief Switch credentials (UID and GID) to values assigned to the box.
-        /// @details Switches real, effective, and saved-set UID and GID. 
+        /// @brief Drop credentials to the box UID/GID for the task process.
+        /// @details Sets real, effective, AND saved-set uid/gid to box_uid/gid,
+        /// matching Isolate's setup_credentials (isolate.c). The drop is
+        /// deliberately irreversible (saved-set is box_uid too, not root): the
+        /// task process execve()s untrusted code and never returns, so it must
+        /// retain no path back to privilege.
+        ///
+        /// The setgroups(0, NULL) drops the supplementary group list, which
+        /// setresuid/setresgid leave untouched — otherwise the box process
+        /// keeps the groups it inherited from root. It is not optional:
+        /// empirically the sandbox failed without it (the exact failure mode was
+        /// never root-caused — this was a long-standing TODO). Order is
+        /// load-bearing regardless: setgroups must run while we still hold
+        /// CAP_SETGID, i.e. after setresgid but before setresuid (dropping uid
+        /// from 0 is what clears capabilities; changing gid does not).
         void switch_to_box()
         {
             auto box_gid = credentials_root_->box_gid();
             if(setresgid(box_gid, box_gid, box_gid) < 0)
                 { terminate("Couldn't switch to box GID, errno: {}", errno); }
 
-            /// TODO: Find out why setgroups is necessary.
             if(setgroups(0, NULL) < 0)
                 { terminate("Setgroups failed, errno: {}", errno); }
 
