@@ -22,8 +22,13 @@ from conftest import ISOLATOR_BIN, PROBES_DIR, WORKLOAD_DIR
 BOX_ID = 0
 
 
-def _run(*args, meta=None):
-    cmd = ["sudo", str(ISOLATOR_BIN), f"--box-id={BOX_ID}"]
+def _run(*args, meta=None, env_vars=None):
+    cmd = ["sudo"]
+    # `sudo KEY=VAL cmd` sets KEY in the launched isolator's environment, so
+    # --env=KEY inherit rules have something to inherit (sudo scrubs env).
+    if env_vars:
+        cmd += [f"{k}={v}" for k, v in env_vars.items()]
+    cmd += [str(ISOLATOR_BIN), f"--box-id={BOX_ID}"]
     if meta:
         cmd.append(f"--meta={meta}")
     cmd.extend(args)
@@ -245,6 +250,114 @@ def test_compat_dir_tmp_override_keeps_tmp_writable():
                    "echo hi > /tmp/probe && cat /tmp/probe")
         assert run.returncode == 0, run.stderr
         assert run.stdout.strip() == "hi"
+    finally:
+        _run("--cleanup")
+
+
+# --- --env / IO redirection / --chdir / --share-net compat verification ------
+
+
+def test_compat_env_set():
+    # #11: --env=K=V sets a variable in the task environment.
+    try:
+        assert _run("--init").returncode == 0
+        run = _run("--env=FOO=bar", "--run", "--", "/bin/sh", "-c", "echo $FOO")
+        assert run.returncode == 0, run.stderr
+        assert run.stdout.strip() == "bar"
+    finally:
+        _run("--cleanup")
+
+
+def test_compat_env_inherit():
+    # #11: bare --env=K inherits K from the isolator's own environment.
+    try:
+        assert _run("--init").returncode == 0
+        run = _run("--env=FOO", "--run", "--", "/bin/sh", "-c", "echo $FOO",
+                   env_vars={"FOO": "inherited"})
+        assert run.returncode == 0, run.stderr
+        assert run.stdout.strip() == "inherited"
+    finally:
+        _run("--cleanup")
+
+
+def test_compat_stdout_redirect_is_box_owned():
+    # #11: --stdout captures the program's output to a file, and (post
+    # privilege-order fix) the file is created box-owned, not root-owned.
+    box_uid = BOX_ID + 60000
+    try:
+        init = _run("--init")
+        assert init.returncode == 0, init.stderr
+        box_root = Path(init.stdout.strip())
+        run = _run("--stdout=/box/out.txt", "--run", "--", "/bin/echo", "captured")
+        assert run.returncode == 0, run.stderr
+        out = box_root / "box" / "out.txt"
+        assert out.read_text().strip() == "captured"
+        assert out.stat().st_uid == box_uid, "redirect file must be box-owned"
+    finally:
+        _run("--cleanup")
+
+
+def test_compat_stdin_redirect():
+    # #11: --stdin feeds a file to the program's stdin. The file is opened as
+    # the box user, so it lives in the box-writable /box.
+    try:
+        init = _run("--init")
+        assert init.returncode == 0, init.stderr
+        box_root = Path(init.stdout.strip())
+        src = box_root / "box" / "in.txt"
+        src.write_text("fed-via-stdin")
+        os.chmod(src, 0o644)
+        run = _run("--stdin=/box/in.txt", "--run", "--", "/bin/cat")
+        assert run.returncode == 0, run.stderr
+        assert run.stdout.strip() == "fed-via-stdin"
+    finally:
+        _run("--cleanup")
+
+
+def test_compat_stderr_to_stdout():
+    # #11: --stderr-to-stdout merges the task's stderr into its stdout.
+    try:
+        assert _run("--init").returncode == 0
+        run = _run("--stderr-to-stdout", "--run", "--", "/bin/sh", "-c",
+                   "echo oops >&2")
+        assert run.returncode == 0, run.stderr
+        assert run.stdout.strip() == "oops"
+    finally:
+        _run("--cleanup")
+
+
+def test_compat_chdir():
+    # #11: --chdir sets the task's working directory (relative to the box root).
+    try:
+        assert _run("--init").returncode == 0
+        run = _run("--chdir=/tmp", "--run", "--", "/bin/sh", "-c", "pwd")
+        assert run.returncode == 0, run.stderr
+        assert run.stdout.strip() == "/tmp"
+    finally:
+        _run("--cleanup")
+
+
+def _iface_count():
+    # Count network interfaces visible inside the box via /proc/net/dev.
+    run = _run("--run", "--", "/bin/sh", "-c", 'grep -c ":" /proc/net/dev')
+    assert run.returncode == 0, run.stderr
+    return int(run.stdout.strip())
+
+
+def _iface_count_shared():
+    run = _run("--share-net", "--run", "--", "/bin/sh", "-c",
+               'grep -c ":" /proc/net/dev')
+    assert run.returncode == 0, run.stderr
+    return int(run.stdout.strip())
+
+
+def test_compat_share_net_toggles_network_namespace():
+    # #11: default is an isolated net namespace (loopback only); --share-net
+    # joins the host's, exposing its interfaces.
+    try:
+        assert _run("--init").returncode == 0
+        assert _iface_count() == 1  # lo only
+        assert _iface_count_shared() > 1  # host interfaces visible
     finally:
         _run("--cleanup")
 

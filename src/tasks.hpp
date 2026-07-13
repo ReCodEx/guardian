@@ -220,11 +220,15 @@ namespace tasks {
                           task_config_->name(), errno);
             } else if (!clone_rv) {
                 /// We are in the task process.
-
-                optional_chdir();
-                redirect_descriptors();
+                /// Order matches Isolate's box_inside: apply rlimits while
+                /// still privileged, drop to the box user, then chdir and open
+                /// the redirect files AS THE BOX USER — so `--stdin` respects
+                /// box-user permissions and `--stdout`/`--stderr` files are
+                /// created box-owned, not root-owned.
                 set_resource_limits();
                 credentials_->switch_to_box();
+                optional_chdir();
+                redirect_descriptors();
                 call_execve();
 
                 /// execve() doesn't return on success.
@@ -295,7 +299,7 @@ namespace tasks {
             auto& stdout_f = task_config_->stdout_file();
             if (stdout_f) {
                 if (!std::freopen(stdout_f.value().c_str(), "w", stdout)) {
-                    terminate("Couldn't redirect \"{}\" to stdin for task {}",
+                    terminate("Couldn't redirect \"{}\" to stdout for task {}",
                               stdout_f.value().string(), task_config_->name());
                 }
             }
