@@ -145,4 +145,57 @@ namespace {
             "No path to executable");
     }
 
+    // --- directory rules: option parsing -------------------------------------
+
+    TEST(dir_rule, dev_norec_sets_dev_and_norec) {
+        config::dir_rule r("dev:dev:norec");
+        EXPECT_EQ(r.in_dir(), "dev");
+        EXPECT_EQ(r.out_dir(), "/dev");
+        EXPECT_TRUE(r.dev());
+        EXPECT_TRUE(r.norec());
+        EXPECT_FALSE(r.fs());
+    }
+
+    TEST(dir_rule, dev_shm_is_rw_tmpfs) {
+        // The outer token is the filesystem type for an fs rule; out_dir keeps
+        // the leading slash and the mount code strips it back to "tmpfs".
+        config::dir_rule r("dev/shm=tmpfs:fs:rw");
+        EXPECT_EQ(r.in_dir(), "dev/shm");
+        EXPECT_EQ(r.out_dir(), "/tmpfs");
+        EXPECT_TRUE(r.fs());
+        EXPECT_TRUE(r.rw());
+    }
+
+    TEST(dir_rule, tmp_flag_forces_rw) {
+        config::dir_rule r("tmp:tmp");
+        EXPECT_EQ(r.in_dir(), "tmp");
+        EXPECT_TRUE(r.tmp());
+        EXPECT_TRUE(r.rw());  // the tmp flag implies rw
+        EXPECT_FALSE(r.fs());
+    }
+
+    // --- default dir set: pinned against Isolate's built-in set ---------------
+
+    TEST(box_fs_config_cli, default_set_matches_isolate_plus_etc) {
+        cli::cli_options o;
+        config::box_fs_config fs(o);
+
+        ASSERT_TRUE(fs.use_default_rules());
+        const auto& rules = fs.default_rules();
+
+        // Isolate's init_dir_rules() set (rules.c), minus box (our /box is the
+        // pivot root's own subdir) plus our retained etc, in apply order.
+        // dev must precede dev/shm (nested mount).
+        ASSERT_EQ(rules.size(), 9u);
+        EXPECT_EQ(rules[0].string(), "etc");
+        EXPECT_EQ(rules[1].string(), "bin");
+        EXPECT_EQ(rules[2].string(), "dev:dev:norec");
+        EXPECT_EQ(rules[3].string(), "dev/shm=tmpfs:fs:rw");
+        EXPECT_EQ(rules[4].string(), "lib");
+        EXPECT_EQ(rules[5].string(), "lib64:maybe");
+        EXPECT_EQ(rules[6].string(), "proc=proc:fs");
+        EXPECT_EQ(rules[7].string(), "tmp:tmp");
+        EXPECT_EQ(rules[8].string(), "usr");
+    }
+
 }  // namespace

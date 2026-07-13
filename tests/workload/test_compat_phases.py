@@ -9,13 +9,15 @@ meta-file and the full exit-code contract land in C1, so only the meta test
 stays skipped.
 """
 
+import os
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 
 import pytest
 
-from conftest import ISOLATOR_BIN, WORKLOAD_DIR
+from conftest import ISOLATOR_BIN, PROBES_DIR, WORKLOAD_DIR
 
 BOX_ID = 0
 
@@ -136,6 +138,80 @@ def test_meta_file_wall_time_exceeded_is_to_killed(tmp_path):
         parsed = _parse_meta(meta)
         assert parsed.get("status") == "TO"
         assert parsed.get("killed") == "1"
+    finally:
+        _run("--cleanup")
+
+
+def test_default_tmp_is_writable():
+    # #11: /tmp is a default mount (isolate's tmp:tmp). A task can write and
+    # read it back. /bin/sh is in the default box, so no dir-rule is needed.
+    try:
+        assert _run("--init").returncode == 0
+        run = _run("--run", "--", "/bin/sh", "-c",
+                   "echo hi > /tmp/probe && cat /tmp/probe")
+        assert run.returncode == 0, run.stderr
+        assert run.stdout.strip() == "hi"
+    finally:
+        _run("--cleanup")
+
+
+def test_default_tmp_is_isolated_from_host():
+    # #11: the box /tmp is a fresh box-owned scratch, NOT a bind of the host
+    # /tmp — a sentinel placed in the host /tmp must be invisible inside the box.
+    sentinel = Path(tempfile.gettempdir()) / f"rcdx_host_sentinel_{os.getpid()}"
+    sentinel.write_text("host-only")
+    try:
+        assert _run("--init").returncode == 0
+        run = _run("--run", "--", "/bin/sh", "-c",
+                   f"test -e /tmp/{sentinel.name} && echo LEAK || echo ISOLATED")
+        assert run.returncode == 0, run.stderr
+        assert run.stdout.strip() == "ISOLATED"
+    finally:
+        _run("--cleanup")
+        sentinel.unlink(missing_ok=True)
+
+
+def test_default_dev_shm_is_writable():
+    # #11: /dev/shm is a default tmpfs mount (isolate's dev/shm=tmpfs:fs:rw),
+    # writable by the task.
+    try:
+        assert _run("--init").returncode == 0
+        run = _run("--run", "--", "/bin/sh", "-c",
+                   "echo hi > /dev/shm/probe && cat /dev/shm/probe")
+        assert run.returncode == 0, run.stderr
+        assert run.stdout.strip() == "hi"
+    finally:
+        _run("--cleanup")
+
+
+def test_default_tmp_strips_setuid():
+    # #11: /tmp is bind-mounted MS_NOSUID, so a setuid-root binary there does
+    # NOT elevate. The box user can't create such a file itself, so we plant a
+    # root-owned 4755 probe into the box's /tmp scratch (box_root/tmp is the
+    # bind-self source) as root, then exec it inside the box: under nosuid its
+    # effective UID stays the box user (box_id + 60000), not 0.
+    probe = PROBES_DIR / "euid_probe"
+    if not probe.exists():
+        pytest.skip("euid_probe workload not built")
+    box_uid = BOX_ID + 60000
+    try:
+        init = _run("--init")
+        assert init.returncode == 0, init.stderr
+        box_root = Path(init.stdout.strip())
+
+        box_tmp = box_root / "tmp"
+        box_tmp.mkdir(parents=True, exist_ok=True)
+        planted = box_tmp / "euid_probe"
+        shutil.copy(probe, planted)
+        os.chown(planted, 0, 0)  # root-owned
+        os.chmod(planted, 0o4755)  # setuid bit set
+
+        run = _run("--run", "--", "/tmp/euid_probe")
+        assert run.returncode == 0, run.stderr
+        assert run.stdout.strip() == str(box_uid), (
+            f"expected euid {box_uid} (nosuid stripped setuid); "
+            f"got {run.stdout.strip()!r}"
+        )
     finally:
         _run("--cleanup")
 

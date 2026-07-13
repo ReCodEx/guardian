@@ -805,14 +805,22 @@ namespace config {
             }
         }
 
+        /// @brief The default directory rules, mirroring Isolate's built-in set
+        /// (`isolate/rules.c` init_dir_rules): minus `box=./box:rw` (our
+        /// writable `/box` is the pivot root's own `box/` subdir, made at
+        /// `--init` by init_box_dir) and plus our retained `etc` (a deliberate
+        /// divergence — see CONTEXT.md). Order is load-bearing only for the
+        /// nested pair: `dev` is bound `norec` so it doesn't drag in the host's
+        /// `/dev/shm`, and the fresh `tmpfs` shm must be applied right after.
         void define_default_rules() {
-            // default_rules_.emplace_back(dir_rule("tmp:tmp"));
             default_rules_.emplace_back(dir_rule("etc"));
             default_rules_.emplace_back(dir_rule("bin"));
-            default_rules_.emplace_back(dir_rule("dev:dev"));
+            default_rules_.emplace_back(dir_rule("dev:dev:norec"));
+            default_rules_.emplace_back(dir_rule("dev/shm=tmpfs:fs:rw"));
             default_rules_.emplace_back(dir_rule("lib"));
             default_rules_.emplace_back(dir_rule("lib64:maybe"));
             default_rules_.emplace_back(dir_rule("proc=proc:fs"));
+            default_rules_.emplace_back(dir_rule("tmp:tmp"));
             default_rules_.emplace_back(dir_rule("usr"));
         }
 

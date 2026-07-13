@@ -129,15 +129,14 @@ namespace env {
                 return;
             }
 
-            if (rule_->tmp()) {
-                /// TODO: why is a tmp rule not being skipped?
-                // logs::debug("tmp rule, doesn't need mount: \"{}\".",
-                // rule_->string());
-            }
-
             auto in = credentials_->box_root() / rule_->in_dir();
             auto& out = rule_->out_dir();
             auto flags = default_flags();
+
+            if (rule_->tmp()) {
+                mount_tmp_rule(in, flags);
+                return;
+            }
 
             if (rule_->fs()) {
                 if (mount("none", in.c_str(), out.c_str() + 1, flags, "") < 0) {
@@ -285,6 +284,39 @@ namespace env {
                         "{}",
                         dir.string(), errno);
                 }
+            }
+        }
+
+        /// @brief Apply a tmp rule: a fresh, empty, box-owned scratch dir at
+        /// the inner path, bind-mounted onto itself so MS_NOSUID|MS_NODEV bite
+        /// (untrusted code writes here). Matches Isolate's tmp semantics; we
+        /// bind the inner dir onto itself rather than a separate outer scratch
+        /// because our box_root *is* the pivot root — Isolate needs a separate
+        /// outer dir only for its root/ vs box_root/ split, which we don't
+        /// have. The dir is created box-owned 0700 by create_dir(); we
+        /// re-assert here so a dir surviving a prior --run is reset first.
+        /// @param in Inner path of the rule (inside the box root).
+        /// @param flags Base mount() flags from default_flags() (MS_NODEV set).
+        void mount_tmp_rule(const fs::path& in, unsigned long flags) {
+            if (chown(in.c_str(), credentials_->box_uid(),
+                      credentials_->box_gid()) < 0) {
+                terminate("chown() on tmp dir ({}) failed, errno: {}",
+                          in.string(), errno);
+            }
+            if (chmod(in.c_str(), 0700) < 0) {
+                terminate("chmod() on tmp dir ({}) failed, errno: {}",
+                          in.string(), errno);
+            }
+            flags |= MS_BIND | MS_NOSUID;  // default_flags() set MS_NODEV
+            if (!rule_->norec()) {
+                flags |= MS_REC;
+            }
+            // Bind flags only bite on a REMOUNT, hence the second mount().
+            if (mount(in.c_str(), in.c_str(), "none", flags, "") < 0 ||
+                mount(in.c_str(), in.c_str(), "none", MS_REMOUNT | flags, "") <
+                    0) {
+                terminate("Mount failed for tmp rule: {}, errno: {}",
+                          rule_->string(), errno);
             }
         }
 
