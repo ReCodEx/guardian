@@ -174,6 +174,55 @@ namespace {
         EXPECT_FALSE(r.fs());
     }
 
+    TEST(dir_rule, strips_leading_slash_from_inner) {
+        // The Worker sends absolute inner paths (--dir=/etc/java); they must be
+        // sanitized to box-relative, matching Isolate's sanitize_dir_path.
+        config::dir_rule bare("/etc/java");
+        EXPECT_EQ(bare.in_dir(), "etc/java");
+        EXPECT_EQ(bare.out_dir(), "/etc/java");  // outer defaults to the host path
+
+        config::dir_rule tmp("/tmp:tmp");
+        EXPECT_EQ(tmp.in_dir(), "tmp");
+        EXPECT_TRUE(tmp.tmp());
+    }
+
+    TEST(dir_rule, rejects_dotdot_escape) {
+        EXPECT_EXIT({ config::dir_rule r(".."); },
+                    ::testing::ExitedWithCode(2), "Invalid inner path");
+        EXPECT_EXIT({ config::dir_rule r("foo/../../etc"); },
+                    ::testing::ExitedWithCode(2), "Invalid inner path");
+    }
+
+    // --- compat --dir wiring + override --------------------------------------
+
+    TEST(box_fs_config_cli, dir_rules_become_user_rules) {
+        cli::cli_options o;
+        o.dir_rules = {"/opt/dotnet", "etc/alternatives=/etc/alternatives:maybe"};
+        config::box_fs_config fs(o);
+
+        ASSERT_EQ(fs.rules().size(), 2u);
+        EXPECT_EQ(fs.rules()[0].in_dir(), "opt/dotnet");
+        EXPECT_EQ(fs.rules()[1].in_dir(), "etc/alternatives");
+        EXPECT_TRUE(fs.rules()[1].maybe());
+    }
+
+    TEST(box_fs_config_cli, user_rule_overrides_same_inner_default) {
+        // The Worker's --dir=/tmp:tmp collides with the default tmp:tmp: the
+        // user rule must replace the default, not stack a second mount.
+        cli::cli_options o;
+        o.dir_rules = {"/tmp:tmp"};
+        config::box_fs_config fs(o);
+
+        auto has_inner = [](const auto& rules, const char* in) {
+            return std::any_of(rules.begin(), rules.end(),
+                               [&](const config::dir_rule& r) {
+                                   return r.in_dir() == in;
+                               });
+        };
+        EXPECT_FALSE(has_inner(fs.default_rules(), "tmp"));  // default dropped
+        EXPECT_TRUE(has_inner(fs.rules(), "tmp"));           // user rule present
+    }
+
     // --- default dir set: pinned against Isolate's built-in set ---------------
 
     TEST(box_fs_config_cli, default_set_matches_isolate_plus_etc) {

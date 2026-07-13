@@ -652,7 +652,15 @@ namespace config {
             auto& outer_token = m[3];
             auto& options_token = m[5];
 
-            fs::path inner = fs::path(inner_token);
+            // Sanitize the inner path to a box-relative one (Isolate's
+            // sanitize_dir_path): strip leading slashes so the Worker's
+            // absolute rules (--dir=/etc/java) become box-relative. `..`
+            // components are rejected below by check_inner_dir.
+            std::string inner_str = inner_token.str();
+            auto first = inner_str.find_first_not_of('/');
+            inner_str = first == std::string::npos ? "" : inner_str.substr(first);
+
+            fs::path inner = fs::path(inner_str);
 
             std::optional<fs::path> outer;
             if (outer_token != "") {
@@ -721,6 +729,14 @@ namespace config {
         /// @param in
         /// @return
         static bool check_inner_dir(const fs::path& in) {
+            if (in.empty()) {
+                return false;  // e.g. --dir=/ sanitized to nothing
+            }
+            for (const auto& part : in) {
+                if (part == "..") {
+                    return false;  // reject path-escape, matching Isolate
+                }
+            }
             return file_utils::is_valid_path(in) &&
                    file_utils::is_subdirectory(in);
         }
@@ -746,10 +762,17 @@ namespace config {
         box_fs_config() {}
 
         /// @brief Compatibility-mode (`--run`) box filesystem: the default
-        /// directory rules only, so the program can exec against the host's
-        /// `/bin`, `/lib`, `/usr`, … Parsing `--dir` rules into user rules (and
-        /// auditing the default set against Isolate's exact one) is issue #11.
-        box_fs_config(const cli::cli_options& opts) { define_default_rules(); }
+        /// directory rules plus the caller's `--dir` rules. Each `--dir` is
+        /// sanitized to a box-relative inner path in dir_rule and overrides any
+        /// same-inner default (e.g. the Worker's `--dir=/tmp:tmp` replaces the
+        /// default `tmp:tmp`). Isolate's delete form (`--dir=in=`) and
+        /// `--no-default-dirs` are not yet implemented (#11).
+        box_fs_config(const cli::cli_options& opts) {
+            define_default_rules();
+            for (const auto& rule_str : opts.dir_rules) {
+                add_rule(dir_rule(rule_str));
+            }
+        }
 
         /// @brief
         /// @param box_root
@@ -792,17 +815,25 @@ namespace config {
 
         void add_rules(const YAML::Node& rules_list) {
             for (std::size_t i = 0; i < rules_list.size(); i++) {
-                auto new_rule = dir_rule(rules_list[i].as<std::string>());
-                // Remove existing rule with same prefix if it exists
-                rules_.erase(std::remove_if(rules_.begin(), rules_.end(),
-                                            [&new_rule](const dir_rule& rule) {
-                                                return rule.in_dir() ==
-                                                       new_rule.in_dir();
-                                            }),
-                             rules_.end());
-
-                rules_.emplace_back(std::move(new_rule));
+                add_rule(dir_rule(rules_list[i].as<std::string>()));
             }
+        }
+
+        /// @brief Add one caller rule, overriding any existing rule — default
+        /// OR user — with the same inner path, mirroring Isolate's in-place
+        /// override (e.g. a `tmp:tmp` rule replaces the default `tmp:tmp`
+        /// instead of stacking a second mount). The overriding rule is appended
+        /// to rules_ and so applies after the surviving defaults; this reorders
+        /// an overridden *default* to the end, which matters only for a
+        /// nested-parent default (the Worker overrides only leaves like `tmp`
+        /// or nests additively under a default like `etc`).
+        void add_rule(dir_rule new_rule) {
+            auto same_inner = [&](const dir_rule& r) {
+                return r.in_dir() == new_rule.in_dir();
+            };
+            std::erase_if(default_rules_, same_inner);
+            std::erase_if(rules_, same_inner);
+            rules_.emplace_back(std::move(new_rule));
         }
 
         /// @brief The default directory rules, mirroring Isolate's built-in set

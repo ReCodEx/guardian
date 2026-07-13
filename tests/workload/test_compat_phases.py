@@ -216,6 +216,39 @@ def test_default_tmp_strips_setuid():
         _run("--cleanup")
 
 
+def test_compat_dir_binds_host_input(tmp_path):
+    # #11: a --dir rule makes a host directory readable inside the box (the
+    # "read a bound input" acceptance criterion). The box user (60000) reads
+    # through the bind mount, so the payload dir/file must be accessible to it.
+    payload = tmp_path / "payload"
+    payload.mkdir()
+    (payload / "data.txt").write_text("bound-input-42")
+    os.chmod(payload, 0o755)
+    os.chmod(payload / "data.txt", 0o644)
+    try:
+        assert _run("--init").returncode == 0
+        run = _run(f"--dir=data={payload}", "--run", "--",
+                   "/bin/cat", "/data/data.txt")
+        assert run.returncode == 0, run.stderr
+        assert run.stdout.strip() == "bound-input-42"
+    finally:
+        _run("--cleanup")
+
+
+def test_compat_dir_tmp_override_keeps_tmp_writable():
+    # #11: the Worker sends --dir=/tmp:tmp, whose inner path collides with the
+    # default tmp:tmp. The override must replace the default (not double-mount),
+    # leaving /tmp writable.
+    try:
+        assert _run("--init").returncode == 0
+        run = _run("--dir=/tmp:tmp", "--run", "--", "/bin/sh", "-c",
+                   "echo hi > /tmp/probe && cat /tmp/probe")
+        assert run.returncode == 0, run.stderr
+        assert run.stdout.strip() == "hi"
+    finally:
+        _run("--cleanup")
+
+
 def test_meta_file_internal_error_is_xx(tmp_path):
     # A --run on an un-init'd box is an Isolator-internal error: exit 2 and a
     # status:XX meta with a message, written by root's terminate() meta-sink
