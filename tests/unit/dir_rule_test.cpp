@@ -50,10 +50,18 @@ namespace {
 
     // --- errors --------------------------------------------------------------
 
-    TEST(dir_rule_errors, absolute_inner_rejected) {
+    TEST(dir_rule, absolute_inner_is_stripped) {
+        // The Worker sends absolute inner paths (--dir=/abs); they are
+        // sanitized to box-relative rather than rejected (matches Isolate's
+        // sanitize_dir_path, and config_test's strips_leading_slash_from_inner).
+        config::dir_rule r("/abs");
+        EXPECT_EQ(r.in_dir(), "abs");
+    }
+
+    TEST(dir_rule_errors, dotdot_inner_rejected) {
         EXPECT_EXIT(
-            { config::dir_rule r("/abs"); }, ::testing::ExitedWithCode(2),
-            "Invalid inner path");
+            { config::dir_rule r("foo/../../etc"); },
+            ::testing::ExitedWithCode(2), "Invalid inner path");
     }
 
     TEST(dir_rule_errors, empty_rule_rejected) {

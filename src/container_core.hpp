@@ -314,6 +314,12 @@ namespace container_core {
         /// so the phases stay methods on root_core and main() need not see the
         /// mode.
         void run() {
+            // Fail-fast privilege gate before touching any on-disk state (meta
+            // file, locks, box tree): a non-root invocation dies here, and the
+            // 4755 install's stale caller egid is fixed to root (ADR 0002).
+            // Runs before arm_sink() so a non-root launch fails meta-less.
+            credentials::require_root();
+
             // Arm the internal-error meta-sink for any compat phase given
             // --meta, so a root-side terminate() leaves a status:XX meta (ADR
             // 0005 C2). meta() is unset in standalone, so it stays disarmed

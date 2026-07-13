@@ -5,6 +5,7 @@
 #include <filesystem>
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <grp.h>
 #include <unistd.h>
 #include "config.hpp"
@@ -13,6 +14,27 @@
 namespace credentials
 {
     namespace fs = std::filesystem;
+
+    /// @brief Fail-fast privilege gate, run once at startup before any phase.
+    /// @details Mirrors Isolate's get_credentials() preamble. We must be
+    /// effective-uid 0 (the binary is installed setuid-root, ADR 0002); a
+    /// non-root invocation dies cleanly here rather than failing deep in
+    /// clone3()/mount() with a confusing errno. Because the install is mode
+    /// 4755 (setuid but NOT setgid), our effective gid is still the caller's on
+    /// entry — setegid(0) fixes it so root-group directory/file creation
+    /// (/run/isolate_boxes, the cgroup tree, the box tree) behaves. umask(022)
+    /// makes file-creation modes deterministic regardless of the caller's
+    /// inherited umask.
+    inline void require_root()
+    {
+        if (geteuid() != 0)
+            { terminate("Must be started as root"); }
+
+        if (getegid() != 0 && setegid(0) < 0)
+            { terminate("Cannot switch to root group, errno: {}", errno); }
+
+        umask(022);
+    }
 
     ///  @class root_credentials_manager
     ///  @brief Manager class responsible for assigning credentials (box_id, UID/GID) used by the box.
@@ -105,18 +127,65 @@ namespace credentials
 
         /// @brief Start of the range from which box UID and GID are assigned.
         static constexpr uid_t box_uid_range_start_ = 60000;
-        
+
+        /// @brief Largest accepted box_id. Bounds box_uid/box_gid to
+        /// [60000, 65000] — safely below `nobody` (65534) and nowhere near a
+        /// uid_t overflow. Mirrors Isolate's `cf_num_boxes` cap on box_id.
+        static constexpr uid_t max_box_id_ = 5000;
+
+        /// @brief Whether a derived-or-overridden box UID/GID lies in the
+        /// dedicated [box_uid_range_start_, box_uid_range_start_ + max_box_id_]
+        /// band. Keeps box credentials off real system accounts and privileged
+        /// ids under every path (compat --box-id, standalone id, or an explicit
+        /// as-uid/as-gid config override).
+        static bool in_box_id_range(std::size_t id)
+        {
+            return id >= box_uid_range_start_ &&
+                   id <= static_cast<std::size_t>(box_uid_range_start_) + max_box_id_;
+        }
+
         /// @brief Reserves a box_id and assigns UID/GID by adding the id and box_uid_range_start_.
         /// @details Currently the box_id is randomly assigned, a daemon keeper process that assigns IDs is planned.
+        /// Every id is range-validated (see in_box_id_range): a caller-supplied
+        /// box_id or an explicit as-uid/as-gid override is rejected (exit 2)
+        /// before it can name a privileged or real system account.
         void assign_box_ids()
         {
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::uniform_int_distribution<uid_t> dist(1,5000);
+            if (auto id = config_->instance_id())
+            {
+                if (*id > max_box_id_)
+                    { terminate("Sandbox ID {} out of range (allowed 0-{})", *id, max_box_id_); }
+                box_id_ = static_cast<uid_t>(*id);
+            }
+            else
+            {
+                std::random_device rd;
+                std::mt19937 gen(rd());
+                std::uniform_int_distribution<uid_t> dist(1, max_box_id_);
+                box_id_ = dist(gen);
+            }
 
-            box_id_ = config_->instance_id().has_value() ? config_->instance_id().value() : dist(gen);
-            box_uid_ = config_->box_uid().has_value() ? config_->box_uid().value() : box_id_ + box_uid_range_start_;
-            box_gid_ = config_->box_gid().has_value() ? config_->box_gid().value() : box_uid_;
+            box_uid_ = assign_derived_id(config_->box_uid(),
+                                         box_id_ + box_uid_range_start_, "box_uid");
+            box_gid_ = assign_derived_id(config_->box_gid(), box_uid_, "box_gid");
+        }
+
+        /// @brief Resolve a box UID/GID: an explicit config override is
+        /// range-checked (raw, before any narrowing) and rejected out of band;
+        /// absent an override the derived value is used, already in range by
+        /// construction (box_id <= max_box_id_).
+        static uid_t assign_derived_id(const std::optional<std::size_t>& override_id,
+                                       uid_t derived, const char* what)
+        {
+            if (override_id)
+            {
+                if (!in_box_id_range(*override_id))
+                    { terminate("Configured {} {} out of range (allowed {}-{})", what,
+                                *override_id, box_uid_range_start_,
+                                box_uid_range_start_ + max_box_id_); }
+                return static_cast<uid_t>(*override_id);
+            }
+            return derived;
         }
         
         /// @brief Assign a root directory for the filesystem of this instance.

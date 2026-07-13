@@ -13,6 +13,7 @@ set(UNIT_TESTS
   dir_rule_test
   env_rule_test
   config_test
+  credentials_test
   lock_test
   meta_file_test
 )

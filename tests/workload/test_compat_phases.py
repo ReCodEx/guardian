@@ -44,6 +44,31 @@ def _parse_meta(path: Path) -> dict[str, str]:
     return out
 
 
+def test_non_root_invocation_is_rejected():
+    # The startup privilege gate (credentials::require_root) fails fast when the
+    # effective uid is not 0, instead of crashing deep in clone3()/mount(). The
+    # suite runs under sudo, so drop the child to the invoking (non-root) user
+    # via SUDO_UID; when the suite is already non-root, run it directly. Either
+    # way the isolator sees euid != 0. No box state is created — it dies at the
+    # gate, so no --cleanup is needed.
+    preexec = None
+    if os.geteuid() == 0:
+        sudo_uid = os.environ.get("SUDO_UID")
+        if not sudo_uid:
+            pytest.skip("no non-root uid available to exercise the gate")
+        drop_to = int(sudo_uid)
+        preexec = lambda: os.setuid(drop_to)  # noqa: E731
+
+    proc = subprocess.run(
+        [str(ISOLATOR_BIN), f"--box-id={BOX_ID}", "--init"],
+        capture_output=True,
+        text=True,
+        preexec_fn=preexec,
+    )
+    assert proc.returncode == 2, proc.stderr
+    assert "Must be started as root" in proc.stderr
+
+
 def test_three_phase_run_succeeds():
     try:
         # --init prints the box root on stdout (the Worker appends /box).
