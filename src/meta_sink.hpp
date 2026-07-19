@@ -1,6 +1,9 @@
 #ifndef META_SINK
 #define META_SINK
 
+#include <sys/fsuid.h>
+#include <unistd.h>
+
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -24,11 +27,47 @@ namespace meta {
     namespace fs = std::filesystem;
 
     namespace detail {
+        /// @brief RAII: drop the filesystem uid/gid to the invoking caller for
+        /// the scope, restoring root's on exit — Isolate's
+        /// `switch_fsid_to_caller` / `switch_fsid_back` (util.c). Used to open a
+        /// caller-supplied path (the `--meta` file) under the caller's fs
+        /// identity, so root's DAC-override cannot be tricked into creating or
+        /// clobbering a file the caller could not reach itself (e.g. through a
+        /// planted symlink). Under the setuid install `getuid()` is the caller
+        /// and `geteuid()` is 0 (== `orig_uid`); run directly as root the two
+        /// coincide and this is a no-op.
+        /// @note Best-effort by design: this guards the recursion-sensitive meta
+        /// sink, so it must never `terminate()`. `setfsuid`/`setfsgid` cannot
+        /// meaningfully report failure (they return the *previous* id), so a
+        /// failed drop simply leaves root's fsid — no worse than not guarding.
+        class fsid_guard {
+           public:
+            fsid_guard() {
+                ::setfsuid(::getuid());
+                ::setfsgid(::getgid());
+            }
+            ~fsid_guard() {
+                ::setfsuid(::geteuid());
+                ::setfsgid(::getegid());
+            }
+            fsid_guard(const fsid_guard&) = delete;
+            fsid_guard& operator=(const fsid_guard&) = delete;
+        };
+
         /// @brief Write @p body to @p path, best-effort. On failure it logs and
         /// returns — it must never `terminate()`, which invokes the meta-sink
         /// and would re-enter the writer and recurse.
         inline void write_file(const fs::path& path, std::string_view body) {
-            std::ofstream f(path, std::ios::binary | std::ios::trunc);
+            std::ofstream f;
+            {
+                // Resolve and create the caller-supplied path under the caller's
+                // fs identity; a symlink planted at it cannot redirect root's
+                // privileged create/truncate onto a file the caller could not
+                // open itself. Restored to root before the writes, which go
+                // through the already-open fd (Isolate's meta_open).
+                fsid_guard caller_fs;
+                f.open(path, std::ios::binary | std::ios::trunc);
+            }
             if (!f) {
                 logs::error("Could not open meta-file {} for writing",
                             path.string());

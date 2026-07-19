@@ -362,6 +362,39 @@ def test_setuid_ownership_dance(setuid_run):
     assert out.stat().st_uid == caller, "run-end must hand box/ back to caller"
 
 
+def test_setuid_meta_file_is_caller_owned(setuid_run):
+    # #13 Slice D: the caller-supplied --meta file is opened under the caller's
+    # filesystem identity (Isolate's switch_fsid_to_caller), so root's DAC
+    # override cannot be tricked into creating or clobbering a file the caller
+    # could not reach itself. The observable proof is ownership: the meta file
+    # comes out owned by the caller (orig_uid), not root.
+    #
+    # Because the fsid'd open is permission-checked as the caller, EVERY
+    # component of the path — not just the leaf dir — must be caller-traversable.
+    # pytest's tmp_path lives under a root-owned 0700 /tmp/pytest-of-root, which
+    # the caller cannot enter; so use a dir the caller owns directly under
+    # world-traversable /tmp (1777).
+    run, caller = setuid_run
+
+    metadir = Path(tempfile.mkdtemp(prefix="isolator_meta_"))
+    os.chown(metadir, caller, caller)
+    meta = metadir / "meta.txt"
+    try:
+        assert run("--init").returncode == 0
+        r = run("--run", f"--meta={meta}", "--", "/bin/true")
+        assert r.returncode == 0, r.stderr
+
+        assert meta.exists(), "meta file was not written"
+        assert meta.stat().st_uid == caller, (
+            "meta file must be created under the caller's fs identity (the fsid "
+            f"dance); got uid {meta.stat().st_uid}"
+        )
+        # Sanity: a real meta file, not an empty artefact left by a failed open.
+        assert "time" in _parse_meta(meta)
+    finally:
+        shutil.rmtree(metadir, ignore_errors=True)
+
+
 def test_compat_dir_binds_host_input(tmp_path):
     # #11: a --dir rule makes a host directory readable inside the box (the
     # "read a bound input" acceptance criterion). The box user (60000) reads
