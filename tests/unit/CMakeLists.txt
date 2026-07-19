@@ -16,6 +16,7 @@ set(UNIT_TESTS
   credentials_test
   lock_test
   meta_file_test
+  utils_test
 )
 
 foreach(t ${UNIT_TESTS})

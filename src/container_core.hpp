@@ -29,6 +29,7 @@
 #include "meta_sink.hpp"
 #include "tasks.hpp"
 #include "terminate.hpp"
+#include "utils.hpp"
 
 namespace container_core {
     using namespace tasks;
@@ -448,11 +449,28 @@ namespace container_core {
             remove_instance_cgroup();  // stale cgroup from a crashed --run
             cg_mngr_.run();
 
+            // Ownership dance, step 2 (see init_box_dir for step 1): hand box/
+            // to the box user so the sandboxed task can read staged inputs and
+            // write outputs. The task is not running yet, so there is no live
+            // mutator; lchown_tree never follows a symlink regardless.
+            const fs::path box_dir = credentials_.box_root() / "box";
+            file_utils::lchown_tree(box_dir, credentials_.box_uid(),
+                                    credentials_.box_gid());
+
             meta::read_result result =
                 proxy_connector_.run_and_collect_meta();
             const auto& meta_path = root_config_.meta();
 
             if (result.status == meta::read_status::complete) {
+                // Ownership dance, step 3: the task has exited (proxy waited on
+                // it), so flip box/ back to the caller — the Worker collects
+                // outputs as orig_uid. Skipped on an internal error (below),
+                // matching Isolate's `rc < 2` guard; --cleanup removes the box
+                // either way. lchown_tree walks a tree the untrusted task
+                // wrote, but it is dead now and we never follow its symlinks.
+                file_utils::lchown_tree(box_dir, credentials_.orig_uid(),
+                                        credentials_.orig_gid());
+
                 if (meta_path) {
                     meta::write_result(*meta_path, result.stats);
                 }
@@ -535,12 +553,14 @@ namespace container_core {
 
         /// @brief Create the box directory tree for `--init`: `box_root` (left
         /// root-owned, default perms) and the writable working dir
-        /// `box_root/box`
-        /// (`0777`, owned `box_uid:box_gid`).
-        /// @note The `0777` mode is the documented insecure status quo — see
-        /// the ReCodEx integration constraints in CONTEXT.md ("the top security
-        /// item to fix"); tightening it is a dedicated security step, not this
-        /// slice.
+        /// `box_root/box` (`0700`, owned `orig_uid:orig_gid`).
+        /// @details `box/` is handed to the *caller* (orig_uid), not the box
+        /// user, so the Worker can stage job files into it before `--run` — the
+        /// first step of the ownership dance (see run_command). Mode is `0700`,
+        /// not the former world-writable `0777`: the caller owns it outright, so
+        /// no world bits are needed, and `--run` flips ownership to the box user
+        /// for the task and back to the caller afterwards. This retires the
+        /// "top security item" the CONTEXT.md integration constraints flagged.
         void init_box_dir() {
             const fs::path box_dir = credentials_.box_root() / "box";
 
@@ -551,14 +571,14 @@ namespace container_core {
                           box_dir.string(), ec.message());
             }
 
-            fs::permissions(box_dir, fs::perms::all, ec);  // 0777
+            fs::permissions(box_dir, fs::perms::owner_all, ec);  // 0700
             if (ec) {
                 terminate("Failed to set permissions on {}: {}",
                           box_dir.string(), ec.message());
             }
 
-            if (::chown(box_dir.c_str(), credentials_.box_uid(),
-                        credentials_.box_gid()) < 0) {
+            if (::chown(box_dir.c_str(), credentials_.orig_uid(),
+                        credentials_.orig_gid()) < 0) {
                 terminate("Failed to chown box directory {}: errno {}",
                           box_dir.string(), errno);
             }

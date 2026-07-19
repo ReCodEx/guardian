@@ -12,6 +12,12 @@
 #include <optional>
 #include <string_view>
 
+#include <sys/types.h>
+#include <unistd.h>
+#include <cerrno>
+
+#include "terminate.hpp"
+
 namespace string_utils
 {
 
@@ -173,6 +179,34 @@ namespace file_utils
             }
         }
         return std::nullopt;
+    }
+
+    /// @brief Recursively set owner/group across a directory tree WITHOUT
+    /// following symlinks, for the box ownership dance (chown box/ to the box
+    /// user before a run, back to the caller after).
+    /// @details The tree's contents may be attacker-influenced — the untrusted
+    /// task writes into box/ — so we must never dereference a symlink it left:
+    /// `lchown` retargets the link itself, and `recursive_directory_iterator`
+    /// does not descend through directory symlinks by default. Special files
+    /// (fifos/sockets/symlinks) are lchown'd in place, not unlinked: no-follow
+    /// is the load-bearing property, `chown` already strips setuid/setgid bits
+    /// off regular files, and the box user cannot create device nodes (no
+    /// CAP_MKNOD). Runs as root with no live task and the box flock held, so no
+    /// concurrent mutator races the walk. Terminates on any failure.
+    inline void lchown_tree(const fs::path& root, uid_t uid, gid_t gid)
+    {
+        auto set_owner = [&](const fs::path& p) {
+            if (::lchown(p.c_str(), uid, gid) < 0)
+            {
+                terminate("Cannot lchown {}: errno {}", p.string(), errno);
+            }
+        };
+
+        set_owner(root);  // the iterator yields contents, not root itself
+        for (const auto& entry : fs::recursive_directory_iterator(root))
+        {
+            set_owner(entry.path());
+        }
     }
 
     inline std::string read_row_col(std::ifstream& f, size_t row, unsigned int col)

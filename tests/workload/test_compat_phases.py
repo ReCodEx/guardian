@@ -11,6 +11,7 @@ stays skipped.
 
 import os
 import shutil
+import stat
 import subprocess
 import tempfile
 from pathlib import Path
@@ -20,6 +21,41 @@ import pytest
 from conftest import ISOLATOR_BIN, PROBES_DIR, WORKLOAD_DIR
 
 BOX_ID = 0
+
+
+@pytest.fixture
+def setuid_run():
+    """Invoke a root-owned 4755 copy of the isolator as the non-root caller.
+
+    Emulates the real install (ADR 0002): the child's real uid is dropped to
+    the invoking user (SUDO_UID), so euid reaches 0 only through the setuid
+    bit — the genuine Worker path, where orig_uid is a non-root user distinct
+    from box_uid. Yields (run, caller_uid). Skips if we cannot drop to a
+    non-root uid.
+    """
+    sudo_uid = os.environ.get("SUDO_UID")
+    if os.geteuid() != 0 or not sudo_uid:
+        pytest.skip("need root + a non-root SUDO_UID to emulate a setuid install")
+    caller = int(sudo_uid)
+
+    suid_bin = ISOLATOR_BIN.parent / "isolator_suid"
+    shutil.copy(ISOLATOR_BIN, suid_bin)
+    os.chown(suid_bin, 0, 0)
+    os.chmod(suid_bin, 0o4755)
+
+    def run(*args):
+        return subprocess.run(
+            [str(suid_bin), f"--box-id={BOX_ID}", *args],
+            capture_output=True,
+            text=True,
+            preexec_fn=lambda: os.setuid(caller),  # noqa: E731
+        )
+
+    try:
+        yield run, caller
+    finally:
+        _run("--cleanup")  # sudo backstop
+        suid_bin.unlink(missing_ok=True)
 
 
 def _run(*args, meta=None, env_vars=None):
@@ -246,61 +282,84 @@ def test_default_tmp_strips_setuid():
         _run("--cleanup")
 
 
-def test_setuid_invocation_runs_task_as_box_uid():
-    # #13 acceptance: the binary installed setuid-root (mode 4755, ADR 0002) and
-    # invoked by a NON-root user must complete init/run/cleanup, and the task
-    # must run as box_uid — not root, not the invoking caller. We emulate the
-    # install with a root-owned 4755 copy and drop the child's real uid to the
-    # caller (SUDO_UID) via preexec, so euid becomes 0 only through the setuid
-    # bit — the genuine Worker path. A non-setuid binary would just hit the
-    # require_root gate, so the setuid copy is what makes this real.
+def test_setuid_invocation_runs_task_as_box_uid(setuid_run):
+    # #13 acceptance: the binary installed setuid-root and invoked by a NON-root
+    # user must complete init/run/cleanup, and the task must run as box_uid —
+    # not root, not the invoking caller.
     probe = PROBES_DIR / "euid_probe"
     if not probe.exists():
         pytest.skip("euid_probe workload not built")
-    sudo_uid = os.environ.get("SUDO_UID")
-    if os.geteuid() != 0 or not sudo_uid:
-        pytest.skip("need root + a non-root SUDO_UID to emulate a setuid install")
-    caller = int(sudo_uid)
+    run, _caller = setuid_run
     box_uid = BOX_ID + 60000
 
-    # Root-owned setuid copy on a suid-capable fs (next to the real binary).
-    suid_bin = ISOLATOR_BIN.parent / "isolator_suid"
-    shutil.copy(ISOLATOR_BIN, suid_bin)
-    os.chown(suid_bin, 0, 0)
-    os.chmod(suid_bin, 0o4755)
+    init = run("--init")
+    assert init.returncode == 0, init.stderr
+    box_root = Path(init.stdout.strip())
+    assert box_root.is_dir()
 
-    def _suid(*args):
-        return subprocess.run(
-            [str(suid_bin), f"--box-id={BOX_ID}", *args],
-            capture_output=True,
-            text=True,
-            preexec_fn=lambda: os.setuid(caller),  # noqa: E731
-        )
+    # Plant a plain (non-setuid) probe the box user can exec.
+    box_tmp = box_root / "tmp"
+    box_tmp.mkdir(parents=True, exist_ok=True)
+    planted = box_tmp / "euid_probe"
+    shutil.copy(probe, planted)
+    os.chmod(planted, 0o755)
 
+    r = run("--run", "--", "/tmp/euid_probe")
+    assert r.returncode == 0, r.stderr
+    assert r.stdout.strip() == str(box_uid), (
+        f"task must run as box_uid {box_uid} under a setuid invocation, "
+        f"not root or the caller; got {r.stdout.strip()!r}"
+    )
+
+    assert run("--cleanup").returncode == 0
+
+
+def test_init_box_dir_is_private_0700():
+    # #13 Slice C: --init creates box/ mode 0700 owned by the caller (orig_uid),
+    # retiring the world-writable 0777 status quo. The caller owns it outright,
+    # so no world bits are needed to stage files. Under the sudo runner the
+    # caller is root.
     try:
-        init = _suid("--init")
+        init = _run("--init")
         assert init.returncode == 0, init.stderr
-        box_root = Path(init.stdout.strip())
-        assert box_root.is_dir()
-
-        # Plant a plain (non-setuid) probe the box user can exec.
-        box_tmp = box_root / "tmp"
-        box_tmp.mkdir(parents=True, exist_ok=True)
-        planted = box_tmp / "euid_probe"
-        shutil.copy(probe, planted)
-        os.chmod(planted, 0o755)
-
-        run = _suid("--run", "--", "/tmp/euid_probe")
-        assert run.returncode == 0, run.stderr
-        assert run.stdout.strip() == str(box_uid), (
-            f"task must run as box_uid {box_uid} under a setuid invocation, "
-            f"not root or the caller; got {run.stdout.strip()!r}"
-        )
-
-        assert _suid("--cleanup").returncode == 0
+        box = Path(init.stdout.strip()) / "box"
+        st = box.stat()
+        assert stat.S_IMODE(st.st_mode) == 0o700, oct(st.st_mode)
+        assert st.st_uid == 0  # orig_uid == root under sudo
     finally:
-        _run("--cleanup")  # sudo backstop if the setuid cleanup didn't run
-        suid_bin.unlink(missing_ok=True)
+        _run("--cleanup")
+
+
+def test_setuid_ownership_dance(setuid_run):
+    # #13 Slice C, end to end under a genuine setuid invocation (caller =
+    # SUDO_UID, distinct from box_uid): --init hands box/ to the caller at 0700;
+    # the caller stages an input; --run flips box/ to box_uid so the task reads
+    # the input and writes an output; the run-end flip hands box/ back so the
+    # caller owns the output and can collect it.
+    run, caller = setuid_run
+
+    init = run("--init")
+    assert init.returncode == 0, init.stderr
+    box = Path(init.stdout.strip()) / "box"
+
+    st = box.stat()
+    assert stat.S_IMODE(st.st_mode) == 0o700, oct(st.st_mode)
+    assert st.st_uid == caller, "init must hand box/ to the caller"
+
+    # Stage an input owned by the caller (the Worker's job-file staging step).
+    inp = box / "in.txt"
+    inp.write_text("dance")
+    os.chown(inp, caller, caller)
+
+    # The task copies the staged input to an output. Success proves it could
+    # read the input (run-start flip to box_uid) and write into box/.
+    r = run("--run", "--", "/bin/sh", "-c", "cat /box/in.txt > /box/out.txt")
+    assert r.returncode == 0, r.stderr
+
+    out = box / "out.txt"
+    assert out.read_text() == "dance"
+    # run-end flip: the task-produced output is owned by the caller again.
+    assert out.stat().st_uid == caller, "run-end must hand box/ back to caller"
 
 
 def test_compat_dir_binds_host_input(tmp_path):
@@ -362,10 +421,13 @@ def test_compat_env_inherit():
         _run("--cleanup")
 
 
-def test_compat_stdout_redirect_is_box_owned():
-    # #11: --stdout captures the program's output to a file, and (post
-    # privilege-order fix) the file is created box-owned, not root-owned.
-    box_uid = BOX_ID + 60000
+def test_compat_stdout_redirect_collectable_by_caller():
+    # --stdout captures the program's output to a file inside box/. The task
+    # creates it as box_uid during the run (#11 privilege-order fix), then the
+    # Slice C run-end flip hands it back to the caller so the Worker can collect
+    # it. Under the sudo runner the caller (orig_uid) is root, so it ends up
+    # root-owned — by the deliberate chown-back, not the old privilege bug; a
+    # caller==non-root check is in test_setuid_ownership_dance.
     try:
         init = _run("--init")
         assert init.returncode == 0, init.stderr
@@ -374,7 +436,7 @@ def test_compat_stdout_redirect_is_box_owned():
         assert run.returncode == 0, run.stderr
         out = box_root / "box" / "out.txt"
         assert out.read_text().strip() == "captured"
-        assert out.stat().st_uid == box_uid, "redirect file must be box-owned"
+        assert out.stat().st_uid == 0, "run-end flip must hand output to caller"
     finally:
         _run("--cleanup")
 

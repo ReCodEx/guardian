@@ -14,7 +14,6 @@ from pathlib import Path
 from conftest import ISOLATOR_BIN
 
 BOX_ID = 0
-BOX_UID = BOX_ID + 60000  # box_uid = box_id + 60000 (CONTEXT.md: Credentials)
 
 
 def _run(*args):
@@ -40,12 +39,15 @@ def test_init_creates_tree_then_cleanup_removes_it():
     box_root = _init_ok()
     assert box_root.is_dir()
 
-    # The writable working dir: 0777, owned box_uid:box_gid (CONTEXT.md).
+    # After --init the box is handed to the caller (orig_uid) as a private
+    # 0700 dir — the caller stages inputs before --run flips ownership to
+    # box_uid (the ownership dance, CONTEXT.md #13). Here the caller is plain
+    # root (sudo, no setuid drop), so orig_uid == 0.
     box = box_root / "box"
     st = box.stat()
     assert box.is_dir()
-    assert st.st_mode & 0o777 == 0o777
-    assert st.st_uid == BOX_UID and st.st_gid == BOX_UID
+    assert st.st_mode & 0o777 == 0o700
+    assert st.st_uid == 0 and st.st_gid == 0
     # box_root itself stays root-owned.
     assert box_root.stat().st_uid == 0
 
