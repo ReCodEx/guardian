@@ -37,12 +37,13 @@ An instance runs three different processes with distinct responsibilities:
 ## ⚡ Quickstart Guide
 
 ### 1. System Setup
-First, initialize the required system resources:
+No system initialization step is required: on its first `--run` the isolator
+lazily creates the shared cgroup parent (`/sys/fs/cgroup/isolator_boxes`) and
+enables its controllers (ADR 0007). To tear the shared cgroup tree and box
+directory (`/var/lib/isolator_boxes`) back down:
 ```sh
 sudo scripts/isolator_cleanup.sh
-sudo scripts/isolator_init.sh
 ```
-This script creates the necessary cgroups and directories common for all instances.
 
 ### 2. Build the Isolator
 ```sh
@@ -138,8 +139,8 @@ The isolator uses YAML configuration files to define sandbox environments and ta
 
 ```yaml
 # Global settings and credentials
-root-dir: "/isolate_boxes"                  # Root directory for all sandboxes
-root-cgroup: "/sys/fs/cgroup/isolate_boxes" # Root cgroup path
+root-dir: "/var/lib/isolator_boxes"                  # Root directory for all sandboxes
+root-cgroup: "/sys/fs/cgroup/isolator_boxes" # Root cgroup path
 share-net: false                            # Whether to share network namespace with parent
 
 credentials:
@@ -288,9 +289,9 @@ Possible status values:
 
 - Running the tool and most of the helper scripts requires root privileges.
 - If tests fail with filesystem errors, ensure that the directories specified in the configuration exist and have appropriate permissions.
-- Check that the isolation environment has been properly initialized with `isolator_cleanup.sh` and `isolator_init.sh`.
+- The isolator self-arranges its cgroup parent on first `--run`; if the shared cgroup tree or box directory gets into a bad state, reset it with `isolator_cleanup.sh`.
 - Always use absolute paths in host filesystem references but remember that paths inside the task configuration are relative to the sandbox root.
-- When testing, inspect the content of `/isolate_boxes/` to see the actual sandbox structure.
+- When testing, inspect the content of `/var/lib/isolator_boxes/` to see the actual sandbox structure.
 - Run the isolator binary with --debug to see detailed logs.
 
 ---

@@ -56,7 +56,8 @@ def isolator_environment():
     if not _can_sudo_noninteractive():
         pytest.skip("workload tests need root (passwordless sudo or run as root)")
 
-    subprocess.run([str(SCRIPTS / "isolator_init.sh")], check=False)
+    # No boot/init step: --run arranges the isolator_boxes cgroup parent
+    # itself, idempotently (ADR 0007).
     yield
     subprocess.run([str(SCRIPTS / "isolator_cleanup.sh")], check=False)
 

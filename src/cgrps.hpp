@@ -466,13 +466,21 @@ namespace cgroup {
         /// possible in a cgroup populated by a process.
         void run() {
             fs::path instance_cg = credentials_->instance_cgroup();
+
+            // Enable controllers at the cgroup root so they become available to
+            // the shared isolator_boxes parent, then idempotently arrange that
+            // parent before creating this instance's cgroup under it. The parent
+            // is created once per boot but touched by every --run, so this
+            // replaces the former boot-time isolator_init.sh (ADR 0007).
+            root_cgrp_.enable_all_cntrlrs();
+            ensure_boxes_parent(instance_cg.parent_path());
+
             instance_cgrp_ = std::make_unique<cgroupv2_t>(instance_cg);
             leaf_cgrp_ =
                 std::make_unique<cgroupv2_t>(instance_cg / fs::path("leaf"));
             proxy_cgrp_ =
                 std::make_unique<cgroupv2_t>(instance_cg / fs::path("proxy"));
 
-            root_cgrp_.enable_all_cntrlrs();
             leaf_cgrp_->add_me();
             instance_cgrp_->enable_all_cntrlrs();
         }
@@ -508,6 +516,31 @@ namespace cgroup {
         /// @brief Leaf cgroup for the root process. See the description of
         /// run().
         std::unique_ptr<cgroup::cgroupv2_t> leaf_cgrp_;
+
+        /// @brief Idempotently arrange the shared isolator_boxes parent cgroup:
+        /// create it if absent and enable the cpu/memory/pids controllers in
+        /// its subtree_control. Unlike the per-box cgroups (whose ctor
+        /// terminates on an existing dir), this parent is created once per boot
+        /// yet touched by every --run and by concurrent peers, so an existing
+        /// dir and already-enabled controllers are success — cgroup v2 treats a
+        /// repeated "+cpu" write as a no-op. Replaces isolator_init.sh (ADR
+        /// 0007). Must run after the root-level enable so the controllers are
+        /// available here.
+        static void ensure_boxes_parent(const fs::path& parent) {
+            std::error_code ec;
+            fs::create_directories(parent, ec);
+            if (ec) {
+                terminate("Failed to create boxes cgroup parent {}: {}",
+                          parent.string(), ec.message());
+            }
+            cpu_cntrlr cpu(parent);
+            memory_cntrlr mem(parent);
+            pid_cntrlr pid(parent);
+            if (!(cpu.enable() && mem.enable() && pid.enable())) {
+                terminate("Failed to enable controllers in boxes parent {}",
+                          parent.string());
+            }
+        }
 
         void cleanup() {
             if (proxy_cgrp_) {

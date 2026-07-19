@@ -20,8 +20,8 @@ namespace config {
 
     /// @brief Default directories
     namespace defaults {
-        constexpr auto BOXES_DIR = "/isolate_boxes";
-        constexpr auto BOXES_CGROUP = "/sys/fs/cgroup/isolate_boxes";
+        constexpr auto BOXES_DIR = "/var/lib/isolator_boxes";
+        constexpr auto BOXES_CGROUP = "/sys/fs/cgroup/isolator_boxes";
     }  // namespace defaults
 
     /// @brief Keywords for the configuration file

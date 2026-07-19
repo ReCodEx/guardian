@@ -8,7 +8,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(TESTING OFF)
-option(ENABLE_SYSTEMD_SERVICE "Enable the systemd service during installation" OFF)
 include(FetchContent)
 
 #Fetch yaml-cpp yaml parsing library

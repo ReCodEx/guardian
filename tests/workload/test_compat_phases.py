@@ -121,6 +121,50 @@ def test_three_phase_run_succeeds():
         assert _run("--cleanup").returncode == 0
 
 
+def test_run_lazily_creates_cgroup_parent_and_uses_new_paths():
+    """Slice A / ADR 0007: --run self-arranges the shared isolator_boxes cgroup
+    parent with no boot/init script, and the box tree lives under the relocated
+    /var/lib/isolator_boxes.
+
+    The shared parent is torn down first so a success proves lazy *creation*
+    (dir + controllers), not a leftover from an earlier test or session.
+    """
+    cg_parent = Path("/sys/fs/cgroup/isolator_boxes")
+
+    # Clean slate: drop any box state, then depth-first rmdir the shared cgroup
+    # parent so we exercise lazy creation rather than reuse.
+    _run("--cleanup")
+    subprocess.run(
+        ["sudo", "find", str(cg_parent), "-type", "d", "-depth",
+         "-exec", "rmdir", "{}", ";"],
+        capture_output=True,
+    )
+    assert not cg_parent.exists(), "precondition: shared cgroup parent removed"
+
+    try:
+        init = _run("--init")
+        assert init.returncode == 0, init.stderr
+        box_root = Path(init.stdout.strip())
+        # Box tree relocated from /isolate_boxes to /var/lib/isolator_boxes.
+        assert box_root == Path(f"/var/lib/isolator_boxes/{BOX_ID}"), box_root
+        assert box_root.is_dir()
+
+        # --run with no prior init script must succeed — which is only possible
+        # if --run lazily created the cgroup parent and enabled its controllers.
+        run = _run("--run", "--", "/bin/true")
+        assert run.returncode == 0, run.stderr
+
+        # The parent exists and carries cpu/memory/pids in its subtree_control
+        # (proof the idempotent enable ran, not merely the mkdir).
+        assert cg_parent.is_dir()
+        enabled = set(
+            (cg_parent / "cgroup.subtree_control").read_text().split()
+        )
+        assert {"cpu", "memory", "pids"} <= enabled, enabled
+    finally:
+        assert _run("--cleanup").returncode == 0
+
+
 def test_run_executes_program_inside_box():
     # Checkpoint B2: the program actually runs and its (inherited) stdout
     # reaches the caller.

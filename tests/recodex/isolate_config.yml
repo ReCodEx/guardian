@@ -1,6 +1,6 @@
-root-dir: /isolate_boxes
+root-dir: /var/lib/isolator_boxes
 # id: 1
-root-cg: /sys/fs/cgroup/isolate_boxes
+root-cg: /sys/fs/cgroup/isolator_boxes
 env: 
   # inherit-all: true
   vars:
