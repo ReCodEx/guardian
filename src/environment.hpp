@@ -122,8 +122,10 @@ namespace env {
         /// filesystem into the box.
         void apply() {
             /// Skip the rule if it has the maybe() flag and the outside
-            /// directory doesn't exist.
-            if (rule_->maybe() && !fs::is_directory(rule_->out_dir())) {
+            /// directory doesn't exist. The existence probe resolves a
+            /// caller-supplied path, so it runs under the caller's fs identity
+            /// (no DAC-override) — Isolate's fsid dance around dir_exists.
+            if (rule_->maybe() && !caller_sees_out_dir()) {
                 logs::debug("Skipping the mount of maybe() rule: \"{}\".",
                             rule_->string());
                 return;
@@ -159,11 +161,20 @@ namespace env {
                     flags |= MS_REC;
                 }
                 logs::debug("Mounting {} to {}", out.string(), in.string());
-                if (mount(out.c_str(), in.c_str(), "none", flags, "") < 0 ||
-                    mount(out.c_str(), in.c_str(), "none", MS_REMOUNT | flags,
-                          "") < 0) {
-                    terminate("Mount failed for directory rule: {}, errno: {}",
-                              rule_->string(), errno);
+                {
+                    // Bind the host path with the caller's ids + only
+                    // CAP_SYS_ADMIN, so a caller cannot bind a directory it
+                    // could not reach itself (no DAC-override). Restored to
+                    // full root when the scope ends, before the rw chmod below.
+                    credentials::mount_priv_guard as_caller(
+                        credentials_->orig_uid(), credentials_->orig_gid());
+                    if (mount(out.c_str(), in.c_str(), "none", flags, "") < 0 ||
+                        mount(out.c_str(), in.c_str(), "none",
+                              MS_REMOUNT | flags, "") < 0) {
+                        terminate(
+                            "Mount failed for directory rule: {}, errno: {}",
+                            rule_->string(), errno);
+                    }
                 }
 
                 /// TODO: more secure solution
@@ -194,8 +205,8 @@ namespace env {
         /// @brief Create necessary directories for the rule.
         void create_directories() {
             /// Skip the rule if it has the maybe() flag and the outside
-            /// directory doesn't exist.
-            if (rule_->maybe() && !fs::is_directory(rule_->out_dir())) {
+            /// directory doesn't exist (probed as the caller — see apply()).
+            if (rule_->maybe() && !caller_sees_out_dir()) {
                 logs::debug(
                     "Skipping creation of directories for maybe() rule: "
                     "\"{}\".",
@@ -225,6 +236,17 @@ namespace env {
         /// @brief Remember a dummy directory if it was created, to clean it up
         /// later.
         std::optional<fs::path> dummy_dir_;
+
+        /// @brief Does the rule's outside directory exist *as seen by the
+        /// caller*? Probes under the caller's fs identity so root's DAC-override
+        /// cannot make a `:maybe` rule bind (or leak the existence of) a path
+        /// the caller could not reach itself — Isolate's fsid dance around
+        /// dir_exists.
+        bool caller_sees_out_dir() const {
+            credentials::fsid_caller_guard as_caller(credentials_->orig_uid(),
+                                                     credentials_->orig_gid());
+            return fs::is_directory(rule_->out_dir());
+        }
 
         /// @brief Create the inner directory of the rule.
         void create_inner_dir() {

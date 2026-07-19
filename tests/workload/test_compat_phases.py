@@ -414,6 +414,64 @@ def test_compat_dir_binds_host_input(tmp_path):
         _run("--cleanup")
 
 
+def test_setuid_bind_mount_denied_for_caller_inaccessible_dir(setuid_run):
+    # #13 Slice E: a --dir bind is mounted with the caller's uid/gid + only
+    # CAP_SYS_ADMIN (no DAC_OVERRIDE), so it cannot bind a host path the caller
+    # could not reach itself — Isolate's drop-priv mount ("if the mounted path
+    # contains elements inaccessible to the user"). The unreachable element must
+    # be an *ancestor*: binding the leaf dir itself needs no permission on it,
+    # only the ability to resolve the path to it. So we bind <outer>/payload
+    # where <outer> is root-owned 0700 — the caller cannot traverse it, so the
+    # bind's path resolution (as the caller) is refused and --run dies (exit 2).
+    # Run as full root (the status quo), DAC-override would walk straight in.
+    run, _caller = setuid_run
+
+    outer = Path(tempfile.mkdtemp(prefix="isolator_secret_"))
+    os.chown(outer, 0, 0)
+    os.chmod(outer, 0o700)  # caller cannot traverse this ancestor
+    inner = outer / "payload"
+    inner.mkdir()
+    os.chmod(inner, 0o755)
+    (inner / "data.txt").write_text("top-secret")
+    os.chmod(inner / "data.txt", 0o644)
+    try:
+        assert run("--init").returncode == 0
+        r = run(f"--dir=secret={inner}", "--run", "--",
+                "/bin/cat", "/secret/data.txt")
+        assert r.returncode == 2, (
+            "bind through a caller-inaccessible ancestor must be refused "
+            f"(drop-priv mount), got rc={r.returncode}: {r.stdout!r} {r.stderr!r}"
+        )
+        assert "Mount failed" in r.stderr, r.stderr
+    finally:
+        shutil.rmtree(outer, ignore_errors=True)
+
+
+def test_setuid_bind_mount_allowed_for_caller_accessible_dir(setuid_run):
+    # #13 Slice E, the positive companion: a bind of a host dir the caller CAN
+    # reach still works under the drop — the drop only removes DAC-override, it
+    # does not block legitimate binds. The dir is caller-owned and world-readable
+    # (the box user reads through the bind at run time); every path component is
+    # caller-traversable so the mount-time check as the caller passes.
+    run, caller = setuid_run
+
+    payload = Path(tempfile.mkdtemp(prefix="isolator_payload_"))
+    os.chown(payload, caller, caller)
+    os.chmod(payload, 0o755)
+    data = payload / "data.txt"
+    data.write_text("bound-ok-7")
+    os.chown(data, caller, caller)
+    os.chmod(data, 0o644)
+    try:
+        assert run("--init").returncode == 0
+        r = run(f"--dir=data={payload}", "--run", "--",
+                "/bin/cat", "/data/data.txt")
+        assert r.returncode == 0, r.stderr
+        assert r.stdout.strip() == "bound-ok-7"
+    finally:
+        shutil.rmtree(payload, ignore_errors=True)
+
+
 def test_compat_dir_tmp_override_keeps_tmp_writable():
     # #11: the Worker sends --dir=/tmp:tmp, whose inner path collides with the
     # default tmp:tmp. The override must replace the default (not double-mount),

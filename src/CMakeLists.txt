@@ -15,4 +15,5 @@ target_link_libraries(
   ${PROJECT_NAME}
   PRIVATE
   yaml-cpp::yaml-cpp
+  cap  # libcap: CAP_SYS_ADMIN for the drop-priv bind mount (credentials.hpp)
 )

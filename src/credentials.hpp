@@ -6,6 +6,8 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/capability.h>
+#include <sys/fsuid.h>
 #include <grp.h>
 #include <unistd.h>
 #include "config.hpp"
@@ -35,6 +37,105 @@ namespace credentials
 
         umask(022);
     }
+
+    /// @brief RAII: run a bind mount with the caller's uid/gid but only
+    /// CAP_SYS_ADMIN in force — never CAP_DAC_OVERRIDE. Isolate's drop-priv
+    /// mount (rules.c). A plain root mount() would resolve the source path with
+    /// DAC-override, so a caller could bind a host directory it cannot actually
+    /// reach; dropping the effective ids to the caller makes the kernel's path
+    /// permission checks apply to *them*, and CAP_SYS_ADMIN (the one capability
+    /// mount() itself needs) is raised back so the mount still works.
+    ///
+    /// @details Must be constructed from a full-root context (the proxy):
+    ///   drop:    setresgid then setresuid to (caller, caller, 0). GID first,
+    ///            while we still hold CAP_SETGID (dropping the uid from 0 is what
+    ///            clears capabilities; changing the gid does not). The saved-set
+    ///            stays 0, so the *permitted* cap set survives the uid change
+    ///            (it is cleared only when no id is 0 any more) — leaving
+    ///            CAP_SYS_ADMIN available to raise into the effective set.
+    ///   restore: setresuid then setresgid back to (0, 0, 0) — full root, so the
+    ///            rest of the root-running proxy is unaffected. This is our one
+    ///            divergence from Isolate, which restores to (orig, 0, orig)
+    ///            because its proxy becomes the caller (our proxy stays root
+    ///            until issue #20). euid returning to 0 re-copies the permitted
+    ///            set into the effective one, so all capabilities come back.
+    /// The restore succeeds without CAP_SETUID because 0 is still the saved-set
+    /// id — the very reason the drop kept it at 0.
+    class mount_priv_guard
+    {
+    public:
+        mount_priv_guard(uid_t orig_uid, gid_t orig_gid)
+        {
+            if (setresgid(orig_gid, orig_gid, 0) < 0)
+                { terminate("mount drop: setresgid failed, errno: {}", errno); }
+            if (setresuid(orig_uid, orig_uid, 0) < 0)
+                { terminate("mount drop: setresuid failed, errno: {}", errno); }
+            raise_cap_sys_admin();
+        }
+
+        ~mount_priv_guard()
+        {
+            if (setresuid(0, 0, 0) < 0 || setresgid(0, 0, 0) < 0)
+                { terminate("mount restore: failed to regain root, errno: {}",
+                            errno); }
+        }
+
+        mount_priv_guard(const mount_priv_guard&) = delete;
+        mount_priv_guard& operator=(const mount_priv_guard&) = delete;
+
+    private:
+        /// @brief Raise CAP_SYS_ADMIN from the permitted set into the effective
+        /// set, so mount() works despite the effective uid no longer being 0.
+        static void raise_cap_sys_admin()
+        {
+            cap_t caps = cap_get_proc();
+            if (!caps)
+                { terminate("Cannot read capabilities, errno: {}", errno); }
+
+            cap_value_t wanted[] = { CAP_SYS_ADMIN };
+            if (cap_set_flag(caps, CAP_EFFECTIVE, 1, wanted, CAP_SET) < 0)
+                { cap_free(caps); terminate("Cannot stage CAP_SYS_ADMIN"); }
+            if (cap_set_proc(caps) < 0)
+                { cap_free(caps);
+                  terminate("Cannot raise CAP_SYS_ADMIN, errno: {}", errno); }
+
+            cap_free(caps);
+        }
+    };
+
+    /// @brief RAII: drop the filesystem uid/gid to the caller for a scope, so a
+    /// caller-path *probe* (the `:maybe` rule's `is_directory` existence check)
+    /// resolves with the caller's permissions, not root's DAC-override —
+    /// Isolate's switch_fsid_to_caller / switch_fsid_back around dir_exists
+    /// (rules.c). The proxy runs as real root, so the caller ids must be passed
+    /// in explicitly (getuid() here is 0, not the caller). Restores the prior
+    /// effective ids (root in the proxy) on scope exit.
+    /// @note Distinct from meta_sink's fsid guard, which runs in the *root*
+    /// process (getuid() is the caller there) and is best-effort; this one runs
+    /// in the proxy and takes explicit ids.
+    class fsid_caller_guard
+    {
+    public:
+        fsid_caller_guard(uid_t orig_uid, gid_t orig_gid)
+            : prev_uid_(geteuid()), prev_gid_(getegid())
+        {
+            setfsuid(orig_uid);
+            setfsgid(orig_gid);
+        }
+
+        ~fsid_caller_guard()
+        {
+            setfsuid(prev_uid_);
+            setfsgid(prev_gid_);
+        }
+
+        fsid_caller_guard(const fsid_caller_guard&) = delete;
+        fsid_caller_guard& operator=(const fsid_caller_guard&) = delete;
+
+    private:
+        uid_t prev_uid_;
+        gid_t prev_gid_;
+    };
 
     ///  @class root_credentials_manager
     ///  @brief Manager class responsible for assigning credentials (box_id, UID/GID) used by the box.
@@ -226,6 +327,18 @@ namespace credentials
         uid_t box_gid() const
         {
             return credentials_root_->box_gid();
+        }
+
+        /// @brief Getter for the invoking caller's UID (for the drop-priv mount).
+        uid_t orig_uid() const
+        {
+            return credentials_root_->orig_uid();
+        }
+
+        /// @brief Getter for the invoking caller's GID (for the drop-priv mount).
+        gid_t orig_gid() const
+        {
+            return credentials_root_->orig_gid();
         }
 
         /// @brief Drop real, effective, and saved-set UID/GID back to the
