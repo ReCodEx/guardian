@@ -102,5 +102,6 @@ set(CPACK_RPM_PACKAGE_PROVIDES "isolate")
 set(CPACK_RPM_USER_FILELIST
     "%attr(4755,root,root) ${CMAKE_INSTALL_FULL_BINDIR}/isolator"
     "%dir %attr(0755,root,root) /var/lib/isolator_boxes")
-set(CPACK_RPM_DEBUGINFO_PACKAGE ON)
+# No -debuginfo subpackage for now: build the RPM as Release (no debug symbols
+# to split out). A proper -debuginfo subpackage can be added later.
 include(CPack)
