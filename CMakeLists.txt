@@ -104,4 +104,9 @@ set(CPACK_RPM_USER_FILELIST
     "%dir %attr(0755,root,root) /var/lib/isolator_boxes")
 # No -debuginfo subpackage for now: build the RPM as Release (no debug symbols
 # to split out). A proper -debuginfo subpackage can be added later.
+# Standard RPM naming (isolator-0.1.0-1.el9.x86_64.rpm) instead of CPack's
+# default "<name>-<version>-Linux.rpm".
+set(CPACK_RPM_FILE_NAME "RPM-DEFAULT")
+set(CPACK_RPM_PACKAGE_RELEASE "1")
+set(CPACK_RPM_PACKAGE_RELEASE_DIST ON)
 include(CPack)
