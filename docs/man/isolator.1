@@ -1,0 +1,208 @@
+.TH ISOLATOR 1 "2026" "isolator 0.1.0" "ReCodEx Isolator Manual"
+.SH NAME
+isolator, isolate \- Isolate-compatible sandbox for running untrusted code
+.SH SYNOPSIS
+.B isolate
+.B \-\-init
+.BI \-\-box\-id= ID
+.br
+.B isolate
+.B \-\-run
+.BI \-\-box\-id= ID
+.RI [ options ]
+.B \-\-
+.I program
+.RI [ args ...]
+.br
+.B isolate
+.B \-\-cleanup
+.BI \-\-box\-id= ID
+.br
+.B isolate
+.BI \-\-yaml= FILE
+.SH DESCRIPTION
+.B isolator
+runs a single program inside a restricted sandbox built from Linux namespaces,
+cgroups v2, a dedicated UID/GID, and a private filesystem view, measuring its
+resource usage. It is a drop-in replacement for the
+.B isolate
+sandbox used by the ReCodEx evaluator and is normally invoked through its
+.B isolate
+alias.
+.PP
+The tool has two interfaces. The
+.B compatibility
+interface mirrors isolate: three independent invocations \(em
+.BR \-\-init ,
+.BR \-\-run ,
+.B \-\-cleanup
+\(em keyed by a caller-supplied
+.BR \-\-box\-id ,
+sharing state only on disk, emitting an isolate-format meta-file and
+0/1/2 exit codes. The
+.B standalone
+interface
+.RB ( \-\-yaml )
+runs a batch of tasks described by one YAML config and emits per-task
+stats-yaml.
+.PP
+The binary is installed setuid root (mode 4755) so the unprivileged caller can
+gain the privilege needed to create namespaces and cgroups; it drops
+irreversibly to a per-box unprivileged UID before executing the program.
+.SH MODES
+.TP
+.B \-\-init
+Create the box directory tree for the given
+.B \-\-box\-id
+and print the box root path to standard output. Fails if the box is already
+initialized.
+.TP
+.B \-\-run \-\- program [args...]
+Run
+.I program
+inside the initialized box under the configured limits. The program and its
+arguments follow a
+.B \-\-
+separator. Paths are relative to the sandbox root.
+.TP
+.B \-\-cleanup
+Remove the box directory tree and cgroup and clear the box lock. Idempotent.
+.TP
+.BI \-\-yaml= FILE
+Standalone mode: run the tasks described by
+.IR FILE .
+.SH OPTIONS
+.SS Identification
+.TP
+.BI \-\-box\-id= ID
+Integer box id (0\(en5000), unique per concurrent invocation. Required for
+.BR \-\-init / \-\-run / \-\-cleanup .
+The box UID/GID, filesystem root, and cgroup are all derived from it.
+.TP
+.BI \-\-meta= FILE
+Write the isolate-format meta-file (task result and statistics) to
+.IR FILE .
+.SS Resource limits
+.TP
+.BI \-\-mem= KB
+.TQ
+.BI \-\-cg\-mem= KB
+Memory limit in kilobytes, enforced via the cgroup.
+.TP
+.BI \-\-as\-size= KB
+Address-space limit in kilobytes
+.RB ( RLIMIT_AS ).
+.TP
+.BI \-\-time= SECONDS
+CPU time limit (fractional seconds).
+.TP
+.BI \-\-wall\-time= SECONDS
+Wall-clock time limit (fractional seconds), enforced by the supervisor.
+.TP
+.BI \-\-extra\-time= SECONDS
+Grace period added before a timed-out process is reported.
+.TP
+.BI \-\-stack= KB
+Stack size limit in kilobytes.
+.TP
+.BI \-\-fsize= KB
+Maximum output file size in kilobytes.
+.TP
+.BI \-\-open\-files= N
+Maximum number of open file descriptors.
+.TP
+.BI \-\-core= KB
+Maximum core-dump size in kilobytes.
+.TP
+.BI \-\-disk\-usage= KB
+Disk-usage limit in kilobytes.
+.TP
+.BI \-\-quota= "BLOCKS,INODES"
+Disk quota (blocks and inodes); requires a quota-capable filesystem.
+.TP
+.BR \-\-processes [ =\fIN\fR ]
+Maximum number of processes/threads. Bare
+.B \-\-processes
+means unlimited.
+.SS Input/output
+.TP
+.BI \-\-stdin= FILE
+Redirect standard input from
+.IR FILE .
+.TP
+.BI \-\-stdout= FILE
+Redirect standard output to
+.IR FILE .
+.TP
+.BI \-\-stderr= FILE
+Redirect standard error to
+.IR FILE .
+.TP
+.B \-\-stderr\-to\-stdout
+Send standard error to the same destination as standard output.
+.TP
+.BI \-\-chdir= DIR
+Change to
+.I DIR
+(relative to the sandbox root) before running the program.
+.SS Environment and filesystem
+.TP
+.BI \-\-env= RULE
+Environment variable rule:
+.BI VAR = VALUE
+sets a variable,
+.I VAR
+inherits it from the caller. May be given multiple times.
+.TP
+.BI \-\-dir= RULE
+Directory rule mapping a host path into the sandbox, e.g.
+.IB in = out
+or
+.IB in = out : OPTIONS
+(options include
+.BR rw ,
+.BR maybe ,
+.BR fs ,
+.BR tmp ,
+.BR dev ,
+.BR noexec ,
+.BR norec ).
+May be given multiple times.
+.TP
+.B \-\-share\-net
+Do not create a network namespace; the sandbox shares the host network.
+.SS Miscellaneous
+.TP
+.B \-\-debug
+Verbose diagnostic logging to standard error.
+.TP
+.BR \-\-cg ", " \-\-cg\-timing
+Accepted for isolate compatibility and ignored (control groups are always used).
+.SH EXIT STATUS
+.TP
+.B 0
+The program ran and exited with status 0.
+.TP
+.B 1
+The program ran but the result was not OK (non-zero exit, killed by a signal,
+or a limit was exceeded); details are in the meta-file.
+.TP
+.B 2
+The isolator itself failed (bad arguments, setup error, or the box was not
+initialized).
+.SH FILES
+.TP
+.I /var/lib/isolator_boxes/<box-id>
+The per-box directory tree (the writable
+.I box/
+working directory lives here).
+.TP
+.I /run/isolator_boxes/locks/<box-id>
+Per-box lock and initialization record (tmpfs).
+.TP
+.I /sys/fs/cgroup/isolator_boxes
+The cgroup subtree for all boxes; created and given controllers on first
+.BR \-\-run .
+.SH SEE ALSO
+.BR isolate (1)
+(the upstream IOI sandbox this tool replaces).
