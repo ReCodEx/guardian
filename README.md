@@ -97,7 +97,12 @@ isn't built or root isn't available, so collection off a root host is a safe
 no-op. (System Python on Arch/PEP-668 distros is externally managed, hence the
 venv rather than a global `pip install`.)
 
-### ReCodEx Integration Tests (`tests/recodex`)
+### Mock evaluator (`tests/recodex`)
+
+Replays real, production-harvested ReCodEx job configs (C, Python, C#, Maven) to
+validate toolchains and limits. It drives the Isolator in **standalone mode**
+(`--yaml=`), so it deliberately covers no part of the compatibility CLI — that is
+the job of the Worker integration tier, which drives the real ReCodEx Worker.
 
 ⚠️ **Warning**: This test suite performs extensive setup and downloads!
 
