@@ -342,9 +342,12 @@ namespace tasks {
             if (rlimits.as_size()) {
                 set_as_size(rlimits.as_size().value());
             }
-            if (rlimits.stack_size()) {
-                set_stack_size(rlimits.stack_size().value());
-            }
+            // Always applied, unlike the other caps: with no stack limit set,
+            // Isolate gives the task an *unlimited* stack rather than leaving
+            // the caller's in place (isolate/isolate.c:803). The Worker omits
+            // --stack whenever its stack-size limit is 0, its default, so this
+            // is the usual configuration (#22).
+            set_stack_size(rlimits.stack_size().value_or(RLIM_INFINITY));
             if (rlimits.processes()) {
                 set_processes_count(rlimits.processes().value());
             }

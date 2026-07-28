@@ -116,6 +116,19 @@ namespace config {
        public:
         resource_limits() = default;
 
+        /// @brief Reject a zero for a cap where a literal zero is meaningless —
+        /// the standalone-mode counterpart of `cli::parse_positive_size`. Omit
+        /// the key to ask for no limit (#22).
+        static size_t require_positive(std::string_view name, size_t value) {
+            if (value == 0) {
+                terminate(
+                    "Invalid resource limit value: {} must be non-zero; omit it "
+                    "for no limit",
+                    name);
+            }
+            return value;
+        }
+
         /// @brief
         /// @param limits_node
         resource_limits(const YAML::Node& limits_node) {
@@ -133,8 +146,10 @@ namespace config {
                                 .as<size_t>();
                     }
                     if (limits_node[config_options::task::STACK]) {
-                        stack_size_ = limits_node[config_options::task::STACK]
-                                          .as<size_t>();
+                        stack_size_ = require_positive(
+                            config_options::task::STACK,
+                            limits_node[config_options::task::STACK]
+                                .as<size_t>());
                     }
                     if (limits_node[config_options::task::WALL_TIME]) {
                         wall_time_ =
@@ -147,7 +162,8 @@ namespace config {
                                 .as<double>();
                     }
                     if (limits_node[config_options::task::PROCESSES]) {
-                        set_processes(
+                        processes_ = require_positive(
+                            config_options::task::PROCESSES,
                             limits_node[config_options::task::PROCESSES]
                                 .as<size_t>());
                     }
@@ -195,7 +211,7 @@ namespace config {
                 memory_usage_ = *opts.memory * KB;
             }
             if (opts.stack) {
-                stack_size_ = *opts.stack * KB;
+                set_stack_size(*opts.stack * KB);
             }
             if (opts.wall_time) {
                 wall_time_ = *opts.wall_time;
@@ -241,12 +257,11 @@ namespace config {
         void set_extra_time(size_t s) { extra_time_ = s; }
         void set_as_size(size_t b) { as_size_bytes_ = b; }
         void set_stack_size(size_t b) { stack_size_ = b; }
-        /// @brief Set the process cap, treating 0 as Isolate's *unlimited*
-        /// sentinel — bare `--processes`, which its enforcement side skips
-        /// (`if (max_processes) RLIM(NPROC, …)`, `isolate/isolate.c:807`). A 0
-        /// leaves the cap unset, so an engaged `processes()` always means a real
-        /// limit; storing a literal 0 would write `pids.max = 0` and let nothing
-        /// fork (#21).
+        /// @brief Set the process cap. A 0 arrives only from the bare
+        /// `--processes` the Worker emits (an explicit `--processes=0` is refused
+        /// at parse) and means *unlimited*, so it leaves the cap unset: an
+        /// engaged `processes()` always means a real limit. Storing a literal 0
+        /// would write `pids.max = 0` and let nothing fork (#21).
         void set_processes(size_t n) {
             if (n > 0) {
                 processes_ = n;

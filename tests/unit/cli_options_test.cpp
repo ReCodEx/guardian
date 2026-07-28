@@ -100,6 +100,38 @@ namespace {
         EXPECT_EQ(*o.processes, 8u);
     }
 
+    // --- zero-valued caps that cannot mean anything are refused (#22) ---------
+
+    // Isolate reads an explicit 0 for these as "no limit"; we refuse it instead,
+    // since enforcing it literally is meaningless (a 0 stack cannot exec, and a
+    // process cap of 0 is just =1). Only the bare --processes above, and an
+    // omitted flag, mean unlimited.
+
+    TEST(cli_processes, explicit_zero_rejected) {
+        EXPECT_EXIT(
+            {
+                parse_args(
+                    {"--run", "--box-id=0", "--processes=0", "--", "/bin/true"});
+            },
+            ::testing::ExitedWithCode(2), "not a limit");
+    }
+
+    TEST(cli_stack, zero_rejected) {
+        EXPECT_EXIT(
+            {
+                parse_args(
+                    {"--run", "--box-id=0", "--stack=0", "--", "/bin/true"});
+            },
+            ::testing::ExitedWithCode(2), "not a limit");
+    }
+
+    TEST(cli_stack, with_value) {
+        auto o = parse_args(
+            {"--run", "--box-id=0", "--stack=64", "--", "/bin/true"});
+        ASSERT_TRUE(o.stack.has_value());
+        EXPECT_EQ(*o.stack, 64u);
+    }
+
     // --- repeatable rules + flags --------------------------------------------
 
     TEST(cli_repeatable, env_and_dir_accumulate) {

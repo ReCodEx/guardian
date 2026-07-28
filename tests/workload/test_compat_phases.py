@@ -679,6 +679,54 @@ def test_compat_processes_cap_still_bites():
         _run("--cleanup")
 
 
+def _stage_probe(box_root: Path, name: str) -> None:
+    # Copy a built workload into box/ so the task can exec it without a --dir
+    # rule; --run flips box/ to box_uid, so the box user can read and exec it.
+    src = PROBES_DIR / name
+    dst = box_root / "box" / name
+    shutil.copy(src, dst)
+    os.chmod(dst, 0o755)
+
+
+def test_compat_no_stack_limit_means_unlimited():
+    # #22: with no --stack, Isolate sets RLIMIT_STACK to RLIM_INFINITY rather
+    # than leaving the caller's limit in place (isolate/isolate.c:803) — and the
+    # Worker omits --stack whenever its stack-size limit is 0, its default. The
+    # probe consumes ~32 MiB of stack, past the caller's usual 8 MiB, so it only
+    # survives if the unlimited stack was actually applied.
+    if not (PROBES_DIR / "deep_stack_test").exists():
+        pytest.skip("deep_stack_test workload not built")
+    try:
+        init = _run("--init")
+        assert init.returncode == 0, init.stderr
+        _stage_probe(Path(init.stdout.strip()), "deep_stack_test")
+
+        run = _run("--run", "--", "/box/deep_stack_test")
+        assert run.returncode == 0, run.stderr
+        assert run.stdout.strip() == "deep-ok"
+    finally:
+        _run("--cleanup")
+
+
+def test_compat_stack_limit_still_bites():
+    # Companion: an explicit cap is still enforced, so unlimited-by-default did
+    # not disable the limit. 1 MiB is far below the probe's ~32 MiB.
+    if not (PROBES_DIR / "deep_stack_test").exists():
+        pytest.skip("deep_stack_test workload not built")
+    try:
+        init = _run("--init")
+        assert init.returncode == 0, init.stderr
+        _stage_probe(Path(init.stdout.strip()), "deep_stack_test")
+
+        run = _run("--stack=1024", "--run", "--", "/box/deep_stack_test")
+        assert run.returncode != 0, (
+            "--stack=1024 (KB) must not admit a ~32 MiB stack; "
+            f"got rc=0 with stdout {run.stdout!r}"
+        )
+    finally:
+        _run("--cleanup")
+
+
 def test_meta_file_internal_error_is_xx(tmp_path):
     # A --run on an un-init'd box is an Isolator-internal error: exit 2 and a
     # status:XX meta with a message, written by root's terminate() meta-sink

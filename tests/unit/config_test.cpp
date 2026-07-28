@@ -70,22 +70,14 @@ namespace {
 
     // --- zero-valued process cap means "no limit" (#21) -----------------------
 
-    // 0 is Isolate's *unlimited* sentinel for --processes, skipped at
-    // enforcement (isolate/isolate.c:807). The Worker emits the bare form on
-    // every sandboxed task by default, so a literal zero cap (pids.max = 0)
-    // would break every real job.
+    // The bare `--processes` the Worker emits parses to 0 and means *unlimited*,
+    // so it must leave the cap unset — a literal pids.max = 0 would let nothing
+    // fork and break every real job. An explicit 0 never reaches here: it is
+    // refused at parse (cli_options_test) / on load below.
 
     TEST(resource_limits_cli, bare_processes_leaves_no_process_cap) {
         cli::cli_options o;
         o.processes = 0;  // what a bare `--processes` parses to
-        config::resource_limits rl(o);
-        EXPECT_FALSE(rl.processes().has_value());
-    }
-
-    TEST(resource_limits_cli, explicit_zero_processes_leaves_no_process_cap) {
-        // `--processes=0` lands on the same sentinel as the bare form.
-        cli::cli_options o;
-        o.processes = 0;
         config::resource_limits rl(o);
         EXPECT_FALSE(rl.processes().has_value());
     }
@@ -98,11 +90,33 @@ namespace {
         EXPECT_EQ(*rl.processes(), 4u);
     }
 
-    TEST(resource_limits_yaml, zero_processes_leaves_no_process_cap) {
+    TEST(resource_limits_yaml, zero_processes_rejected) {
         YAML::Node n;
         n[config::config_options::task::PROCESSES] = 0;
+        EXPECT_EXIT({ config::resource_limits rl(n); },
+                    ::testing::ExitedWithCode(2), "must be non-zero");
+    }
+
+    // --- unset stack cap means unlimited; a zero one is refused (#22) ---------
+
+    // An *unset* stack cap means unlimited — Isolate always applies
+    // RLIMIT_STACK, using RLIM_INFINITY when none is given
+    // (isolate/isolate.c:803) — which the enforcement side turns into infinity.
+    // A literal 0 would leave the task no stack at all, so it is refused rather
+    // than silently read as unlimited.
+
+    TEST(resource_limits_yaml, absent_stack_leaves_no_stack_cap) {
+        YAML::Node n;
+        n[config::config_options::task::CPU_TIME] = 1;
         config::resource_limits rl(n);
-        EXPECT_FALSE(rl.processes().has_value());
+        EXPECT_FALSE(rl.stack_size().has_value());
+    }
+
+    TEST(resource_limits_yaml, zero_stack_rejected) {
+        YAML::Node n;
+        n[config::config_options::task::STACK] = 0;
+        EXPECT_EXIT({ config::resource_limits rl(n); },
+                    ::testing::ExitedWithCode(2), "must be non-zero");
     }
 
     // --- task_config from a YAML node ----------------------------------------

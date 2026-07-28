@@ -121,6 +121,20 @@ namespace cli {
             return value;
         }
 
+        /// @brief Parse an option value that must be non-zero. Isolate reads a 0
+        /// for these caps as "no limit"; we refuse it, because enforcing it
+        /// literally is meaningless — a 0 stack leaves the task unable to exec,
+        /// and a process cap of 0 is just `=1`. Omitting the flag (or the bare
+        /// `--processes`) is how you ask for no limit (#22).
+        inline std::size_t parse_positive_size(std::string_view flag,
+                                               const char* arg) {
+            const std::size_t value = parse_size(flag, arg);
+            if (value == 0) {
+                usage_error("--{}=0 is not a limit; omit the flag instead", flag);
+            }
+            return value;
+        }
+
         /// @brief Parse a non-negative fractional value (Isolate's time flags
         /// allow fractional seconds; the Worker emits e.g. `--time=1.000000`).
         inline double parse_double(std::string_view flag, const char* arg) {
@@ -307,7 +321,7 @@ namespace cli {
                     opts.extra_time = parse_double("extra-time", optarg);
                     break;
                 case OPT_STACK:
-                    opts.stack = parse_size("stack", optarg);
+                    opts.stack = parse_positive_size("stack", optarg);
                     break;
                 case OPT_FSIZE:
                     opts.file_size = parse_size("fsize", optarg);
@@ -322,9 +336,10 @@ namespace cli {
                     opts.disk_usage = parse_size("disk-usage", optarg);
                     break;
                 case OPT_PROCESSES:
-                    // Bare `--processes` (optarg == nullptr) means unlimited.
+                    // Bare `--processes` (optarg == nullptr) means unlimited;
+                    // an explicit 0 is refused rather than read as unlimited.
                     opts.processes =
-                        optarg ? parse_size("processes", optarg) : 0;
+                        optarg ? parse_positive_size("processes", optarg) : 0;
                     break;
 
                 case OPT_STDIN:
