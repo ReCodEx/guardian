@@ -68,6 +68,43 @@ namespace {
         EXPECT_EQ(rl.open_files(), 64u);  // count, unchanged
     }
 
+    // --- zero-valued process cap means "no limit" (#21) -----------------------
+
+    // 0 is Isolate's *unlimited* sentinel for --processes, skipped at
+    // enforcement (isolate/isolate.c:807). The Worker emits the bare form on
+    // every sandboxed task by default, so a literal zero cap (pids.max = 0)
+    // would break every real job.
+
+    TEST(resource_limits_cli, bare_processes_leaves_no_process_cap) {
+        cli::cli_options o;
+        o.processes = 0;  // what a bare `--processes` parses to
+        config::resource_limits rl(o);
+        EXPECT_FALSE(rl.processes().has_value());
+    }
+
+    TEST(resource_limits_cli, explicit_zero_processes_leaves_no_process_cap) {
+        // `--processes=0` lands on the same sentinel as the bare form.
+        cli::cli_options o;
+        o.processes = 0;
+        config::resource_limits rl(o);
+        EXPECT_FALSE(rl.processes().has_value());
+    }
+
+    TEST(resource_limits_cli, positive_processes_is_kept) {
+        cli::cli_options o;
+        o.processes = 4;
+        config::resource_limits rl(o);
+        ASSERT_TRUE(rl.processes().has_value());
+        EXPECT_EQ(*rl.processes(), 4u);
+    }
+
+    TEST(resource_limits_yaml, zero_processes_leaves_no_process_cap) {
+        YAML::Node n;
+        n[config::config_options::task::PROCESSES] = 0;
+        config::resource_limits rl(n);
+        EXPECT_FALSE(rl.processes().has_value());
+    }
+
     // --- task_config from a YAML node ----------------------------------------
 
     TEST(task_config_yaml, parses_id_exec_and_args) {

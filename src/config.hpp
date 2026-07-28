@@ -147,9 +147,9 @@ namespace config {
                                 .as<double>();
                     }
                     if (limits_node[config_options::task::PROCESSES]) {
-                        processes_ =
+                        set_processes(
                             limits_node[config_options::task::PROCESSES]
-                                .as<size_t>();
+                                .as<size_t>());
                     }
                     if (limits_node[config_options::task::DISK_USAGE]) {
                         disk_usage_ =
@@ -204,7 +204,7 @@ namespace config {
                 extra_time_ = *opts.extra_time;
             }
             if (opts.processes) {
-                processes_ = *opts.processes;
+                set_processes(*opts.processes);
             }
             if (opts.as_size) {
                 as_size_bytes_ = *opts.as_size;
@@ -241,7 +241,19 @@ namespace config {
         void set_extra_time(size_t s) { extra_time_ = s; }
         void set_as_size(size_t b) { as_size_bytes_ = b; }
         void set_stack_size(size_t b) { stack_size_ = b; }
-        void set_processes(size_t n) { processes_ = n; }
+        /// @brief Set the process cap, treating 0 as Isolate's *unlimited*
+        /// sentinel — bare `--processes`, which its enforcement side skips
+        /// (`if (max_processes) RLIM(NPROC, …)`, `isolate/isolate.c:807`). A 0
+        /// leaves the cap unset, so an engaged `processes()` always means a real
+        /// limit; storing a literal 0 would write `pids.max = 0` and let nothing
+        /// fork (#21).
+        void set_processes(size_t n) {
+            if (n > 0) {
+                processes_ = n;
+            } else {
+                processes_.reset();
+            }
+        }
         void set_open_files(size_t n) { open_files_ = n; }
         void set_file_size(size_t b) { file_size_ = b; }
         void set_core_dump_size(size_t b) { core_size_ = b; }

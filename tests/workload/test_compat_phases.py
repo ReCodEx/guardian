@@ -641,6 +641,44 @@ def test_compat_share_net_toggles_network_namespace():
         _run("--cleanup")
 
 
+def test_compat_bare_processes_means_unlimited():
+    # #21: bare --processes is Isolate's *unlimited* sentinel, and the Worker
+    # emits it on every sandboxed task by default. A pipeline needs to fork, so
+    # it only runs if no cap was applied.
+    try:
+        assert _run("--init").returncode == 0
+        run = _run("--processes", "--run", "--", "/bin/sh", "-c",
+                   "echo forked | /bin/cat")
+        assert run.returncode == 0, run.stderr
+        assert run.stdout.strip() == "forked"
+    finally:
+        _run("--cleanup")
+
+
+def test_compat_processes_cap_still_bites():
+    # Companion: treating 0 as "no cap" must not disable real caps. The same
+    # pipeline succeeds with room to fork and fails when only the shell fits, so
+    # a pass can't come from the limit being ignored.
+    try:
+        assert _run("--init").returncode == 0
+
+        ok = _run("--processes=8", "--run", "--", "/bin/sh", "-c",
+                  "echo forked | /bin/cat")
+        assert ok.returncode == 0, ok.stderr
+        assert ok.stdout.strip() == "forked"
+
+        # rc is not pinned: a failed task (1) or an internal error (2) depending
+        # on when the cap takes force. Either way it must not succeed.
+        capped = _run("--processes=1", "--run", "--", "/bin/sh", "-c",
+                      "echo forked | /bin/cat")
+        assert capped.returncode != 0, (
+            "--processes=1 must not admit a forking pipeline; "
+            f"got rc=0 with stdout {capped.stdout!r}"
+        )
+    finally:
+        _run("--cleanup")
+
+
 def test_meta_file_internal_error_is_xx(tmp_path):
     # A --run on an un-init'd box is an Isolator-internal error: exit 2 and a
     # status:XX meta with a message, written by root's terminate() meta-sink
