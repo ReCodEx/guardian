@@ -75,8 +75,6 @@ sudo ./build/src/isolator --yaml=config.yml
 
 Add `--dev` (`Debug` + `-DTESTING=ON`) when you want the test tiers built too —
 the workload tier needs it, since a default build compiles no test code.
-`scripts/isolator_run.sh config.yml` is a thin convenience wrapper for that
-second line, if you tire of typing the `sudo` and the path.
 
 Nothing is placed on the system; the only persistent state is the box tree
 (`/var/lib/isolator_boxes`) and the shared cgroup parent, both created lazily on
