@@ -1,5 +1,7 @@
 build
 test_build
+.venv
+.pytest_cache
 .vscode
 __pycache__
 links

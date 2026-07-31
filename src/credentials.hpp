@@ -5,6 +5,9 @@
 #include <filesystem>
 
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/capability.h>
+#include <sys/fsuid.h>
 #include <grp.h>
 #include <unistd.h>
 #include "config.hpp"
@@ -13,6 +16,126 @@
 namespace credentials
 {
     namespace fs = std::filesystem;
+
+    /// @brief Fail-fast privilege gate, run once at startup before any phase.
+    /// @details Mirrors Isolate's get_credentials() preamble. We must be
+    /// effective-uid 0 (the binary is installed setuid-root, ADR 0002); a
+    /// non-root invocation dies cleanly here rather than failing deep in
+    /// clone3()/mount() with a confusing errno. Because the install is mode
+    /// 4755 (setuid but NOT setgid), our effective gid is still the caller's on
+    /// entry — setegid(0) fixes it so root-group directory/file creation
+    /// (/run/isolator_boxes, the cgroup tree, the box tree) behaves. umask(022)
+    /// makes file-creation modes deterministic regardless of the caller's
+    /// inherited umask.
+    inline void require_root()
+    {
+        if (geteuid() != 0)
+            { terminate("Must be started as root"); }
+
+        if (getegid() != 0 && setegid(0) < 0)
+            { terminate("Cannot switch to root group, errno: {}", errno); }
+
+        umask(022);
+    }
+
+    /// @brief RAII: run a bind mount with the caller's uid/gid but only
+    /// CAP_SYS_ADMIN in force — never CAP_DAC_OVERRIDE. Isolate's drop-priv
+    /// mount (rules.c). A plain root mount() would resolve the source path with
+    /// DAC-override, so a caller could bind a host directory it cannot actually
+    /// reach; dropping the effective ids to the caller makes the kernel's path
+    /// permission checks apply to *them*, and CAP_SYS_ADMIN (the one capability
+    /// mount() itself needs) is raised back so the mount still works.
+    ///
+    /// @details Must be constructed from a full-root context (the proxy):
+    ///   drop:    setresgid then setresuid to (caller, caller, 0). GID first,
+    ///            while we still hold CAP_SETGID (dropping the uid from 0 is what
+    ///            clears capabilities; changing the gid does not). The saved-set
+    ///            stays 0, so the *permitted* cap set survives the uid change
+    ///            (it is cleared only when no id is 0 any more) — leaving
+    ///            CAP_SYS_ADMIN available to raise into the effective set.
+    ///   restore: setresuid then setresgid back to (0, 0, 0) — full root, so the
+    ///            rest of the root-running proxy is unaffected. This is our one
+    ///            divergence from Isolate, which restores to (orig, 0, orig)
+    ///            because its proxy becomes the caller (our proxy stays root
+    ///            until issue #20). euid returning to 0 re-copies the permitted
+    ///            set into the effective one, so all capabilities come back.
+    /// The restore succeeds without CAP_SETUID because 0 is still the saved-set
+    /// id — the very reason the drop kept it at 0.
+    class mount_priv_guard
+    {
+    public:
+        mount_priv_guard(uid_t orig_uid, gid_t orig_gid)
+        {
+            if (setresgid(orig_gid, orig_gid, 0) < 0)
+                { terminate("mount drop: setresgid failed, errno: {}", errno); }
+            if (setresuid(orig_uid, orig_uid, 0) < 0)
+                { terminate("mount drop: setresuid failed, errno: {}", errno); }
+            raise_cap_sys_admin();
+        }
+
+        ~mount_priv_guard()
+        {
+            if (setresuid(0, 0, 0) < 0 || setresgid(0, 0, 0) < 0)
+                { terminate("mount restore: failed to regain root, errno: {}",
+                            errno); }
+        }
+
+        mount_priv_guard(const mount_priv_guard&) = delete;
+        mount_priv_guard& operator=(const mount_priv_guard&) = delete;
+
+    private:
+        /// @brief Raise CAP_SYS_ADMIN from the permitted set into the effective
+        /// set, so mount() works despite the effective uid no longer being 0.
+        static void raise_cap_sys_admin()
+        {
+            cap_t caps = cap_get_proc();
+            if (!caps)
+                { terminate("Cannot read capabilities, errno: {}", errno); }
+
+            cap_value_t wanted[] = { CAP_SYS_ADMIN };
+            if (cap_set_flag(caps, CAP_EFFECTIVE, 1, wanted, CAP_SET) < 0)
+                { cap_free(caps); terminate("Cannot stage CAP_SYS_ADMIN"); }
+            if (cap_set_proc(caps) < 0)
+                { cap_free(caps);
+                  terminate("Cannot raise CAP_SYS_ADMIN, errno: {}", errno); }
+
+            cap_free(caps);
+        }
+    };
+
+    /// @brief RAII: drop the filesystem uid/gid to the caller for a scope, so a
+    /// caller-path *probe* (the `:maybe` rule's `is_directory` existence check)
+    /// resolves with the caller's permissions, not root's DAC-override —
+    /// Isolate's switch_fsid_to_caller / switch_fsid_back around dir_exists
+    /// (rules.c). The proxy runs as real root, so the caller ids must be passed
+    /// in explicitly (getuid() here is 0, not the caller). Restores the prior
+    /// effective ids (root in the proxy) on scope exit.
+    /// @note Distinct from meta_sink's fsid guard, which runs in the *root*
+    /// process (getuid() is the caller there) and is best-effort; this one runs
+    /// in the proxy and takes explicit ids.
+    class fsid_caller_guard
+    {
+    public:
+        fsid_caller_guard(uid_t orig_uid, gid_t orig_gid)
+            : prev_uid_(geteuid()), prev_gid_(getegid())
+        {
+            setfsuid(orig_uid);
+            setfsgid(orig_gid);
+        }
+
+        ~fsid_caller_guard()
+        {
+            setfsuid(prev_uid_);
+            setfsgid(prev_gid_);
+        }
+
+        fsid_caller_guard(const fsid_caller_guard&) = delete;
+        fsid_caller_guard& operator=(const fsid_caller_guard&) = delete;
+
+    private:
+        uid_t prev_uid_;
+        gid_t prev_gid_;
+    };
 
     ///  @class root_credentials_manager
     ///  @brief Manager class responsible for assigning credentials (box_id, UID/GID) used by the box.
@@ -105,18 +228,65 @@ namespace credentials
 
         /// @brief Start of the range from which box UID and GID are assigned.
         static constexpr uid_t box_uid_range_start_ = 60000;
-        
+
+        /// @brief Largest accepted box_id. Bounds box_uid/box_gid to
+        /// [60000, 65000] — safely below `nobody` (65534) and nowhere near a
+        /// uid_t overflow. Mirrors Isolate's `cf_num_boxes` cap on box_id.
+        static constexpr uid_t max_box_id_ = 5000;
+
+        /// @brief Whether a derived-or-overridden box UID/GID lies in the
+        /// dedicated [box_uid_range_start_, box_uid_range_start_ + max_box_id_]
+        /// band. Keeps box credentials off real system accounts and privileged
+        /// ids under every path (compat --box-id, standalone id, or an explicit
+        /// as-uid/as-gid config override).
+        static bool in_box_id_range(std::size_t id)
+        {
+            return id >= box_uid_range_start_ &&
+                   id <= static_cast<std::size_t>(box_uid_range_start_) + max_box_id_;
+        }
+
         /// @brief Reserves a box_id and assigns UID/GID by adding the id and box_uid_range_start_.
         /// @details Currently the box_id is randomly assigned, a daemon keeper process that assigns IDs is planned.
+        /// Every id is range-validated (see in_box_id_range): a caller-supplied
+        /// box_id or an explicit as-uid/as-gid override is rejected (exit 2)
+        /// before it can name a privileged or real system account.
         void assign_box_ids()
         {
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::uniform_int_distribution<uid_t> dist(1,5000);
+            if (auto id = config_->instance_id())
+            {
+                if (*id > max_box_id_)
+                    { terminate("Sandbox ID {} out of range (allowed 0-{})", *id, max_box_id_); }
+                box_id_ = static_cast<uid_t>(*id);
+            }
+            else
+            {
+                std::random_device rd;
+                std::mt19937 gen(rd());
+                std::uniform_int_distribution<uid_t> dist(1, max_box_id_);
+                box_id_ = dist(gen);
+            }
 
-            box_id_ = config_->instance_id().has_value() ? config_->instance_id().value() : dist(gen);
-            box_uid_ = config_->box_uid().has_value() ? config_->box_uid().value() : box_id_ + box_uid_range_start_;
-            box_gid_ = config_->box_gid().has_value() ? config_->box_gid().value() : box_uid_;
+            box_uid_ = assign_derived_id(config_->box_uid(),
+                                         box_id_ + box_uid_range_start_, "box_uid");
+            box_gid_ = assign_derived_id(config_->box_gid(), box_uid_, "box_gid");
+        }
+
+        /// @brief Resolve a box UID/GID: an explicit config override is
+        /// range-checked (raw, before any narrowing) and rejected out of band;
+        /// absent an override the derived value is used, already in range by
+        /// construction (box_id <= max_box_id_).
+        static uid_t assign_derived_id(const std::optional<std::size_t>& override_id,
+                                       uid_t derived, const char* what)
+        {
+            if (override_id)
+            {
+                if (!in_box_id_range(*override_id))
+                    { terminate("Configured {} {} out of range (allowed {}-{})", what,
+                                *override_id, box_uid_range_start_,
+                                box_uid_range_start_ + max_box_id_); }
+                return static_cast<uid_t>(*override_id);
+            }
+            return derived;
         }
         
         /// @brief Assign a root directory for the filesystem of this instance.
@@ -159,14 +329,35 @@ namespace credentials
             return credentials_root_->box_gid();
         }
 
-        /// @brief Switch back to the UID/GID as which this instance was launched.
-        /// @details Switches real, effective, and saved-set UID and GID. 
+        /// @brief Getter for the invoking caller's UID (for the drop-priv mount).
+        uid_t orig_uid() const
+        {
+            return credentials_root_->orig_uid();
+        }
+
+        /// @brief Getter for the invoking caller's GID (for the drop-priv mount).
+        gid_t orig_gid() const
+        {
+            return credentials_root_->orig_gid();
+        }
+
+        /// @brief Drop real, effective, and saved-set UID/GID back to the
+        /// invoking caller (orig_uid/orig_gid).
+        /// @details Mirror image of switch_to_box, and the exact counterpart of
+        /// Isolate's setup_orig_credentials (isolate.c). Isolate calls it in
+        /// box_proxy so the supervisor that monitors untrusted code runs
+        /// unprivileged. Our proxy does NOT yet call it — it currently
+        /// supervises the whole task lifecycle as root — because our wall-time
+        /// SIGKILL lives in the proxy and a caller-uid proxy could not signal
+        /// the box_uid task. Wiring this in (retaining CAP_KILL, or relocating
+        /// the kill to root) is tracked in issue #20; the method is kept here as
+        /// the ready call site rather than deleted-and-re-added.
         void switch_to_user()
         {
             auto orig_gid = credentials_root_->orig_gid();
             if(setresgid(orig_gid, orig_gid, orig_gid) < 0)
                 { terminate("Couldn't switch to original GID, errno: {}", errno); }
-            
+
             if(setgroups(0, NULL) < 0)
                 { terminate("Setgroups failed, errno: {}", errno); }
 
@@ -175,15 +366,27 @@ namespace credentials
                 { terminate("Couldn't switch to original UID, errno: {}", errno); }
         }
 
-        /// @brief Switch credentials (UID and GID) to values assigned to the box.
-        /// @details Switches real, effective, and saved-set UID and GID. 
+        /// @brief Drop credentials to the box UID/GID for the task process.
+        /// @details Sets real, effective, AND saved-set uid/gid to box_uid/gid,
+        /// matching Isolate's setup_credentials (isolate.c). The drop is
+        /// deliberately irreversible (saved-set is box_uid too, not root): the
+        /// task process execve()s untrusted code and never returns, so it must
+        /// retain no path back to privilege.
+        ///
+        /// The setgroups(0, NULL) drops the supplementary group list, which
+        /// setresuid/setresgid leave untouched — otherwise the box process
+        /// keeps the groups it inherited from root. It is not optional:
+        /// empirically the sandbox failed without it (the exact failure mode was
+        /// never root-caused — this was a long-standing TODO). Order is
+        /// load-bearing regardless: setgroups must run while we still hold
+        /// CAP_SETGID, i.e. after setresgid but before setresuid (dropping uid
+        /// from 0 is what clears capabilities; changing gid does not).
         void switch_to_box()
         {
             auto box_gid = credentials_root_->box_gid();
             if(setresgid(box_gid, box_gid, box_gid) < 0)
                 { terminate("Couldn't switch to box GID, errno: {}", errno); }
 
-            /// TODO: Find out why setgroups is necessary.
             if(setgroups(0, NULL) < 0)
                 { terminate("Setgroups failed, errno: {}", errno); }
 

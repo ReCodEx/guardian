@@ -1,0 +1,45 @@
+---
+Language: Cpp
+Standard: Latest
+
+BasedOnStyle: Google
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+# UseTab: Never
+# AccessModifierOffset: -4
+NamespaceIndentation: All
+# IndentCaseLabels: true
+#
+# # Braces: Allman (each brace on its own line)
+# BreakBeforeBraces: Allman
+#
+# # Line length
+# ColumnLimit: 120
+#
+# # Pointers / references bind to the type (int* p, int& r)
+PointerAlignment: Left
+ReferenceAlignment: Left
+#
+# # Constructor initializer lists
+# BreakConstructorInitializers: BeforeColon
+# PackConstructorInitializers: CurrentLine
+# ConstructorInitializerIndentWidth: 4
+#
+# # Includes — keep grouping, sort within groups
+# SortIncludes: CaseInsensitive
+# IncludeBlocks: Preserve
+#
+# # Misc
+# Wrap single-statement if/else/for/while bodies in braces automatically.
+InsertBraces: true
+AllowShortFunctionsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+# AlwaysBreakTemplateDeclarations: Yes
+# SpaceBeforeParens: ControlStatements
+# FixNamespaceComments: true
+# EmptyLineBeforeAccessModifier: LogicalBlock
+# KeepEmptyLinesAtTheStartOfBlocks: false
+# MaxEmptyLinesToKeep: 1

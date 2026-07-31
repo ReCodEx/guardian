@@ -1,8 +1,16 @@
 # setuid-root install with an `isolate` alias
 
-The ReCodEx Worker runs as the non-root `recodex` user yet `execvp`s a PATH-resolved binary named `isolate` that must gain root to create namespaces and cgroups. To preserve "replace only the command," we install the Isolator **setuid root** (`mode 4755`), exactly as upstream Isolate does, and expose an `isolate`-named entrypoint (symlink) so PATH resolves to us. The package declares `Conflicts: isolate` so the two cannot both own the name.
+The ReCodEx Worker runs as the non-root `recodex` user yet `execvp`s a PATH-resolved binary named `isolate` that must gain root to create namespaces and cgroups. To preserve "replace only the command," we install the Isolator **setuid root** (`mode 4755`), exactly as upstream Isolate does, and expose an `isolate`-named entrypoint (symlink) so PATH resolves to us. The package **`Provides: isolate`** (satisfying the Worker RPM's `Requires: isolate`, ADR 0004) and prevents coexistence with the upstream `isolate` package by **owning the same `/usr/bin/isolate` path** — RPM refuses to install two packages that own one file — rather than by an explicit `Conflicts: isolate`, which would self-conflict against our own `Provides`.
 
-We accept the larger setuid attack surface (a C++ binary linking Boost / yaml-cpp / spdlog versus Isolate's hardened C) because no alternative preserves invocation by a non-root Worker without sudo or a Worker patch. We mitigate by building with the same compiler-hardening flags Isolate uses (`-D_FORTIFY_SOURCE=3 -fstack-protector-strong -fstack-clash-protection -fPIE -pie`, RELRO + `-z now`) from the start.
+We accept the larger setuid attack surface (a C++ binary linking Boost / yaml-cpp / spdlog versus Isolate's hardened C) because no alternative preserves invocation by a non-root Worker without sudo or a Worker patch. We mitigate by building with the same compiler-hardening flags Isolate uses — the full set: `-fstack-protector-strong -fstack-clash-protection -fPIE -pie -D_FORTIFY_SOURCE=3` (fortify gated to optimized builds, where it is not a no-op) plus linker flags `-Wl,-z,{nodlopen,noexecstack,relro,now}` — and statically linking libstdc++/libgcc so the binary carries no SCL runtime dependency (ADR 0004).
+
+The alias is packaging, not behaviour, so it is a build-time switch:
+`-DISOLATE_ALIAS` (default `OFF`) gates the symlink, the `man isolate` redirect
+and the RPM `Provides: isolate` together. It is opt-in because claiming
+`/usr/bin/isolate` displaces upstream Isolate on the host — a default build owns
+no such path, installs beside upstream Isolate, and serves standalone `--yaml`
+use. A Worker host builds with `-DISOLATE_ALIAS=ON` to get the drop-in path and
+satisfy the Worker RPM's `Requires: isolate`.
 
 ## Consequences
 

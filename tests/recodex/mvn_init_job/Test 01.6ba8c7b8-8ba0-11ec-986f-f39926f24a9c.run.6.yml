@@ -33,8 +33,8 @@ env:
   - MAVEN_HOME=/opt/maven
   - M2_HOME=/opt/maven-repo
   - LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/14/include:/usr/lib/gcc/x86_64-redhat-linux/14/:/usr/lib64:/usr/lib:/lib64:/lib
-root-cg: /sys/fs/cgroup/isolate_boxes
-root-dir: /isolate_boxes
+root-cg: /sys/fs/cgroup/isolator_boxes
+root-dir: /var/lib/isolator_boxes
 share-net: true
 tasks:
 - box-fs:

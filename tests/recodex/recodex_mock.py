@@ -282,10 +282,10 @@ def cleanup_box(box_id):
     """Clean up isolate box directories"""
     try:
         # Remove cgroup directories
-        subprocess.run(['sudo','find', f"/sys/fs/cgroup/isolate_boxes/{box_id}", '-type', 'd', '-depth', '-exec', 'rmdir', '{}', ';'], 
+        subprocess.run(['sudo','find', f"/sys/fs/cgroup/isolator_boxes/{box_id}", '-type', 'd', '-depth', '-exec', 'rmdir', '{}', ';'], 
                       stderr=subprocess.PIPE)
         # Remove isolate box directories  
-        subprocess.run(['sudo','rm', '-rf', f"/isolate_boxes/{box_id}"],
+        subprocess.run(['sudo','rm', '-rf', f"/var/lib/isolator_boxes/{box_id}"],
                       stderr=subprocess.PIPE)
     except Exception as e:
         print(f"Error cleaning up isolate box \"{box_id}\": {e}")
@@ -538,8 +538,8 @@ def run_groups(submissions_csv, groups=["C#", "Python", "C++", "AdvC++"]):
         print(f" Failed submissions: {group_stats.get('failed_submissions', [])}")
 if __name__ == "__main__":
     # Initialize before running tests
-    subprocess.run([f"{SCRIPT_DIR}/../../scripts/isolator_cleanup.sh"], shell=True)
-    subprocess.run([f"{SCRIPT_DIR}/../../scripts/isolator_init.sh"], shell=True)
+    subprocess.run([f"{SCRIPT_DIR}/../../scripts/isolator.sh", "purge"], check=False)
+    # No init step: --run arranges the isolator_boxes cgroup parent itself (ADR 0007).
     if len(sys.argv) > 2 and sys.argv[1] == "-d":
         run_submission(f"{SCRIPT_DIR}/test-data/download/{sys.argv[2]}", verbose=True)
         sys.exit(0)
