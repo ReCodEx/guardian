@@ -28,9 +28,192 @@ An instance runs three different processes with distinct responsibilities:
 ## 🛠️ System Requirements
 
 - Linux kernel with cgroupv2 enabled.
-- CMake 3.20+ and a compiler supporting C++23
-- Boost `program_options` library
+- CMake 3.20+ and a compiler supporting C++23 (on Rocky 9 that means
+  `gcc-toolset-14`; the system GCC 11.5 is not enough)
+- `libcap` development headers (`libcap-devel` / `libcap-dev`)
+- Network access at configure time: yaml-cpp is fetched by CMake and statically
+  linked. For an offline build, point `FETCHCONTENT_SOURCE_DIR_YAML-CPP` at a
+  pre-fetched tree.
+- `rpm-build` only if you want to produce the RPM
 - For disk usage quotas, the sandbox must be on a filesystem supporting `QUOTACTL(2)` (e.g., ext4)
+
+---
+
+## 📦 Installation
+
+One script drives the whole lifecycle — `scripts/isolator.sh MODE`:
+
+| Mode | What it does |
+| --- | --- |
+| `build` | configure (only if needed) + build |
+| `package` | build, then `cpack -G RPM` — produces the package, installs nothing |
+| `install` | build, then `cmake --install` |
+| `uninstall` | remove what `install` put there, alias included |
+| `purge` | tear down `/var/lib/isolator_boxes` and the shared cgroup parent |
+
+Defaults are the same for every mode: `Release`, prefix `/usr`, no `isolate`
+alias, no test tiers. `scripts/isolator.sh --help` lists the flags.
+
+> **On Rocky 9, enter the toolset first — for *every* mode that compiles:**
+> ```sh
+> scl enable gcc-toolset-14 -- bash
+> ```
+> The system compiler is GCC 11.5, which has no `<format>`; `src/logs.hpp` and
+> `src/terminate.hpp` need it, so a build outside the toolset fails with
+> `fatal error: format: No such file or directory`. Modern dev distros need
+> nothing special.
+
+### Option A — build in place, run with `sudo` (development)
+
+No installation at all: build in the tree and invoke the binary through `sudo`.
+This is what the workload and mock-evaluator test tiers use.
+
+```sh
+scripts/isolator.sh build                     # into ./build
+sudo ./build/src/isolator --yaml=config.yml
+```
+
+Add `--dev` (`Debug` + `-DTESTING=ON`) when you want the test tiers built too —
+the workload tier needs it, since a default build compiles no test code.
+`scripts/isolator_run.sh config.yml` is a thin convenience wrapper for that
+second line, if you tire of typing the `sudo` and the path.
+
+Nothing is placed on the system; the only persistent state is the box tree
+(`/var/lib/isolator_boxes`) and the shared cgroup parent, both created lazily on
+first run and removable with `scripts/isolator.sh purge`.
+Because the binary is not setuid here, every invocation needs root — the
+Isolate-compatible drop-in path (a non-root caller) is *not* exercised by this
+option.
+
+### Option B — install from source (system-wide, no packaging)
+
+Use this on hosts where you cannot or do not want to build an RPM. `install`
+builds first, so this is the whole procedure from a clean tree:
+
+```sh
+scripts/isolator.sh install            # add --alias on a ReCodEx Worker host
+```
+
+It installs:
+
+| Path | What |
+| --- | --- |
+| `/usr/bin/isolator` | the binary, **mode 4755 (setuid root)**|
+| `/var/lib/isolator_boxes` | persistent box tree |
+| `/usr/share/man/man1/isolator.1` | man page |
+
+Only the `cmake --install` step is elevated (via `sudo`); configure and build
+never are, so the build tree stays yours. The script prints the mode that
+actually landed, because `cmake --install` applies permissions directly and a
+restrictive umask can file the setuid bit off — expect `-rwsr-xr-x`. (The RPM in
+Option C forces `4755` regardless of the build user's umask.)
+
+Configure-time choices are remembered in the build tree, so `install` after a
+`build --alias` still installs the alias; naming a flag again reconfigures and
+says so. `--destdir DIR` stages the install under `DIR` instead, which needs no
+root at all — useful for inspecting exactly what would land.
+
+#### Uninstalling
+
+```sh
+scripts/isolator.sh uninstall          # -n / --dry-run to preview
+```
+
+Run it from the *same* build tree you installed from — it reads that tree's
+`install_manifest.txt`, and errors out rather than guessing if the manifest is
+gone. It removes one path the manifest does not contain: the `isolate` symlink,
+which CMake never records because an `install(CODE ...)` step creates it. Left
+behind, that symlink dangles at the front of `PATH` and anything invoking
+`isolate` fails confusingly instead of falling through to another install.
+
+The box tree is reclaimed only when empty, exactly as `dnf remove` treats the
+package's directory. A non-empty tree means live or leftover boxes, so it is
+reported and left alone; `uninstall --purge` (or `purge` on its own) removes it
+and the shared cgroup parent.
+
+On a host where the isolator came from an **RPM**, `uninstall` refuses and points
+you at `dnf`: deleting RPM-owned files behind `rpm`'s back leaves the package
+database convinced it is still installed. And when there's no manifest to work
+from, it surveys the host instead of just complaining — listing every `isolator`
+it can find with the right removal route for each, since an RPM install under
+`/usr` and a source install under `/usr/local` can coexist (and the `/usr/local`
+one wins on a default `PATH`).
+
+### Option C — RPM package (el9, the production path)
+
+The ReCodEx Worker cluster runs Rocky Linux 9 and its Worker RPM declares
+`Requires: isolate`, which our package satisfies with `Provides: isolate` **when
+built with the alias** — so a package destined for a Worker host wants `--alias`:
+
+```sh
+scl enable gcc-toolset-14 -- bash
+scripts/isolator.sh package --alias    # -> build/isolator-0.1.0-1.el9.x86_64.rpm
+sudo dnf install ./build/isolator-0.1.0-1.el9.x86_64.rpm
+```
+
+`package` produces the RPM and stops there; installing and removing it is `dnf`'s
+job, deliberately. The default `Release` build type matters here: CPack emits no
+`-debuginfo` subpackage, so a `RelWithDebInfo` package carries debug symbols
+*inside* the setuid binary — measured on el9, 17 MB of binary in a 4.4 MB
+package, against 3.1 MB in 955 KB for `Release`.
+
+The package owns the same file list as Option B, with `/usr/bin/isolator` forced
+to `%attr(4755,root,root)` and `/var/lib/isolator_boxes` owned as a directory so
+`dnf remove` cleans it up. The binary statically links libstdc++/libgcc and
+yaml-cpp, so it has **no dependency on the gcc-toolset SCL runtime** at execution
+time — build under the toolset, run against the plain system.
+
+An alias-built package owns `/usr/bin/isolate`, so RPM will refuse to install it
+alongside the upstream `isolate` package (that file conflict *is* the
+coexistence guard); remove upstream Isolate first. A default
+(alias-less) package owns no such path and installs beside it.
+
+There is no boot-time service or `--init`-style system setup step to enable.
+
+### The `isolate` alias (`-DISOLATE_ALIAS`, default `OFF`)
+
+The alias is what makes the drop-in path work: the ReCodEx Worker `execvp`s a
+PATH-resolved binary literally named `isolate`, and its RPM declares
+`Requires: isolate`. One CMake option covers all three of its parts:
+
+| | `ISOLATE_ALIAS=OFF` (default) | `ISOLATE_ALIAS=ON` |
+| --- | --- | --- |
+| `<bindir>/isolate` symlink | not installed | installed |
+| `man isolate` redirect page | not installed | installed |
+| RPM `Provides: isolate` | not declared | declared |
+
+It is **opt-in** because taking over `/usr/bin/isolate` displaces upstream
+Isolate on the host. A default build is the neutral one: it installs only
+`isolator`, coexists with upstream Isolate, and is all you need for standalone
+`--yaml` mode.
+
+Turn it on by adding `--alias` on any mode that configures:
+
+```sh
+scripts/isolator.sh install --alias
+scripts/isolator.sh package --alias
+```
+
+Two consequences of the default. A default-built package cannot satisfy the
+Worker's `Requires: isolate`, so a Worker deployment must be handed an alias
+build. And flipping to `--no-alias` and re-installing does *not* remove an alias
+an earlier install left behind — `uninstall` (which knows about the symlink) is
+what cleans it up.
+
+### Verifying an installation
+
+```sh
+ls -l /usr/bin/isolator                 # -rwsr-xr-x, owner root
+man -w isolator                         # man page resolves
+
+isolator --init --box-id=999            # as a non-root user: prints the box root
+isolator --cleanup --box-id=999         # and tears it back down
+```
+
+The `--init` / `--cleanup` round-trip as an unprivileged user is the meaningful
+check for Options B and C: it only succeeds if the setuid bit is in place. On an
+alias build, repeat it as `isolate` — that `command -v isolate` resolves to our
+symlink is the drop-in path's precondition.
 
 ---
 
@@ -39,25 +222,28 @@ An instance runs three different processes with distinct responsibilities:
 ### 1. System Setup
 No system initialization step is required: on its first `--run` the isolator
 lazily creates the shared cgroup parent (`/sys/fs/cgroup/isolator_boxes`) and
-enables its controllers (ADR 0007). To tear the shared cgroup tree and box
+enables its controllers. To tear the shared cgroup tree and box
 directory (`/var/lib/isolator_boxes`) back down:
 ```sh
-sudo scripts/isolator_cleanup.sh
+scripts/isolator.sh purge
 ```
 
 ### 2. Build the Isolator
 ```sh
-scripts/isolator_build.sh
+scripts/isolator.sh build
 ```
+(That is installation Option A above — see the Installation section for the
+system-wide and RPM options.)
 
 ### 3. Run with Configuration
 ```sh
 sudo ./build/src/isolator --yaml=/path/to/config.yml
 ```
-### 4. Cleanup
-To clean up resources used by Isolator instances:
+### 4. Purge
+To reclaim the host-wide state Isolator instances leave behind (the box tree and
+the shared cgroup parent):
 ```sh
-sudo scripts/isolator_cleanup.sh
+scripts/isolator.sh purge
 ```
 ---
 
@@ -72,8 +258,7 @@ logic — CLI/config parsing and the box lock — needing **no root**. Fetched v
 CMake only when `-DTESTING=ON`, and run with `ctest`:
 
 ```sh
-cmake -S . -B build -DTESTING=ON
-cmake --build build
+scripts/isolator.sh build --dev          # Debug + -DTESTING=ON
 cd build && ctest --output-on-failure
 ```
 
@@ -85,9 +270,13 @@ end-to-end, running **workloads** (small in-box payload programs under
 isolation boundaries actually bite. These need **root** (cgroups + namespaces):
 
 ```sh
-cmake -S . -B build -DTESTING=ON && cmake --build build  # builds the workloads
-scripts/workload_tests.sh                                 # venv + sudo pytest
+scripts/isolator.sh build --dev   # builds the binary and the workloads
+scripts/workload_tests.sh         # venv + sudo pytest
 ```
+
+A default `build` compiles **no** test code, so `--dev` (or `--testing`) is what
+puts the workloads in `tests/workload/build/`; without them the tier skips and
+tells you which command to run.
 
 `scripts/workload_tests.sh` is idempotent: on first run it creates a local
 `.venv` (gitignored) from `tests/requirements.txt`, then runs pytest under
@@ -101,8 +290,9 @@ venv rather than a global `pip install`.)
 
 Replays real, production-harvested ReCodEx job configs (C, Python, C#, Maven) to
 validate toolchains and limits. It drives the Isolator in **standalone mode**
-(`--yaml=`), so it deliberately covers no part of the compatibility CLI — that is
-the job of the Worker integration tier, which drives the real ReCodEx Worker.
+(`--yaml=`), so it deliberately covers no part of the compatibility CLI as the
+Worker actually emits it; that validation belongs to ReCodEx's own integration
+pipeline, against an installed alias build.
 
 ⚠️ **Warning**: This test suite performs extensive setup and downloads!
 
@@ -215,6 +405,20 @@ tasks:
       cpu-time: 1
 ```
 
+### Omitted vs. zero limits
+
+Every limit is optional; **omit it to mean "no limit"**. A limit written as `0` is
+never silently read as "unlimited":
+
+- `mem`, `as-size`, `fsize`, `open-files`, `core` and `disk-usage` **enforce a
+  literal `0`** — ask for zero and you get zero.
+- `stack: 0` and `processes: 0` are **refused** as a usage error (exit code 2). A
+  zero stack leaves the task unable to `execve` at all, and a process cap of `0`
+  merely duplicates `1`, so both are mistakes rather than strict settings.
+- An **omitted `stack`** is the one limit still applied, as *unlimited*, rather
+  than inheriting the caller's (typically 8 MiB) stack — otherwise a deeply
+  recursive task's verdict would depend on the shell that launched the isolator.
+
 ## 📁 Directory Rules and Sandboxed Paths
 
 The isolator creates a secure sandbox environment with a strictly controlled filesystem. The `box-fs` section in the configuration defines how the filesystem should be structured within the sandbox.
@@ -271,7 +475,7 @@ tasks:
 
 ## 📊 Metadata file
 
-After execution, the isolator generates metadata in YAML format with information about the run:
+After execution, the isolator generates metadata in YAML format with information about the run — this is the `stats-yaml` of **standalone mode** (`--yaml=`):
 
 ```yaml
 status: OK                   # Status: OK, killed, memory, wall-time, cpu-time
@@ -290,11 +494,29 @@ Possible status values:
 - `cpu-time`: CPU time limit exceeded
 - `memory`: Memory limit exceeded
 
+**Compatibility mode writes a different file.** Driven as a drop-in replacement
+for Isolate (`--init` / `--run` / `--cleanup` with `--meta=FILE`), the isolator
+emits Isolate's `key:value` **meta-file** instead, as a superset of what Isolate
+writes so the ReCodEx Worker parses it unchanged:
+
+| Key | When |
+| --- | --- |
+| `status` | only on failure — `RE` / `SG` / `TO` / `XX`; absent means success, as in Isolate |
+| `exitcode` | the task exited normally |
+| `exitsig` | the task died on a signal |
+| `killed:1` | *we* `SIGKILL`ed it — the wall/CPU-timeout path |
+| `time`, `time-wall`, `max-rss`, `csw-voluntary`, `csw-forced` | always |
+| `cg-mem` | cgroup memory was measurable (omitted otherwise, leaving `max-rss` as the memory signal) |
+| `cg-oom-killed:1` | the kernel OOM-killed something in the box |
+
+The YAML above is never written on that path, and conversely `--meta` has no
+effect on the standalone path — the two output formats belong to the two modes.
+
 ## 🔍 Troubleshooting
 
-- Running the tool and most of the helper scripts requires root privileges.
+- Running the isolator itself requires root — unless it is installed setuid, which is the point of Options B and C. Of the helper modes, `build` and `package` need no privilege at all; `install`, `uninstall` and `purge` elevate the single command that needs it (via `sudo`) rather than running wholesale as root, so your build tree never ends up root-owned.
 - If tests fail with filesystem errors, ensure that the directories specified in the configuration exist and have appropriate permissions.
-- The isolator self-arranges its cgroup parent on first `--run`; if the shared cgroup tree or box directory gets into a bad state, reset it with `isolator_cleanup.sh`.
+- The isolator self-arranges its cgroup parent on first `--run`; if the shared cgroup tree or box directory gets into a bad state, reset it with `scripts/isolator.sh purge`.
 - Always use absolute paths in host filesystem references but remember that paths inside the task configuration are relative to the sandbox root.
 - When testing, inspect the content of `/var/lib/isolator_boxes/` to see the actual sandbox structure.
 - Run the isolator binary with --debug to see detailed logs.
