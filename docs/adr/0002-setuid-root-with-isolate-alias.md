@@ -4,6 +4,14 @@ The ReCodEx Worker runs as the non-root `recodex` user yet `execvp`s a PATH-reso
 
 We accept the larger setuid attack surface (a C++ binary linking Boost / yaml-cpp / spdlog versus Isolate's hardened C) because no alternative preserves invocation by a non-root Worker without sudo or a Worker patch. We mitigate by building with the same compiler-hardening flags Isolate uses — the full set: `-fstack-protector-strong -fstack-clash-protection -fPIE -pie -D_FORTIFY_SOURCE=3` (fortify gated to optimized builds, where it is not a no-op) plus linker flags `-Wl,-z,{nodlopen,noexecstack,relro,now}` — and statically linking libstdc++/libgcc so the binary carries no SCL runtime dependency (ADR 0004).
 
+The alias is packaging, not behaviour, so it is a build-time switch:
+`-DISOLATE_ALIAS` (default `OFF`) gates the symlink, the `man isolate` redirect
+and the RPM `Provides: isolate` together. It is opt-in because claiming
+`/usr/bin/isolate` displaces upstream Isolate on the host — a default build owns
+no such path, installs beside upstream Isolate, and serves standalone `--yaml`
+use. A Worker host builds with `-DISOLATE_ALIAS=ON` to get the drop-in path and
+satisfy the Worker RPM's `Requires: isolate`.
+
 ## Consequences
 
 - Credential handling must respect the real-vs-effective-uid split under setuid: privileged setup runs at euid 0, and the drop-to-box-uid / restore paths must be correct when the real uid is the unprivileged `recodex` user (current code reads `getuid()` at `credentials.hpp`, which needs an audit).

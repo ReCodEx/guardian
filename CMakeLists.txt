@@ -12,6 +12,12 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(TESTING OFF)
+# The `isolate` alias — symlink, man redirect and `Provides: isolate` (ADR 0002).
+# Off by default: claiming /usr/bin/isolate displaces upstream Isolate, so it is
+# opt-in. Turn it on for a host running the ReCodEx Worker, which is the only
+# consumer that needs the alias.
+option(ISOLATE_ALIAS "Install the Isolate-compatible \
+`isolate` alias (symlink, man redirect, RPM Provides)" OFF)
 include(FetchContent)
 
 #Fetch yaml-cpp yaml parsing library
@@ -71,17 +77,22 @@ install(TARGETS isolator
 # unchanged (ADR 0002). CMAKE_INSTALL_PREFIX and DESTDIR are deferred to
 # install time (escaped) so the link lands next to the binary regardless of the
 # prefix; only the relative BINDIR is baked at configure.
-install(CODE "file(CREATE_LINK isolator \
+if(ISOLATE_ALIAS)
+  install(CODE "file(CREATE_LINK isolator \
 \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/isolate\" SYMBOLIC)")
+endif()
 
 # Persistent box tree, owned by the package. Absolute (not under the /usr
 # prefix); also created lazily at --run (ADR 0007), this just tracks + cleans it.
 install(DIRECTORY DESTINATION /var/lib/isolator_boxes)
 
-# Man page + the `man isolate` .so redirect alias.
+# Man page, plus the `man isolate` .so redirect when the alias is installed.
 install(FILES ${CMAKE_SOURCE_DIR}/docs/man/isolator.1
-              ${CMAKE_SOURCE_DIR}/docs/man/isolate.1
         DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+if(ISOLATE_ALIAS)
+  install(FILES ${CMAKE_SOURCE_DIR}/docs/man/isolate.1
+          DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+endif()
 
 # ---------------------------------------------------------------------------
 # CPack / RPM (el9, CPACK generator "RPM"; ADR 0004).
@@ -96,11 +107,23 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
 set(CPACK_RPM_PACKAGE_LICENSE "MIT")
 # Satisfy the Worker's `Requires: isolate`; coexistence with the upstream
 # `isolate` package is prevented by the shared /usr/bin/isolate file (ADR 0002).
-set(CPACK_RPM_PACKAGE_PROVIDES "isolate")
+# Both effects belong to the alias, so an alias-less package claims neither: it
+# cannot satisfy the Worker, but it does install beside upstream Isolate.
+if(ISOLATE_ALIAS)
+  set(CPACK_RPM_PACKAGE_PROVIDES "isolate")
+endif()
+# CPack relocates the install tree under its *own* packaging prefix, which is
+# independent of CMAKE_INSTALL_PREFIX. Pin it to /usr (the el9 target) and derive
+# the filelist below from the same variable: deriving from CMAKE_INSTALL_FULL_BINDIR
+# instead makes the spec name a path the package does not contain whenever the build
+# tree was configured with another prefix, and rpmbuild then dies with
+# "File not found: .../usr/local/bin/isolator".
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
+
 # Force the packaged mode/ownership regardless of the build user's umask, and
 # own the box tree as a directory.
 set(CPACK_RPM_USER_FILELIST
-    "%attr(4755,root,root) ${CMAKE_INSTALL_FULL_BINDIR}/isolator"
+    "%attr(4755,root,root) ${CPACK_PACKAGING_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/isolator"
     "%dir %attr(0755,root,root) /var/lib/isolator_boxes")
 # No -debuginfo subpackage for now: build the RPM as Release (no debug symbols
 # to split out). A proper -debuginfo subpackage can be added later.
