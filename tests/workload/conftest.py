@@ -49,17 +49,20 @@ def isolator_environment():
     if not ISOLATOR_BIN.exists():
         pytest.skip(
             f"isolator not built at {ISOLATOR_BIN} "
-            f"(configure -DTESTING=ON and build first)"
+            f"(run: scripts/isolator.sh build --dev)"
         )
     if not PROBES_DIR.exists() or not any(PROBES_DIR.iterdir()):
-        pytest.skip(f"workloads not built into {PROBES_DIR}")
+        pytest.skip(
+            f"workloads not built into {PROBES_DIR} "
+            f"(run: scripts/isolator.sh build --dev — they need -DTESTING=ON)"
+        )
     if not _can_sudo_noninteractive():
         pytest.skip("workload tests need root (passwordless sudo or run as root)")
 
     # No boot/init step: --run arranges the isolator_boxes cgroup parent
     # itself, idempotently (ADR 0007).
     yield
-    subprocess.run([str(SCRIPTS / "isolator_cleanup.sh")], check=False)
+    subprocess.run([str(SCRIPTS / "isolator.sh"), "purge"], check=False)
 
 
 def load_config(name: str) -> dict:

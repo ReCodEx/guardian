@@ -538,7 +538,7 @@ def run_groups(submissions_csv, groups=["C#", "Python", "C++", "AdvC++"]):
         print(f" Failed submissions: {group_stats.get('failed_submissions', [])}")
 if __name__ == "__main__":
     # Initialize before running tests
-    subprocess.run([f"{SCRIPT_DIR}/../../scripts/isolator_cleanup.sh"], shell=True)
+    subprocess.run([f"{SCRIPT_DIR}/../../scripts/isolator.sh", "purge"], check=False)
     # No init step: --run arranges the isolator_boxes cgroup parent itself (ADR 0007).
     if len(sys.argv) > 2 and sys.argv[1] == "-d":
         run_submission(f"{SCRIPT_DIR}/test-data/download/{sys.argv[2]}", verbose=True)
