@@ -4,10 +4,12 @@ project("rcdx_isolator")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_subdirectory(workload)
-
-# Host-side unit tier — only when TESTING is ON (needs GoogleTest, fetched at the
-# top level under the same guard).
+# Both tiers are TESTING-only: a production/RPM build must never compile test
+# code, and the workloads are what the workload tier expects -DTESTING=ON to
+# build (tests/workload/conftest.py skips when they're absent).
 if(TESTING)
+  add_subdirectory(workload)
+  # Host-side unit tier — needs GoogleTest, fetched at the top level under the
+  # same guard.
   add_subdirectory(unit)
 endif()
