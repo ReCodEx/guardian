@@ -125,6 +125,24 @@ cache_get() {
 # it was configured with, then build. Values the caller didn't name are inherited
 # from the cache, so a plain `install` never silently flips an earlier choice.
 configure_and_build() {
+    # CMake bakes the resolved compiler path into the cache and will not swap it,
+    # so entering or leaving a toolset is otherwise silently ignored — the tree
+    # keeps building with the compiler it was born with. Re-resolve the *same
+    # command name* on today's PATH (not "whatever CMake would pick"), so an
+    # explicitly pinned compiler never looks like drift. A compiler change
+    # invalidates every object anyway, so a fresh tree costs nothing.
+    if [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
+        cached_cxx=$(cache_get CMAKE_CXX_COMPILER)
+        if [ -n "$cached_cxx" ]; then
+            now_cxx=$(command -v "$(basename "$cached_cxx")" 2>/dev/null || true)
+            if [ -n "$now_cxx" ] && [ "$now_cxx" != "$cached_cxx" ]; then
+                say "compiler changed: $cached_cxx -> $now_cxx"
+                say "wiping $BUILD_DIR (a compiler change invalidates every object)"
+                rm -rf "$BUILD_DIR"
+            fi
+        fi
+    fi
+
     if [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
         c_type=$(cache_get CMAKE_BUILD_TYPE)
         c_prefix=$(cache_get CMAKE_INSTALL_PREFIX)

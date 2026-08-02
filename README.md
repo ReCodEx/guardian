@@ -58,9 +58,9 @@ alias, no test tiers. `scripts/guardian.sh --help` lists the flags.
 > ```sh
 > scl enable gcc-toolset-14 -- bash
 > ```
-> The system compiler is GCC 11.5, which has no `<format>`; `src/logs.hpp` and
-> `src/terminate.hpp` need it, so a build outside the toolset fails with
-> `fatal error: format: No such file or directory`. Modern dev distros need
+> The system compiler is GCC 11.5, which has no `<format>`. Configure refuses
+> without a toolset and tells you which one to enter; changing compiler under an
+> existing build tree makes `guardian.sh` wipe it. Modern dev distros need
 > nothing special.
 
 ### Option A — build in place, run with `sudo` (development)

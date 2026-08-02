@@ -4,6 +4,45 @@ project("recodex-guardian" VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ---------------------------------------------------------------------------
+# Compiler gate. `std::format` (src/logs.hpp, src/terminate.hpp) is the first
+# thing an under-spec toolchain breaks on, and without this it breaks deep in
+# the build rather than here — on el9 the system GCC 11.5 configures happily
+# and then dies on `#include <format>`. Probe the feature itself rather than a
+# version or a platform, so the gate stays true across compilers.
+# ---------------------------------------------------------------------------
+include(CheckCXXSourceCompiles)
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX23_STANDARD_COMPILE_OPTION}")
+check_cxx_source_compiles("
+  #include <format>
+  #include <string>
+  int main() { return std::format(\"{}\", 42) == \"42\" ? 0 : 1; }
+" HAVE_STD_FORMAT)
+unset(CMAKE_REQUIRED_FLAGS)
+
+if(NOT HAVE_STD_FORMAT)
+  set(_hint "")
+  # A toolset installed but not entered is the usual cause on el9, so name the
+  # exact command instead of leaving the reader to find it in the README.
+  file(GLOB _toolsets /opt/rh/gcc-toolset-*/enable)
+  if(_toolsets)
+    list(SORT _toolsets)
+    list(GET _toolsets -1 _newest)
+    get_filename_component(_scl "${_newest}" DIRECTORY)
+    get_filename_component(_scl "${_scl}" NAME)
+    set(_hint "\n  This host has ${_scl} installed but not active. Enter it first:"
+              "\n      scl enable ${_scl} -- bash"
+              "\n  Then delete the build tree and configure again — CMake caches"
+              "\n  the compiler path, so entering the toolset alone is not enough.")
+  endif()
+  message(FATAL_ERROR
+    "This project needs a C++23 <format> implementation, which "
+    "${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} does not provide."
+    "\n  Found:  ${CMAKE_CXX_COMPILER}"
+    "\n  Needs:  GCC 13+ or Clang 17+ (with a matching libstdc++/libc++)"
+    ${_hint})
+endif()
+
 # Build every object position-independent so the statically linked yaml-cpp is
 # PIC-compatible with the -pie recodex-guardian executable (src/CMakeLists.txt).
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -14,8 +53,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(TESTING OFF)
 # The `isolate` alias — symlink, man redirect and `Provides: isolate` (ADR 0002).
 # Off by default: claiming /usr/bin/isolate displaces upstream Isolate, so it is
-# opt-in. Turn it on for a host running the ReCodEx Worker, which is the only
-# consumer that needs the alias.
+# opt-in.
 option(ISOLATE_ALIAS "Install the Isolate-compatible \
 `isolate` alias (symlink, man redirect, RPM Provides)" OFF)
 include(FetchContent)
@@ -24,10 +62,7 @@ include(FetchContent)
 include(FetchContent)
 # Pinned to a fixed commit (not the moving master branch) for reproducible
 # builds (ADR 0004); statically linked into the self-contained setuid binary.
-# We pin a post-0.8.0 commit rather than the 0.8.0 tag because 0.8.0 declares
-# `cmake_minimum_required(VERSION 3.4)`, which CMake 4.x rejects; this commit
-# declares `3.15..4.3`, working on both the el9 target (CMake 3.20) and modern
-# dev hosts. A hermetic/offline build can set FETCHCONTENT_SOURCE_DIR_YAML-CPP
+# A hermetic/offline build can set FETCHCONTENT_SOURCE_DIR_YAML-CPP
 # to a pre-fetched tree.
 set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
