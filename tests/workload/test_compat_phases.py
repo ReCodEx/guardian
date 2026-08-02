@@ -18,14 +18,14 @@ from pathlib import Path
 
 import pytest
 
-from conftest import ISOLATOR_BIN, PROBES_DIR, WORKLOAD_DIR
+from conftest import GUARDIAN_BIN, PROBES_DIR, WORKLOAD_DIR
 
 BOX_ID = 0
 
 
 @pytest.fixture
 def setuid_run():
-    """Invoke a root-owned 4755 copy of the isolator as the non-root caller.
+    """Invoke a root-owned 4755 copy of the Guardian as the non-root caller.
 
     Emulates the real install (ADR 0002): the child's real uid is dropped to
     the invoking user (SUDO_UID), so euid reaches 0 only through the setuid
@@ -38,8 +38,8 @@ def setuid_run():
         pytest.skip("need root + a non-root SUDO_UID to emulate a setuid install")
     caller = int(sudo_uid)
 
-    suid_bin = ISOLATOR_BIN.parent / "isolator_suid"
-    shutil.copy(ISOLATOR_BIN, suid_bin)
+    suid_bin = GUARDIAN_BIN.parent / "guardian_suid"
+    shutil.copy(GUARDIAN_BIN, suid_bin)
     os.chown(suid_bin, 0, 0)
     os.chmod(suid_bin, 0o4755)
 
@@ -60,11 +60,11 @@ def setuid_run():
 
 def _run(*args, meta=None, env_vars=None):
     cmd = ["sudo"]
-    # `sudo KEY=VAL cmd` sets KEY in the launched isolator's environment, so
+    # `sudo KEY=VAL cmd` sets KEY in the launched recodex-guardian's environment, so
     # --env=KEY inherit rules have something to inherit (sudo scrubs env).
     if env_vars:
         cmd += [f"{k}={v}" for k, v in env_vars.items()]
-    cmd += [str(ISOLATOR_BIN), f"--box-id={BOX_ID}"]
+    cmd += [str(GUARDIAN_BIN), f"--box-id={BOX_ID}"]
     if meta:
         cmd.append(f"--meta={meta}")
     cmd.extend(args)
@@ -85,7 +85,7 @@ def test_non_root_invocation_is_rejected():
     # effective uid is not 0, instead of crashing deep in clone3()/mount(). The
     # suite runs under sudo, so drop the child to the invoking (non-root) user
     # via SUDO_UID; when the suite is already non-root, run it directly. Either
-    # way the isolator sees euid != 0. No box state is created — it dies at the
+    # way the Guardian sees euid != 0. No box state is created — it dies at the
     # gate, so no --cleanup is needed.
     preexec = None
     if os.geteuid() == 0:
@@ -96,7 +96,7 @@ def test_non_root_invocation_is_rejected():
         preexec = lambda: os.setuid(drop_to)  # noqa: E731
 
     proc = subprocess.run(
-        [str(ISOLATOR_BIN), f"--box-id={BOX_ID}", "--init"],
+        [str(GUARDIAN_BIN), f"--box-id={BOX_ID}", "--init"],
         capture_output=True,
         text=True,
         preexec_fn=preexec,
@@ -122,14 +122,14 @@ def test_three_phase_run_succeeds():
 
 
 def test_run_lazily_creates_cgroup_parent_and_uses_new_paths():
-    """Slice A / ADR 0007: --run self-arranges the shared isolator_boxes cgroup
+    """Slice A / ADR 0007: --run self-arranges the shared recodex-guardian cgroup
     parent with no boot/init script, and the box tree lives under the relocated
-    /var/lib/isolator_boxes.
+    /var/lib/recodex-guardian/boxes.
 
     The shared parent is torn down first so a success proves lazy *creation*
     (dir + controllers), not a leftover from an earlier test or session.
     """
-    cg_parent = Path("/sys/fs/cgroup/isolator_boxes")
+    cg_parent = Path("/sys/fs/cgroup/recodex-guardian")
 
     # Clean slate: drop any box state, then depth-first rmdir the shared cgroup
     # parent so we exercise lazy creation rather than reuse.
@@ -145,8 +145,8 @@ def test_run_lazily_creates_cgroup_parent_and_uses_new_paths():
         init = _run("--init")
         assert init.returncode == 0, init.stderr
         box_root = Path(init.stdout.strip())
-        # Box tree relocated from /isolate_boxes to /var/lib/isolator_boxes.
-        assert box_root == Path(f"/var/lib/isolator_boxes/{BOX_ID}"), box_root
+        # Box tree relocated from /isolate_boxes to /var/lib/recodex-guardian/boxes.
+        assert box_root == Path(f"/var/lib/recodex-guardian/boxes/{BOX_ID}"), box_root
         assert box_root.is_dir()
 
         # --run with no prior init script must succeed — which is only possible
@@ -191,7 +191,7 @@ def test_repeated_run_in_same_box():
 
 
 def test_run_before_init_is_box_not_found():
-    # A --run on an un-init'd box is an Isolator-internal error (exit 2).
+    # A --run on an un-init'd box is an Guardian-internal error (exit 2).
     _run("--cleanup")  # ensure no prior state
     run = _run("--run", "--", "/bin/true")
     assert run.returncode == 2
@@ -222,7 +222,7 @@ def test_meta_file_ok_omits_status(tmp_path):
 
 
 def test_meta_file_nonzero_exit_is_re(tmp_path):
-    # A program that exits non-zero: status:RE, exitcode:N, Isolator exit 1.
+    # A program that exits non-zero: status:RE, exitcode:N, Guardian exit 1.
     meta = tmp_path / "meta.txt"
     try:
         assert _run("--init").returncode == 0
@@ -236,7 +236,7 @@ def test_meta_file_nonzero_exit_is_re(tmp_path):
 
 
 def test_meta_file_wall_time_exceeded_is_to_killed(tmp_path):
-    # A program that overruns --wall-time is SIGKILLed by the Isolator:
+    # A program that overruns --wall-time is SIGKILLed by the Guardian:
     # status:TO plus the killed:1 discriminator (slice 3). /bin/sleep is in the
     # default box (like /bin/echo above), so no dir-rule (#11) is needed.
     meta = tmp_path / "meta.txt"
@@ -420,7 +420,7 @@ def test_setuid_meta_file_is_caller_owned(setuid_run):
     # world-traversable /tmp (1777).
     run, caller = setuid_run
 
-    metadir = Path(tempfile.mkdtemp(prefix="isolator_meta_"))
+    metadir = Path(tempfile.mkdtemp(prefix="guardian_meta_"))
     os.chown(metadir, caller, caller)
     meta = metadir / "meta.txt"
     try:
@@ -470,7 +470,7 @@ def test_setuid_bind_mount_denied_for_caller_inaccessible_dir(setuid_run):
     # Run as full root (the status quo), DAC-override would walk straight in.
     run, _caller = setuid_run
 
-    outer = Path(tempfile.mkdtemp(prefix="isolator_secret_"))
+    outer = Path(tempfile.mkdtemp(prefix="guardian_secret_"))
     os.chown(outer, 0, 0)
     os.chmod(outer, 0o700)  # caller cannot traverse this ancestor
     inner = outer / "payload"
@@ -499,7 +499,7 @@ def test_setuid_bind_mount_allowed_for_caller_accessible_dir(setuid_run):
     # caller-traversable so the mount-time check as the caller passes.
     run, caller = setuid_run
 
-    payload = Path(tempfile.mkdtemp(prefix="isolator_payload_"))
+    payload = Path(tempfile.mkdtemp(prefix="guardian_payload_"))
     os.chown(payload, caller, caller)
     os.chmod(payload, 0o755)
     data = payload / "data.txt"
@@ -545,7 +545,7 @@ def test_compat_env_set():
 
 
 def test_compat_env_inherit():
-    # #11: bare --env=K inherits K from the isolator's own environment.
+    # #11: bare --env=K inherits K from the Guardian's own environment.
     try:
         assert _run("--init").returncode == 0
         run = _run("--env=FOO", "--run", "--", "/bin/sh", "-c", "echo $FOO",
@@ -728,7 +728,7 @@ def test_compat_stack_limit_still_bites():
 
 
 def test_meta_file_internal_error_is_xx(tmp_path):
-    # A --run on an un-init'd box is an Isolator-internal error: exit 2 and a
+    # A --run on an un-init'd box is an Guardian-internal error: exit 2 and a
     # status:XX meta with a message, written by root's terminate() meta-sink
     # (ADR 0005 C2).
     meta = tmp_path / "meta.txt"

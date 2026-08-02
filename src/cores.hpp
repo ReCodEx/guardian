@@ -1,5 +1,5 @@
-#ifndef CONTAINER_CORE
-#define CONTAINER_CORE
+#ifndef CORES
+#define CORES
 
 #include <fcntl.h>
 #include <linux/sched.h>
@@ -31,7 +31,7 @@
 #include "terminate.hpp"
 #include "utils.hpp"
 
-namespace container_core {
+namespace cores {
     using namespace tasks;
     namespace fs = std::filesystem;
 
@@ -171,7 +171,7 @@ namespace container_core {
         /// meta pipe (compat `--run`, ADR 0005 C1).
         /// @return The record read outcome: a complete `task_stats`, or
         /// empty/partial when the proxy died before/mid-report — which root
-        /// turns into the Isolator's exit-code contract (0/1 vs 2).
+        /// turns into the Guardian's exit-code contract (0/1 vs 2).
         /// @details Opens a `pipe2(O_CLOEXEC)` before `clone3` so the cloned
         /// proxy inherits the write end and the task's `execve` auto-closes it
         /// (a leaked write fd would defeat the EOF-means-failure signal *and*
@@ -203,7 +203,7 @@ namespace container_core {
         /// via `spawn_proxy`; `-1` outside a `--run` (standalone).
         int meta_write_fd_ = -1;
 
-        /// @brief Internal representation of container configuration.
+        /// @brief Internal representation of the instance configuration.
         config::root_configuration* root_config_;
 
         /// @brief Responsible for assigning credentials (box_id, UID/GID) used
@@ -305,7 +305,7 @@ namespace container_core {
               proxy_connector_(root_config_, credentials_, cg_mngr_)
 
         {
-            logs::info("Hello world from the Isolator!");
+            logs::info("Hello world from the Guardian!");
         }
 
         /// @brief The "main" function of an instance. Dispatches to the phase
@@ -352,7 +352,7 @@ namespace container_core {
         }
 
        private:
-        /// @brief Internal representation of container configuration.
+        /// @brief Internal representation of the instance configuration.
         config::root_configuration root_config_;
 
         /// @brief Responsible for assigning credentials (box_id, UID/GID) used
@@ -435,7 +435,7 @@ namespace container_core {
         /// 0005 C1); root owns the exit-code decision. A complete record maps
         /// to 0 (task OK) or 1 (task ran, result != OK) and, if `--meta` was
         /// given, an Isolate meta-file; an empty/partial pipe means the proxy
-        /// died before reporting — the Isolator's own failure (exit 2 +
+        /// died before reporting — the Guardian's own failure (exit 2 +
         /// `status:XX` meta).
         [[noreturn]] void run_command() {
             credentials_.run();
@@ -597,6 +597,6 @@ namespace container_core {
             }
         }
     };
-}  // namespace container_core
+}  // namespace cores
 
 #endif

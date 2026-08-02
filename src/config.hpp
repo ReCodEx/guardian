@@ -20,8 +20,8 @@ namespace config {
 
     /// @brief Default directories
     namespace defaults {
-        constexpr auto BOXES_DIR = "/var/lib/isolator_boxes";
-        constexpr auto BOXES_CGROUP = "/sys/fs/cgroup/isolator_boxes";
+        constexpr auto BOXES_DIR = "/var/lib/recodex-guardian/boxes";
+        constexpr auto BOXES_CGROUP = "/sys/fs/cgroup/recodex-guardian";
     }  // namespace defaults
 
     /// @brief Keywords for the configuration file
@@ -589,13 +589,13 @@ namespace config {
         }
     };
 
-    /// @brief Configuration class storing all tasks of a container run.
+    /// @brief Configuration class storing all tasks of an instance run.
     class tasks_config {
        public:
         tasks_config() {}
         tasks_config(const YAML::Node& tasks_node) {
             if (!tasks_node || tasks_node.size() < 1) {
-                logs::warn("No tasks specified, empty container run");
+                logs::warn("No tasks specified, empty instance run");
             } else {
                 for (std::size_t i = 0; i < tasks_node.size(); i++) {
                     logs::debug("Adding task {}", i);
@@ -1034,11 +1034,11 @@ namespace config {
         const auto& instance_name() const { return instance_name_; }
         const auto& instance_id() const { return instance_id_; }
 
-        /// @brief Return the path to the common directory for all container
+        /// @brief Return the path to the common directory for all
         /// instances.
         const fs::path& boxes_dir() const { return boxes_dir_; }
 
-        /// @brief Return the path to the common cgroup for all container
+        /// @brief Return the path to the common cgroup for all
         /// instances.
         const fs::path& boxes_cgroup() const { return boxes_cgroup_; }
 

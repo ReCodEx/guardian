@@ -15,9 +15,9 @@ box-fs:
   - etc/java:maybe
   - etc/OpenCL:maybe
   - etc/alternatives=/etc/alternatives:maybe
-  - worker/judges/build=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/worker/judges/build
+  - worker/judges/build=/home/simonkurz/mff/recodex-guardian/demoV1/tests/rcdx_examples/worker/judges/build
   - opt/maven-repo:maybe,rw
-  - Test 01=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/mvn_init_job/Test
+  - Test 01=/home/simonkurz/mff/recodex-guardian/demoV1/tests/rcdx_examples/mvn_init_job/Test
     01:rw
 env:
   vars:
@@ -33,14 +33,12 @@ env:
   - MAVEN_HOME=/opt/maven
   - M2_HOME=/opt/maven-repo
   - LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/14/include:/usr/lib/gcc/x86_64-redhat-linux/14/:/usr/lib64:/usr/lib:/lib64:/lib
-root-cg: /sys/fs/cgroup/isolator_boxes
-root-dir: /var/lib/isolator_boxes
 share-net: true
 tasks:
 - box-fs:
     dir-rules:
     - opt/maven-repo:maybe,rw
-  carboncopy-stdout: /home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/results/mvn_init_job/compilation.62mmkgg9spjkqsv0u2nj.out
+  carboncopy-stdout: /home/simonkurz/mff/recodex-guardian/demoV1/tests/rcdx_examples/results/mvn_init_job/compilation.62mmkgg9spjkqsv0u2nj.out
   chdir: Test 01
   cmd:
     args:

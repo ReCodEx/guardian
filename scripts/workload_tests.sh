@@ -4,7 +4,7 @@
 # On Arch and other PEP-668 distros the system Python is externally managed, so
 # we never pip-install globally: deps live in tests/requirements.txt and are
 # installed into a gitignored .venv at the repo root. The workload tier drives
-# the real isolator, which needs root, so pytest is launched under sudo (the
+# the real Guardian, which needs root, so pytest is launched under sudo (the
 # venv's interpreter works fine as root — a venv is just a path layout).
 #
 # Usage:

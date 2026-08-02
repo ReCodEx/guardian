@@ -70,8 +70,8 @@ namespace meta {
         return "";
     }
 
-    /// @brief Isolator exit code for a completed run: 0 iff OK, else 1
-    /// (Isolate's convention; 2 is reserved for the Isolator's own failure).
+    /// @brief Guardian exit code for a completed run: 0 iff OK, else 1
+    /// (Isolate's convention; 2 is reserved for the Guardian's own failure).
     inline int result_exit_code(const config::task_stats& s) {
         return classify(s) == result_code::ok ? 0 : 1;
     }
@@ -93,7 +93,7 @@ namespace meta {
         if (rc != result_code::ok) {
             out += std::format("status:{}\n", code_str(rc));
         }
-        // killed:1 — the Isolator SIGKILLed the task (the timeout path). A
+        // killed:1 — the Guardian SIGKILLed the task (the timeout path). A
         // discriminator, derived from the TO verdict, not a separate signal.
         if (rc == result_code::to) {
             out += "killed:1\n";

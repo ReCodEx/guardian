@@ -114,7 +114,7 @@ namespace {
                   "cg-mem:2048\n");
     }
 
-    // Wall-time overrun -> TO, with killed:1 (the Isolator SIGKILLed the task).
+    // Wall-time overrun -> TO, with killed:1 (the Guardian SIGKILLed the task).
     TEST_F(MetaFileTest, wall_time_exceeded_is_TO_killed) {
         auto s = baseline();
         s.exited_normally = false;
@@ -155,7 +155,7 @@ namespace {
     }
 
     // Memory-limit hit -> SG + cg-oom-killed:1 (kernel OOM-killed the task; it
-    // is signalled by SIGKILL). No killed:1 (the Isolator did not kill it).
+    // is signalled by SIGKILL). No killed:1 (the Guardian did not kill it).
     TEST_F(MetaFileTest, memory_oom_is_SG_cg_oom_killed) {
         auto s = baseline();
         s.exited_normally = false;

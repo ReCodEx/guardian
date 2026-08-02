@@ -4,7 +4,7 @@
 
 ### Issue tracker
 
-Issues are tracked in this repo's GitLab Issues (`gitlab.mff.cuni.cz:kurzs/rcdx_cntnr`) via the `glab` CLI. See `docs/agents/issue-tracker.md`.
+Issues are tracked in this repo's GitLab Issues (`gitlab.mff.cuni.cz:kurzs/recodex-guardian`) via the `glab` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

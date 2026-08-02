@@ -9,7 +9,7 @@ import re
 import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-ISOLATE_SANDBOX = f"{SCRIPT_DIR}/../../build/src/isolator"
+ISOLATE_SANDBOX = f"{SCRIPT_DIR}/../../build/src/recodex-guardian"
 CWD = os.getcwd()
 
 dotnet_versions = {
@@ -47,7 +47,7 @@ def mvn_init():
         os.makedirs(f"{MAVEN_REPO}/.m2", exist_ok=True)
         subprocess.run("sudo", [f"{SCRIPT_DIR}/recodex_mock.py", "mvn_init_job"])
 
-def get_container_path():
+def get_sandbox_path():
     paths = set()
 
     # 1. Start with current system PATH
@@ -89,7 +89,7 @@ def get_ld_library_path(CC="gcc"):
     return ":".join(paths)
 
 print("GCC LD_LIBRARY_PATH=" + get_ld_library_path())
-print("PATH=" + get_container_path())
+print("PATH=" + get_sandbox_path())
 print("JAVA_HOME=" + find_java_home())
 
         
@@ -197,7 +197,7 @@ def run_task(task, results):
             config_data['tasks'][-1]['cmd']['args'] = args
             config_data['tasks'][-1]['stats-yaml'] = f"{sandbox_res_in}"
             config_data['env']['vars'].append(f"LD_LIBRARY_PATH={ld_path}")
-            config_data['env']['vars'].append(f"PATH={get_container_path()}")
+            config_data['env']['vars'].append(f"PATH={get_sandbox_path()}")
             config_data['env']['vars'].append(f"JAVA_HOME={find_java_home()}")
             config_data['env']['vars'].append(f"HOME=/{workdir}")
             config_data['box-fs']['dir-rules'].append(f"{dirs['JUDGES_DIR']}={SCRIPT_DIR}/{dirs['JUDGES_DIR']}")
@@ -258,7 +258,7 @@ def run_task(task, results):
             cleanup_box(instance_id)
             
         except Exception as e:
-            print(f"Exception while running the isolator command: {e}")
+            print(f"Exception while running the Guardian command: {e}")
     else:
         try:
             result = subprocess.run(["sudo"] + full_cmd, capture_output=True, text=True)
@@ -282,10 +282,10 @@ def cleanup_box(box_id):
     """Clean up isolate box directories"""
     try:
         # Remove cgroup directories
-        subprocess.run(['sudo','find', f"/sys/fs/cgroup/isolator_boxes/{box_id}", '-type', 'd', '-depth', '-exec', 'rmdir', '{}', ';'], 
+        subprocess.run(['sudo','find', f"/sys/fs/cgroup/recodex-guardian/{box_id}", '-type', 'd', '-depth', '-exec', 'rmdir', '{}', ';'], 
                       stderr=subprocess.PIPE)
         # Remove isolate box directories  
-        subprocess.run(['sudo','rm', '-rf', f"/var/lib/isolator_boxes/{box_id}"],
+        subprocess.run(['sudo','rm', '-rf', f"/var/lib/recodex-guardian/boxes/{box_id}"],
                       stderr=subprocess.PIPE)
     except Exception as e:
         print(f"Error cleaning up isolate box \"{box_id}\": {e}")
@@ -538,8 +538,8 @@ def run_groups(submissions_csv, groups=["C#", "Python", "C++", "AdvC++"]):
         print(f" Failed submissions: {group_stats.get('failed_submissions', [])}")
 if __name__ == "__main__":
     # Initialize before running tests
-    subprocess.run([f"{SCRIPT_DIR}/../../scripts/isolator.sh", "purge"], check=False)
-    # No init step: --run arranges the isolator_boxes cgroup parent itself (ADR 0007).
+    subprocess.run([f"{SCRIPT_DIR}/../../scripts/guardian.sh", "purge"], check=False)
+    # No init step: --run arranges the recodex-guardian cgroup parent itself (ADR 0007).
     if len(sys.argv) > 2 and sys.argv[1] == "-d":
         run_submission(f"{SCRIPT_DIR}/test-data/download/{sys.argv[2]}", verbose=True)
         sys.exit(0)

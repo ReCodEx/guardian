@@ -1,11 +1,11 @@
 cmake_minimum_required (VERSION 3.20)
 
-project("rcdx_cntnr" VERSION 0.1.0 LANGUAGES CXX)
+project("recodex-guardian" VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Build every object position-independent so the statically linked yaml-cpp is
-# PIC-compatible with the -pie isolator executable (src/CMakeLists.txt).
+# PIC-compatible with the -pie recodex-guardian executable (src/CMakeLists.txt).
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Emit compile_commands.json for clangd / clang-tidy.
@@ -65,7 +65,7 @@ add_subdirectory(src)
 include(GNUInstallDirs)
 
 # The setuid-root binary (mode 4755 — setuid, not setgid; ADR 0002).
-install(TARGETS isolator
+install(TARGETS recodex-guardian
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         PERMISSIONS
           SETUID
@@ -78,16 +78,16 @@ install(TARGETS isolator
 # install time (escaped) so the link lands next to the binary regardless of the
 # prefix; only the relative BINDIR is baked at configure.
 if(ISOLATE_ALIAS)
-  install(CODE "file(CREATE_LINK isolator \
+  install(CODE "file(CREATE_LINK recodex-guardian \
 \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/isolate\" SYMBOLIC)")
 endif()
 
 # Persistent box tree, owned by the package. Absolute (not under the /usr
 # prefix); also created lazily at --run (ADR 0007), this just tracks + cleans it.
-install(DIRECTORY DESTINATION /var/lib/isolator_boxes)
+install(DIRECTORY DESTINATION /var/lib/recodex-guardian/boxes)
 
 # Man page, plus the `man isolate` .so redirect when the alias is installed.
-install(FILES ${CMAKE_SOURCE_DIR}/docs/man/isolator.1
+install(FILES ${CMAKE_SOURCE_DIR}/docs/man/recodex-guardian.1
         DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 if(ISOLATE_ALIAS)
   install(FILES ${CMAKE_SOURCE_DIR}/docs/man/isolate.1
@@ -98,11 +98,11 @@ endif()
 # CPack / RPM (el9, CPACK generator "RPM"; ADR 0004).
 # ---------------------------------------------------------------------------
 set(CPACK_GENERATOR "RPM")
-set(CPACK_PACKAGE_NAME "isolator")
+set(CPACK_PACKAGE_NAME "recodex-guardian")
 set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
 set(CPACK_PACKAGE_CONTACT "Simon Kurz <simon.kurz@meteopress.com>")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
-    "ReCodEx isolator — an Isolate-compatible sandbox for untrusted code")
+    "ReCodEx Guardian — an Isolate-compatible sandbox for untrusted code")
 # TODO: confirm the project license before release (placeholder).
 set(CPACK_RPM_PACKAGE_LICENSE "MIT")
 # Satisfy the Worker's `Requires: isolate`; coexistence with the upstream
@@ -117,17 +117,18 @@ endif()
 # the filelist below from the same variable: deriving from CMAKE_INSTALL_FULL_BINDIR
 # instead makes the spec name a path the package does not contain whenever the build
 # tree was configured with another prefix, and rpmbuild then dies with
-# "File not found: .../usr/local/bin/isolator".
+# "File not found: .../usr/local/bin/recodex-guardian".
 set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
 
 # Force the packaged mode/ownership regardless of the build user's umask, and
 # own the box tree as a directory.
 set(CPACK_RPM_USER_FILELIST
-    "%attr(4755,root,root) ${CPACK_PACKAGING_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/isolator"
-    "%dir %attr(0755,root,root) /var/lib/isolator_boxes")
+    "%attr(4755,root,root) ${CPACK_PACKAGING_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/recodex-guardian"
+    "%dir %attr(0755,root,root) /var/lib/recodex-guardian"
+    "%dir %attr(0755,root,root) /var/lib/recodex-guardian/boxes")
 # No -debuginfo subpackage for now: build the RPM as Release (no debug symbols
 # to split out). A proper -debuginfo subpackage can be added later.
-# Standard RPM naming (isolator-0.1.0-1.el9.x86_64.rpm) instead of CPack's
+# Standard RPM naming (recodex-guardian-0.1.0-1.el9.x86_64.rpm) instead of CPack's
 # default "<name>-<version>-Linux.rpm".
 set(CPACK_RPM_FILE_NAME "RPM-DEFAULT")
 set(CPACK_RPM_PACKAGE_RELEASE "1")

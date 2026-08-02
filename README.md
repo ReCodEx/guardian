@@ -1,4 +1,4 @@
-# ReCoDex Isolator
+# ReCodEx Guardian
 
 Lightweight Linux containerization tool written from scratch for the ReCoDex assignment evaluation system. 
 
@@ -10,8 +10,8 @@ This project uses advanced Linux kernel features (namespaces, cgroups, UID/GID m
 
 ### 🧠 Terminology
 
-- **Isolator** — This tool as a whole, providing containerization capabilities.
-- **Instance** — One run of the isolator, from parsing the configuration file to executing tasks and generating metadata.
+- **Guardian** — This tool as a whole, providing containerization capabilities.
+- **Instance** — One run of the Guardian, from parsing the configuration file to executing tasks and generating metadata.
 - **Sandbox** — The isolated environment created based on configuration, including namespaces, cgroups, UID/GID mappings, environment variables, and filesystem mounts.
 - **Task** — A single unit of execution within the sandbox, running an executable with specified arguments and resource limits.
 
@@ -41,7 +41,7 @@ An instance runs three different processes with distinct responsibilities:
 
 ## 📦 Installation
 
-One script drives the whole lifecycle — `scripts/isolator.sh MODE`:
+One script drives the whole lifecycle — `scripts/guardian.sh MODE`:
 
 | Mode | What it does |
 | --- | --- |
@@ -49,10 +49,10 @@ One script drives the whole lifecycle — `scripts/isolator.sh MODE`:
 | `package` | build, then `cpack -G RPM` — produces the package, installs nothing |
 | `install` | build, then `cmake --install` |
 | `uninstall` | remove what `install` put there, alias included |
-| `purge` | tear down `/var/lib/isolator_boxes` and the shared cgroup parent |
+| `purge` | destroy every box in `/var/lib/recodex-guardian/boxes` (keeping the RPM-owned directory) and tear down the shared cgroup parent |
 
 Defaults are the same for every mode: `Release`, prefix `/usr`, no `isolate`
-alias, no test tiers. `scripts/isolator.sh --help` lists the flags.
+alias, no test tiers. `scripts/guardian.sh --help` lists the flags.
 
 > **On Rocky 9, enter the toolset first — for *every* mode that compiles:**
 > ```sh
@@ -69,16 +69,16 @@ No installation at all: build in the tree and invoke the binary through `sudo`.
 This is what the workload and mock-evaluator test tiers use.
 
 ```sh
-scripts/isolator.sh build                     # into ./build
-sudo ./build/src/isolator --yaml=config.yml
+scripts/guardian.sh build                     # into ./build
+sudo ./build/src/recodex-guardian --yaml=config.yml
 ```
 
 Add `--dev` (`Debug` + `-DTESTING=ON`) when you want the test tiers built too —
 the workload tier needs it, since a default build compiles no test code.
 
 Nothing is placed on the system; the only persistent state is the box tree
-(`/var/lib/isolator_boxes`) and the shared cgroup parent, both created lazily on
-first run and removable with `scripts/isolator.sh purge`.
+(`/var/lib/recodex-guardian/boxes`) and the shared cgroup parent, both created lazily on
+first run and removable with `scripts/guardian.sh purge`.
 Because the binary is not setuid here, every invocation needs root — the
 Isolate-compatible drop-in path (a non-root caller) is *not* exercised by this
 option.
@@ -89,16 +89,16 @@ Use this on hosts where you cannot or do not want to build an RPM. `install`
 builds first, so this is the whole procedure from a clean tree:
 
 ```sh
-scripts/isolator.sh install            # add --alias on a ReCodEx Worker host
+scripts/guardian.sh install            # add --alias on a ReCodEx Worker host
 ```
 
 It installs:
 
 | Path | What |
 | --- | --- |
-| `/usr/bin/isolator` | the binary, **mode 4755 (setuid root)**|
-| `/var/lib/isolator_boxes` | persistent box tree |
-| `/usr/share/man/man1/isolator.1` | man page |
+| `/usr/bin/recodex-guardian` | the binary, **mode 4755 (setuid root)**|
+| `/var/lib/recodex-guardian/boxes` | persistent box tree |
+| `/usr/share/man/man1/recodex-guardian.1` | man page |
 
 Only the `cmake --install` step is elevated (via `sudo`); configure and build
 never are, so the build tree stays yours. The script prints the mode that
@@ -114,7 +114,7 @@ root at all — useful for inspecting exactly what would land.
 #### Uninstalling
 
 ```sh
-scripts/isolator.sh uninstall          # -n / --dry-run to preview
+scripts/guardian.sh uninstall          # -n / --dry-run to preview
 ```
 
 Run it from the *same* build tree you installed from — it reads that tree's
@@ -129,10 +129,10 @@ package's directory. A non-empty tree means live or leftover boxes, so it is
 reported and left alone; `uninstall --purge` (or `purge` on its own) removes it
 and the shared cgroup parent.
 
-On a host where the isolator came from an **RPM**, `uninstall` refuses and points
+On a host where the Guardian came from an **RPM**, `uninstall` refuses and points
 you at `dnf`: deleting RPM-owned files behind `rpm`'s back leaves the package
 database convinced it is still installed. And when there's no manifest to work
-from, it surveys the host instead of just complaining — listing every `isolator`
+from, it surveys the host instead of just complaining — listing every `recodex-guardian`
 it can find with the right removal route for each, since an RPM install under
 `/usr` and a source install under `/usr/local` can coexist (and the `/usr/local`
 one wins on a default `PATH`).
@@ -145,8 +145,8 @@ built with the alias** — so a package destined for a Worker host wants `--alia
 
 ```sh
 scl enable gcc-toolset-14 -- bash
-scripts/isolator.sh package --alias    # -> build/isolator-0.1.0-1.el9.x86_64.rpm
-sudo dnf install ./build/isolator-0.1.0-1.el9.x86_64.rpm
+scripts/guardian.sh package --alias    # -> build/recodex-guardian-0.1.0-1.el9.x86_64.rpm
+sudo dnf install ./build/recodex-guardian-0.1.0-1.el9.x86_64.rpm
 ```
 
 `package` produces the RPM and stops there; installing and removing it is `dnf`'s
@@ -155,8 +155,8 @@ job, deliberately. The default `Release` build type matters here: CPack emits no
 *inside* the setuid binary — measured on el9, 17 MB of binary in a 4.4 MB
 package, against 3.1 MB in 955 KB for `Release`.
 
-The package owns the same file list as Option B, with `/usr/bin/isolator` forced
-to `%attr(4755,root,root)` and `/var/lib/isolator_boxes` owned as a directory so
+The package owns the same file list as Option B, with `/usr/bin/recodex-guardian` forced
+to `%attr(4755,root,root)` and `/var/lib/recodex-guardian/boxes` owned as a directory so
 `dnf remove` cleans it up. The binary statically links libstdc++/libgcc and
 yaml-cpp, so it has **no dependency on the gcc-toolset SCL runtime** at execution
 time — build under the toolset, run against the plain system.
@@ -182,14 +182,14 @@ PATH-resolved binary literally named `isolate`, and its RPM declares
 
 It is **opt-in** because taking over `/usr/bin/isolate` displaces upstream
 Isolate on the host. A default build is the neutral one: it installs only
-`isolator`, coexists with upstream Isolate, and is all you need for standalone
+`recodex-guardian`, coexists with upstream Isolate, and is all you need for standalone
 `--yaml` mode.
 
 Turn it on by adding `--alias` on any mode that configures:
 
 ```sh
-scripts/isolator.sh install --alias
-scripts/isolator.sh package --alias
+scripts/guardian.sh install --alias
+scripts/guardian.sh package --alias
 ```
 
 Two consequences of the default. A default-built package cannot satisfy the
@@ -201,11 +201,11 @@ what cleans it up.
 ### Verifying an installation
 
 ```sh
-ls -l /usr/bin/isolator                 # -rwsr-xr-x, owner root
-man -w isolator                         # man page resolves
+ls -l /usr/bin/recodex-guardian                 # -rwsr-xr-x, owner root
+man -w recodex-guardian                         # man page resolves
 
-isolator --init --box-id=999            # as a non-root user: prints the box root
-isolator --cleanup --box-id=999         # and tears it back down
+recodex-guardian --init --box-id=999            # as a non-root user: prints the box root
+recodex-guardian --cleanup --box-id=999         # and tears it back down
 ```
 
 The `--init` / `--cleanup` round-trip as an unprivileged user is the meaningful
@@ -218,30 +218,30 @@ symlink is the drop-in path's precondition.
 ## ⚡ Quickstart Guide
 
 ### 1. System Setup
-No system initialization step is required: on its first `--run` the isolator
-lazily creates the shared cgroup parent (`/sys/fs/cgroup/isolator_boxes`) and
+No system initialization step is required: on its first `--run` the Guardian
+lazily creates the shared cgroup parent (`/sys/fs/cgroup/recodex-guardian`) and
 enables its controllers. To tear the shared cgroup tree and box
-directory (`/var/lib/isolator_boxes`) back down:
+directory (`/var/lib/recodex-guardian/boxes`) back down:
 ```sh
-scripts/isolator.sh purge
+scripts/guardian.sh purge
 ```
 
-### 2. Build the Isolator
+### 2. Build the Guardian
 ```sh
-scripts/isolator.sh build
+scripts/guardian.sh build
 ```
 (That is installation Option A above — see the Installation section for the
 system-wide and RPM options.)
 
 ### 3. Run with Configuration
 ```sh
-sudo ./build/src/isolator --yaml=/path/to/config.yml
+sudo ./build/src/recodex-guardian --yaml=/path/to/config.yml
 ```
 ### 4. Purge
-To reclaim the host-wide state Isolator instances leave behind (the box tree and
+To reclaim the host-wide state Guardian instances leave behind (the box tree and
 the shared cgroup parent):
 ```sh
-scripts/isolator.sh purge
+scripts/guardian.sh purge
 ```
 ---
 
@@ -256,19 +256,19 @@ logic — CLI/config parsing and the box lock — needing **no root**. Fetched v
 CMake only when `-DTESTING=ON`, and run with `ctest`:
 
 ```sh
-scripts/isolator.sh build --dev          # Debug + -DTESTING=ON
+scripts/guardian.sh build --dev          # Debug + -DTESTING=ON
 cd build && ctest --output-on-failure
 ```
 
 ### Workload tests (`tests/workload`)
 
-[pytest](https://pytest.org) tests that drive the whole `isolator` binary
+[pytest](https://pytest.org) tests that drive the whole `recodex-guardian` binary
 end-to-end, running **workloads** (small in-box payload programs under
 `tests/workload/workloads/`) inside the sandbox to verify resource limits and
 isolation boundaries actually bite. These need **root** (cgroups + namespaces):
 
 ```sh
-scripts/isolator.sh build --dev   # builds the binary and the workloads
+scripts/guardian.sh build --dev   # builds the binary and the workloads
 scripts/workload_tests.sh         # venv + sudo pytest
 ```
 
@@ -287,7 +287,7 @@ venv rather than a global `pip install`.)
 ### Mock evaluator (`tests/recodex`)
 
 Replays real, production-harvested ReCodEx job configs (C, Python, C#, Maven) to
-validate toolchains and limits. It drives the Isolator in **standalone mode**
+validate toolchains and limits. It drives the Guardian in **standalone mode**
 (`--yaml=`), so it deliberately covers no part of the compatibility CLI as the
 Worker actually emits it; that validation belongs to ReCodEx's own integration
 pipeline, against an installed alias build.
@@ -328,17 +328,17 @@ When creating manual configuration files, you should either replace these variab
 
 ##  Configuration Reference
 
-The isolator uses YAML configuration files to define sandbox environments and tasks.
+The Guardian uses YAML configuration files to define sandbox environments and tasks.
 
 ```yaml
 # Global settings and credentials
-root-dir: "/var/lib/isolator_boxes"                  # Root directory for all sandboxes
-root-cgroup: "/sys/fs/cgroup/isolator_boxes" # Root cgroup path
+root-dir: "/var/lib/recodex-guardian/boxes"                  # Root directory for all sandboxes
+root-cgroup: "/sys/fs/cgroup/recodex-guardian" # Root cgroup path
 share-net: false                            # Whether to share network namespace with parent
 
 credentials:
   id: "unique-instance-id"                  # Unique identifier for this instance
-  name: "example-container"                 # Descriptive name for this container
+  name: "example-instance"                  # Descriptive name for this instance
   as-uid: 1000                              # User ID for running processes in the sandbox
   as-gid: 1000                              # Group ID for running processes in the sandbox
 
@@ -415,11 +415,11 @@ never silently read as "unlimited":
   merely duplicates `1`, so both are mistakes rather than strict settings.
 - An **omitted `stack`** is the one limit still applied, as *unlimited*, rather
   than inheriting the caller's (typically 8 MiB) stack — otherwise a deeply
-  recursive task's verdict would depend on the shell that launched the isolator.
+  recursive task's verdict would depend on the shell that launched the Guardian.
 
 ## 📁 Directory Rules and Sandboxed Paths
 
-The isolator creates a secure sandbox environment with a strictly controlled filesystem. The `box-fs` section in the configuration defines how the filesystem should be structured within the sandbox.
+The Guardian creates a secure sandbox environment with a strictly controlled filesystem. The `box-fs` section in the configuration defines how the filesystem should be structured within the sandbox.
 
 ### Directory Rules Syntax
 
@@ -473,7 +473,7 @@ tasks:
 
 ## 📊 Metadata file
 
-After execution, the isolator generates metadata in YAML format with information about the run — this is the `stats-yaml` of **standalone mode** (`--yaml=`):
+After execution, the Guardian generates metadata in YAML format with information about the run — this is the `stats-yaml` of **standalone mode** (`--yaml=`):
 
 ```yaml
 status: OK                   # Status: OK, killed, memory, wall-time, cpu-time
@@ -493,7 +493,7 @@ Possible status values:
 - `memory`: Memory limit exceeded
 
 **Compatibility mode writes a different file.** Driven as a drop-in replacement
-for Isolate (`--init` / `--run` / `--cleanup` with `--meta=FILE`), the isolator
+for Isolate (`--init` / `--run` / `--cleanup` with `--meta=FILE`), the Guardian
 emits Isolate's `key:value` **meta-file** instead, as a superset of what Isolate
 writes so the ReCodEx Worker parses it unchanged:
 
@@ -512,11 +512,11 @@ effect on the standalone path — the two output formats belong to the two modes
 
 ## 🔍 Troubleshooting
 
-- Running the isolator itself requires root — unless it is installed setuid, which is the point of Options B and C. Of the helper modes, `build` and `package` need no privilege at all; `install`, `uninstall` and `purge` elevate the single command that needs it (via `sudo`) rather than running wholesale as root, so your build tree never ends up root-owned.
+- Running the Guardian itself requires root — unless it is installed setuid, which is the point of Options B and C. Of the helper modes, `build` and `package` need no privilege at all; `install`, `uninstall` and `purge` elevate the single command that needs it (via `sudo`) rather than running wholesale as root, so your build tree never ends up root-owned.
 - If tests fail with filesystem errors, ensure that the directories specified in the configuration exist and have appropriate permissions.
-- The isolator self-arranges its cgroup parent on first `--run`; if the shared cgroup tree or box directory gets into a bad state, reset it with `scripts/isolator.sh purge`.
+- The Guardian self-arranges its cgroup parent on first `--run`; if the shared cgroup tree or box directory gets into a bad state, reset it with `scripts/guardian.sh purge`.
 - Always use absolute paths in host filesystem references but remember that paths inside the task configuration are relative to the sandbox root.
-- When testing, inspect the content of `/var/lib/isolator_boxes/` to see the actual sandbox structure.
-- Run the isolator binary with --debug to see detailed logs.
+- When testing, inspect the content of `/var/lib/recodex-guardian/boxes/` to see the actual sandbox structure.
+- Run the Guardian binary with --debug to see detailed logs.
 
 ---

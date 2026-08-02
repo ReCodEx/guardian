@@ -11,14 +11,14 @@ import os
 import subprocess
 from pathlib import Path
 
-from conftest import ISOLATOR_BIN
+from conftest import GUARDIAN_BIN
 
 BOX_ID = 0
 
 
 def _run(*args):
     return subprocess.run(
-        ["sudo", str(ISOLATOR_BIN), f"--box-id={BOX_ID}", *args],
+        ["sudo", str(GUARDIAN_BIN), f"--box-id={BOX_ID}", *args],
         capture_output=True,
         text=True,
     )

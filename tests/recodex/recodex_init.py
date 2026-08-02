@@ -3,12 +3,12 @@ import subprocess
 import os
 
 def run_build_script(current_dir):
-    build_script = os.path.join(current_dir, "..", "..", "scripts", "isolator.sh")
+    build_script = os.path.join(current_dir, "..", "..", "scripts", "guardian.sh")
     try:
         subprocess.run([build_script, "build"], check=True)
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Error running isolator.sh build: {e}")
+        print(f"Error running guardian.sh build: {e}")
         return False
 
 def build_recodex_judge(current_dir):

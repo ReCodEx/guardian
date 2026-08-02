@@ -20,8 +20,8 @@
 /// `is_initialized` bit, letting `--run` refuse a box that was never `--init`'d
 /// (ADR 0001).
 ///
-/// The lock lives on tmpfs at `/run/isolator_boxes/locks/<box-id>`, deliberately
-/// outside the persistent box tree under `/var/lib/isolator_boxes`: `--cleanup`
+/// The lock lives on tmpfs at `/run/recodex-guardian/locks/<box-id>`, deliberately
+/// outside the persistent box tree under `/var/lib/recodex-guardian/boxes`: `--cleanup`
 /// `rm -rf`s the box dir, so the lock must survive that, and a stale lock after
 /// reboot is harmless (tmpfs is empty). `--cleanup` `ftruncate`s the lock to
 /// zero — clearing the magic, marking it uninitialized — rather than
@@ -31,7 +31,7 @@ namespace lock {
 
     namespace defaults {
         /// @brief tmpfs directory holding one record file per box-id.
-        constexpr auto LOCKS_DIR = "/run/isolator_boxes/locks";
+        constexpr auto LOCKS_DIR = "/run/recodex-guardian/locks";
     }  // namespace defaults
 
     /// @brief On-disk lock record. A box is considered initialized only when a

@@ -24,7 +24,7 @@ namespace credentials
     /// clone3()/mount() with a confusing errno. Because the install is mode
     /// 4755 (setuid but NOT setgid), our effective gid is still the caller's on
     /// entry — setegid(0) fixes it so root-group directory/file creation
-    /// (/run/isolator_boxes, the cgroup tree, the box tree) behaves. umask(022)
+    /// (/run/recodex-guardian, the cgroup tree, the box tree) behaves. umask(022)
     /// makes file-creation modes deterministic regardless of the caller's
     /// inherited umask.
     inline void require_root()

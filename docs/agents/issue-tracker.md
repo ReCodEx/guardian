@@ -1,6 +1,6 @@
 # Issue tracker: GitLab
 
-Issues and PRDs for this repo live as GitLab issues on the self-hosted instance at `gitlab.mff.cuni.cz` (project `kurzs/rcdx_cntnr`). Use the [`glab`](https://gitlab.com/gitlab-org/cli) CLI for all operations.
+Issues and PRDs for this repo live as GitLab issues on the self-hosted instance at `gitlab.mff.cuni.cz` (project `kurzs/recodex-guardian`). Use the [`glab`](https://gitlab.com/gitlab-org/cli) CLI for all operations.
 
 ## Setup (one-time)
 

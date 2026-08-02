@@ -15,8 +15,8 @@ box-fs:
   - etc/java:maybe
   - etc/OpenCL:maybe
   - etc/alternatives=/etc/alternatives:maybe
-  - worker/judges/build=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/worker/judges/build
-  - Test 01=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/hello-world-c/Test
+  - worker/judges/build=/home/simonkurz/mff/recodex-guardian/demoV1/tests/rcdx_examples/worker/judges/build
+  - Test 01=/home/simonkurz/mff/recodex-guardian/demoV1/tests/rcdx_examples/hello-world-c/Test
     01:rw
 env:
   vars:
@@ -32,8 +32,6 @@ env:
   - MAVEN_HOME=/opt/maven
   - M2_HOME=/opt/maven-repo
   - LD_LIBRARY_PATH=/lib:/lib/:/lib/../lib64/:/lib/x86_64-redhat-linux/14/:/lib64:/usr/lib:/usr/lib/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/14:/usr/lib/gcc/x86_64-redhat-linux/14/:/usr/lib/gcc/x86_64-redhat-linux/14/../../../:/usr/lib/gcc/x86_64-redhat-linux/14/../../../../lib64/:/usr/lib/gcc/x86_64-redhat-linux/14/../../../../x86_64-redhat-linux/lib/:/usr/lib/gcc/x86_64-redhat-linux/14/../../../../x86_64-redhat-linux/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/14/../../../../x86_64-redhat-linux/lib/x86_64-redhat-linux/14/:/usr/lib/gcc/x86_64-redhat-linux/14/../../../x86_64-redhat-linux/14/:/usr/lib/x86_64-redhat-linux/14/:/usr/lib64
-root-cg: /sys/fs/cgroup/isolator_boxes
-root-dir: /var/lib/isolator_boxes
 tasks:
 - chdir: Test 01
   cmd:

@@ -1,6 +1,6 @@
-.TH ISOLATOR 1 "2026" "isolator 0.1.0" "ReCodEx Isolator Manual"
+.TH RECODEX-GUARDIAN 1 "2026" "recodex-guardian 0.1.0" "ReCodEx Guardian Manual"
 .SH NAME
-isolator, isolate \- Isolate-compatible sandbox for running untrusted code
+recodex-guardian, isolate \- Isolate-compatible sandbox for running untrusted code
 .SH SYNOPSIS
 .B isolate
 .B \-\-init
@@ -21,7 +21,7 @@ isolator, isolate \- Isolate-compatible sandbox for running untrusted code
 .B isolate
 .BI \-\-yaml= FILE
 .SH DESCRIPTION
-.B isolator
+.B recodex-guardian
 runs a single program inside a restricted sandbox built from Linux namespaces,
 cgroups v2, a dedicated UID/GID, and a private filesystem view, measuring its
 resource usage. It is a drop-in replacement for the
@@ -188,19 +188,19 @@ The program ran but the result was not OK (non-zero exit, killed by a signal,
 or a limit was exceeded); details are in the meta-file.
 .TP
 .B 2
-The isolator itself failed (bad arguments, setup error, or the box was not
+The Guardian itself failed (bad arguments, setup error, or the box was not
 initialized).
 .SH FILES
 .TP
-.I /var/lib/isolator_boxes/<box-id>
+.I /var/lib/recodex-guardian/boxes/<box-id>
 The per-box directory tree (the writable
 .I box/
 working directory lives here).
 .TP
-.I /run/isolator_boxes/locks/<box-id>
+.I /run/recodex-guardian/locks/<box-id>
 Per-box lock and initialization record (tmpfs).
 .TP
-.I /sys/fs/cgroup/isolator_boxes
+.I /sys/fs/cgroup/recodex-guardian
 The cgroup subtree for all boxes; created and given controllers on first
 .BR \-\-run .
 .SH SEE ALSO

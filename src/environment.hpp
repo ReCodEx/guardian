@@ -1,5 +1,5 @@
-#ifndef CONTAINER_ENV
-#define CONTAINER_ENV
+#ifndef ENVIRONMENT
+#define ENVIRONMENT
 
 #include <sys/mount.h>
 #include <sys/stat.h>

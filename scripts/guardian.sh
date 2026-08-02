@@ -1,5 +1,5 @@
 #!/bin/sh
-# One entry point for the Isolator's artifact lifecycle: build it, package it,
+# One entry point for the Guardian's artifact lifecycle: build it, package it,
 # install it, remove it, and tear its host-wide state down (see docs/adr/0009).
 #
 # Two things about this script are deliberate and easy to "fix" by mistake:
@@ -10,22 +10,23 @@
 #     `build --alias` followed by a plain `install` still installs the alias.
 #   * We produce RPMs but never install or remove them. `uninstall` refuses to
 #     touch files an RPM owns, because deleting them behind rpm's back leaves the
-#     rpm database broken. Use `dnf remove isolator` there.
+#     rpm database broken. Use `dnf remove recodex-guardian` there.
 #
 # Usage:
-#   isolator.sh build [--dev]            configure + build
-#   isolator.sh package [--alias]        + cpack -G RPM (artifact only)
-#   isolator.sh install [--alias]        + cmake --install (needs root)
-#   isolator.sh uninstall [--purge]      remove installed files (needs root)
-#   isolator.sh purge                    box tree + shared cgroup (needs root)
+#   guardian.sh build [--dev]            configure + build
+#   guardian.sh package [--alias]        + cpack -G RPM (artifact only)
+#   guardian.sh install [--alias]        + cmake --install (needs root)
+#   guardian.sh uninstall [--purge]      remove installed files (needs root)
+#   guardian.sh purge                    box tree + shared cgroup (needs root)
 set -eu
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 REPO="$(dirname "$SCRIPT_DIR")"
 
 # Host-wide state, matching the paths the binary itself uses.
-BOX_TREE="/var/lib/isolator_boxes"
-CGROUP_PARENT="/sys/fs/cgroup/isolator_boxes"
+BOX_ROOT="/var/lib/recodex-guardian"
+BOX_TREE="$BOX_ROOT/boxes"
+CGROUP_PARENT="/sys/fs/cgroup/recodex-guardian"
 
 # Defaults, uniform across every mode so crossing from build to install never
 # forces a reconfigure. Release (not empty/Debug) is what turns _FORTIFY_SOURCE
@@ -168,7 +169,7 @@ do_install() {
     configure_and_build
 
     # A DESTDIR install stages everything — including the absolute
-    # /var/lib/isolator_boxes — under that root, so it needs no privilege. Only a
+    # /var/lib/recodex-guardian/boxes — under that root, so it needs no privilege. Only a
     # live install does.
     if [ -n "$DESTDIR" ]; then
         DESTDIR="$DESTDIR" cmake --install "$BUILD_DIR"
@@ -177,19 +178,19 @@ do_install() {
     fi
 
     bindir="$DESTDIR$(cache_get CMAKE_INSTALL_PREFIX)/bin"
-    say "installed $bindir/isolator"
+    say "installed $bindir/recodex-guardian"
     if [ "$(cache_get ISOLATE_ALIAS)" = "ON" ]; then
-        say "installed $bindir/isolate -> isolator"
+        say "installed $bindir/isolate -> recodex-guardian"
     fi
     # The setuid bit is applied by install(PERMISSIONS) and a restrictive umask can
     # file it off, so report what actually landed rather than what we asked for.
-    say "mode: $(ls -l "$bindir/isolator" | cut -d' ' -f1) (want -rwsr-xr-x)"
+    say "mode: $(ls -l "$bindir/recodex-guardian" | cut -d' ' -f1) (want -rwsr-xr-x)"
 }
 
 do_package() {
     configure_and_build
     ( cd "$BUILD_DIR" && cpack -G RPM )
-    say "packaged: $(ls "$BUILD_DIR"/isolator-*.rpm 2>/dev/null | tr '\n' ' ')"
+    say "packaged: $(ls "$BUILD_DIR"/recodex-guardian-*.rpm 2>/dev/null | tr '\n' ' ')"
     say "install it with dnf; this script deliberately does not (docs/adr/0009)"
 }
 
@@ -198,15 +199,15 @@ do_uninstall() {
 
     # Survey the *host* before demanding a manifest. An RPM install has no manifest
     # anywhere, so leading with the manifest answers "no install_manifest.txt" to
-    # someone whose isolator came from dnf — true, and useless. Two installs can
+    # someone whose recodex-guardian came from dnf — true, and useless. Two installs can
     # also coexist (an unowned /usr/local one shadowing an RPM /usr one on PATH),
     # and each is removed a different way.
     live_rpm=""   # "path=package" for RPM-owned installs
     live_src=""   # unowned paths, i.e. source installs
     seen=""
     if [ -z "$DESTDIR" ]; then
-        for cand in "$(command -v isolator 2>/dev/null || true)" \
-                    /usr/bin/isolator /usr/local/bin/isolator; do
+        for cand in "$(command -v recodex-guardian 2>/dev/null || true)" \
+                    /usr/bin/recodex-guardian /usr/local/bin/recodex-guardian; do
             [ -n "$cand" ] && [ -e "$cand" ] || continue
             case "$seen" in *"|$cand|"*) continue ;; esac
             seen="$seen|$cand|"
@@ -221,7 +222,7 @@ do_uninstall() {
 
     if [ ! -f "$manifest" ]; then
         [ -n "$live_rpm$live_src" ] || \
-            die "no $manifest, and no isolator in PATH, /usr/bin or /usr/local/bin — nothing to uninstall"
+            die "no $manifest, and no recodex-guardian in PATH, /usr/bin or /usr/local/bin — nothing to uninstall"
 
         say "$manifest is missing, so there is no record of a source install to undo." >&2
         say "What is installed here:" >&2
@@ -236,13 +237,13 @@ do_uninstall() {
     fi
 
     # A manifest-driven removal only undoes what this tree installed, so flag any
-    # other, RPM-owned isolator rather than leaving the user to wonder why it stayed.
+    # other, RPM-owned recodex-guardian rather than leaving the user to wonder why it stayed.
     for entry in $live_rpm; do
         say "note: ${entry%=*} is owned by the '${entry#*=}' RPM — dnf's to remove, not ours"
     done
 
     # CMake strips DESTDIR out of the manifest, so a staged install records the
-    # *live* paths (/usr/bin/isolator, not <destdir>/usr/bin/isolator). Removing a
+    # *live* paths (/usr/bin/recodex-guardian, not <destdir>/usr/bin/recodex-guardian). Removing a
     # staged install therefore needs the same --destdir the install had, or we would
     # delete the real system's files instead.
     if [ -n "$DESTDIR" ]; then
@@ -251,18 +252,18 @@ do_uninstall() {
 
     # The manifest is authoritative for what cmake --install put down, with one
     # structural gap: the alias symlink comes from install(CODE ...), which CMake
-    # never records. Derive its directory from the manifest's own isolator entry
+    # never records. Derive its directory from the manifest's own recodex-guardian entry
     # so the prefix is inherited rather than guessed.
-    bindir="$(sed -n 's|/isolator$||p' "$manifest" | head -1)"
+    bindir="$(sed -n 's|/recodex-guardian$||p' "$manifest" | head -1)"
     alias_link="${bindir:+$DESTDIR$bindir/isolate}"
 
     # The manifest may name a prefix the host probe above never looked at, so check
     # ownership there too: deleting RPM-owned files behind rpm's back leaves the
-    # package database convinced isolator is still installed.
+    # package database convinced recodex-guardian is still installed.
     if [ -z "$DESTDIR" ] && [ -n "$bindir" ]; then
-        owner="$(rpm_owner "$bindir/isolator")"
+        owner="$(rpm_owner "$bindir/recodex-guardian")"
         if [ -n "$owner" ]; then
-            die "$bindir/isolator belongs to the '$owner' RPM — use: sudo dnf remove $owner"
+            die "$bindir/recodex-guardian belongs to the '$owner' RPM — use: sudo dnf remove $owner"
         fi
     fi
 
@@ -307,9 +308,13 @@ do_uninstall() {
         boxes=$(find "$BOX_TREE" -mindepth 1 -maxdepth 1 | wc -l)
         if [ "$boxes" -eq 0 ]; then
             if $dry_run; then
-                say "would rmdir $BOX_TREE (empty)"
+                say "would rmdir $BOX_TREE (empty), and $BOX_ROOT with it"
             else
                 as_root rmdir "$BOX_TREE"
+                # The tree is nested one level down, so reclaiming it alone
+                # would strand its parent. Only ours to take if nothing else
+                # put state there, hence the plain rmdir.
+                as_root rmdir "$BOX_ROOT" 2>/dev/null || true
                 say "removed $BOX_TREE (was empty)"
             fi
         else
@@ -324,7 +329,7 @@ do_purge() {
     [ -z "$DESTDIR" ] || die "purge operates on host state — --destdir makes no sense here"
     if $dry_run; then
         say "would rmdir $CGROUP_PARENT (leaves first)"
-        say "would rm -rf $BOX_TREE"
+        say "would empty $BOX_TREE (keeping the directory)"
         return
     fi
     # Depth-first: a cgroup directory only rmdirs once its children are gone.
@@ -332,8 +337,12 @@ do_purge() {
         as_root find "$CGROUP_PARENT" -type d -depth -exec rmdir {} \; || true
         say "tore down $CGROUP_PARENT"
     fi
-    as_root rm -rf "$BOX_TREE"
-    say "removed $BOX_TREE"
+    # Empty the tree but keep it: the RPM owns this directory, so removing it
+    # would leave an installed package failing `rpm -V`.
+    if [ -d "$BOX_TREE" ]; then
+        as_root find "$BOX_TREE" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+        say "emptied $BOX_TREE"
+    fi
 }
 
 # --- argument parsing ------------------------------------------------------

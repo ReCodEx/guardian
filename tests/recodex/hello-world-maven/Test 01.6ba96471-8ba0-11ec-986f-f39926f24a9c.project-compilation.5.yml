@@ -15,8 +15,8 @@ box-fs:
   - etc/java:maybe
   - etc/OpenCL:maybe
   - etc/alternatives=/etc/alternatives:maybe
-  - worker/judges/build=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/worker/judges/build
-  - Test 01=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/hello-world-maven//Test
+  - worker/judges/build=/home/simonkurz/mff/recodex-guardian/demoV1/tests/rcdx_examples/worker/judges/build
+  - Test 01=/home/simonkurz/mff/recodex-guardian/demoV1/tests/rcdx_examples/hello-world-maven//Test
     01:rw
 env:
   vars:
@@ -32,10 +32,8 @@ env:
   - MAVEN_HOME=/opt/maven
   - M2_HOME=/opt/maven-repo
   - LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/14/include:/usr/lib/gcc/x86_64-redhat-linux/14/:/usr/lib64:/usr/lib:/lib64:/lib
-root-cg: /sys/fs/cgroup/isolator_boxes
-root-dir: /var/lib/isolator_boxes
 tasks:
-- carboncopy-stdout: /home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/results/hello-world-maven//compilation.62mmkgg9spjkqsv0u2nj.out
+- carboncopy-stdout: /home/simonkurz/mff/recodex-guardian/demoV1/tests/rcdx_examples/results/hello-world-maven//compilation.62mmkgg9spjkqsv0u2nj.out
   chdir: Test 01
   cmd:
     args:

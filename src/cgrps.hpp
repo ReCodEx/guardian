@@ -468,10 +468,10 @@ namespace cgroup {
             fs::path instance_cg = credentials_->instance_cgroup();
 
             // Enable controllers at the cgroup root so they become available to
-            // the shared isolator_boxes parent, then idempotently arrange that
+            // the shared recodex-guardian parent, then idempotently arrange that
             // parent before creating this instance's cgroup under it. The parent
             // is created once per boot but touched by every --run, so this
-            // replaces the former boot-time isolator_init.sh (ADR 0007).
+            // replaces the former boot-time guardian_init.sh (ADR 0007).
             root_cgrp_.enable_all_cntrlrs();
             ensure_boxes_parent(instance_cg.parent_path());
 
@@ -517,13 +517,13 @@ namespace cgroup {
         /// run().
         std::unique_ptr<cgroup::cgroupv2_t> leaf_cgrp_;
 
-        /// @brief Idempotently arrange the shared isolator_boxes parent cgroup:
+        /// @brief Idempotently arrange the shared recodex-guardian parent cgroup:
         /// create it if absent and enable the cpu/memory/pids controllers in
         /// its subtree_control. Unlike the per-box cgroups (whose ctor
         /// terminates on an existing dir), this parent is created once per boot
         /// yet touched by every --run and by concurrent peers, so an existing
         /// dir and already-enabled controllers are success — cgroup v2 treats a
-        /// repeated "+cpu" write as a no-op. Replaces isolator_init.sh (ADR
+        /// repeated "+cpu" write as a no-op. Replaces guardian_init.sh (ADR
         /// 0007). Must run after the root-level enable so the controllers are
         /// available here.
         static void ensure_boxes_parent(const fs::path& parent) {

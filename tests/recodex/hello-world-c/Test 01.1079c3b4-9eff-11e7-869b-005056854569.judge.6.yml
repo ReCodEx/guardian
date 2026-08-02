@@ -14,7 +14,7 @@ box-fs:
   - etc/java:maybe
   - etc/OpenCL:maybe
   - etc/alternatives=/etc/alternatives:maybe
-  - Test 01=/home/simonkurz/mff/rcdx_cntnr/demoV1/tests/rcdx_examples/hello-world-c/Test
+  - Test 01=/home/simonkurz/mff/recodex-guardian/demoV1/tests/rcdx_examples/hello-world-c/Test
     01:rw
 env:
   vars:
@@ -30,8 +30,6 @@ env:
   - GROOVY_HOME=/opt/groovy
   - MAVEN_HOME=/opt/maven
   - M2_HOME=/opt/maven-repo
-root-cg: /sys/fs/cgroup/isolator_boxes
-root-dir: /var/lib/isolator_boxes
 tasks:
 - chdir: Test 01
   cmd:

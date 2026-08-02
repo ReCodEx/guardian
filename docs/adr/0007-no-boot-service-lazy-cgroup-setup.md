@@ -4,7 +4,7 @@ status: accepted
 
 # No boot service: the cgroup tree is self-arranged at `--run`
 
-The Isolator needs its per-instance cgroup parent `/sys/fs/cgroup/isolator_boxes`
+The Guardian needs its per-instance cgroup parent `/sys/fs/cgroup/recodex-guardian`
 to exist with the `cpu`/`memory`/`pids` controllers enabled in its
 `cgroup.subtree_control` before any `<box-id>` cgroup can be created and given
 limits. Upstream Isolate arranges this out-of-band at boot (a systemd **slice**
@@ -14,11 +14,11 @@ idempotently, the first time it is invoked after boot.
 
 This is a small, symmetric extension of what `root_cgroup_manager::run()`
 (`cgrps.hpp`) already does — it already enables controllers on the **root**
-`/sys/fs/cgroup` and on the **instance** `…/isolator_boxes/<id>` on every run. The
-only gap was the **intermediate** `isolator_boxes` level: ensure the parent
+`/sys/fs/cgroup` and on the **instance** `…/recodex-guardian/<id>` on every run. The
+only gap was the **intermediate** `recodex-guardian` level: ensure the parent
 directory exists (`create_directories`, idempotent) and enable its
 `subtree_control` before enabling the instance level. That gap had been
-externalized into `scripts/isolator_init.sh` (which the workload harness ran via
+externalized into `scripts/guardian_init.sh` (which the workload harness ran via
 `tests/workload/conftest.py`); folding it into `--run` removes the external step.
 
 ## Considered options
@@ -37,19 +37,19 @@ externalized into `scripts/isolator_init.sh` (which the workload harness ran via
   only for the long-running delegation-daemon/slice model we are deferring.
 - **Self-arrange in `--run`** (chosen). Zero-config install (`dnf install` → it
   works), consistent with ADR 0005's "cgroup path is a pure function of box-id,
-  recomputed each phase," and lets the test harness drop its `isolator_init.sh`
+  recomputed each phase," and lets the test harness drop its `guardian_init.sh`
   dependency.
 
 ## Consequences
 
 - **`--run` gains ~3 lines of idempotent cgroup-parent setup** (ensure
-  `isolator_boxes` exists, enable its `subtree_control`) ahead of the existing
+  `recodex-guardian` exists, enable its `subtree_control`) ahead of the existing
   instance-level enable. It must tolerate a concurrent peer having already
   created/enabled the shared parent (create-if-absent; enabling an
   already-enabled controller in cgroup v2 is a no-op).
 - **No unit file, no `--init-system` mode, no install scriptlet** enter the RPM.
-  `/var/lib/isolator_boxes` remains lazily created by the per-instance path and
-  owned by the RPM as a `%dir`; `/run/isolator_boxes/locks` remains lazily created
+  `/var/lib/recodex-guardian/boxes` remains lazily created by the per-instance path and
+  owned by the RPM as a `%dir`; `/run/recodex-guardian/locks` remains lazily created
   by `box_lock`. Nothing about the install requires a boot step.
 - **The systemd-slice escalation risk is unchanged** — it was never about the
   service. Touching the root `/sys/fs/cgroup/cgroup.subtree_control` without a

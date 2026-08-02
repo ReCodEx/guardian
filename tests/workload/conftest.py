@@ -1,6 +1,6 @@
 """Shared fixtures and helpers for the workload-test tier.
 
-Workload tests drive the real `isolator` binary end-to-end (standalone --yaml
+Workload tests drive the real `recodex-guardian` binary end-to-end (standalone --yaml
 mode today; the three-phase compat lifecycle once B2 lands). They need root and
 a cgroup-v2 host, so the whole tier skips cleanly when the binary isn't built or
 root isn't available non-interactively.
@@ -20,7 +20,7 @@ import yaml
 
 WORKLOAD_DIR = Path(__file__).resolve().parent
 REPO_ROOT = WORKLOAD_DIR.parents[1]
-ISOLATOR_BIN = REPO_ROOT / "build" / "src" / "isolator"
+GUARDIAN_BIN = REPO_ROOT / "build" / "src" / "recodex-guardian"
 SCRIPTS = REPO_ROOT / "scripts"
 PROBES_DIR = WORKLOAD_DIR / "build"   # compiled workloads, mounted as /build
 RES_DIR = WORKLOAD_DIR / "res"        # per-task stats-yaml sink, mounted as /res
@@ -39,30 +39,30 @@ def _can_sudo_noninteractive() -> bool:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def isolator_environment():
+def guardian_environment():
     """Set up the shared box/cgroup roots for the whole tier; skip if we can't.
 
     Skips (rather than fails) when the binary or workloads aren't built or root
     isn't available, so a plain `pytest` on a dev machine is a no-op instead of a
     wall of errors.
     """
-    if not ISOLATOR_BIN.exists():
+    if not GUARDIAN_BIN.exists():
         pytest.skip(
-            f"isolator not built at {ISOLATOR_BIN} "
-            f"(run: scripts/isolator.sh build --dev)"
+            f"recodex-guardian not built at {GUARDIAN_BIN} "
+            f"(run: scripts/guardian.sh build --dev)"
         )
     if not PROBES_DIR.exists() or not any(PROBES_DIR.iterdir()):
         pytest.skip(
             f"workloads not built into {PROBES_DIR} "
-            f"(run: scripts/isolator.sh build --dev — they need -DTESTING=ON)"
+            f"(run: scripts/guardian.sh build --dev — they need -DTESTING=ON)"
         )
     if not _can_sudo_noninteractive():
         pytest.skip("workload tests need root (passwordless sudo or run as root)")
 
-    # No boot/init step: --run arranges the isolator_boxes cgroup parent
+    # No boot/init step: --run arranges the recodex-guardian cgroup parent
     # itself, idempotently (ADR 0007).
     yield
-    subprocess.run([str(SCRIPTS / "isolator.sh"), "purge"], check=False)
+    subprocess.run([str(SCRIPTS / "guardian.sh"), "purge"], check=False)
 
 
 def load_config(name: str) -> dict:
@@ -89,7 +89,7 @@ def run_standalone(config: dict) -> dict[str, str | None]:
         yaml.safe_dump(config, f)
     try:
         subprocess.run(
-            ["sudo", str(ISOLATOR_BIN), f"--yaml={tmp}"],
+            ["sudo", str(GUARDIAN_BIN), f"--yaml={tmp}"],
             capture_output=True,
             text=True,
         )

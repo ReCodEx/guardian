@@ -14,7 +14,7 @@ namespace {
     // have static storage, so the const_cast pointers stay valid for the call.
     cli::cli_options parse_args(const std::vector<const char*>& args) {
         std::vector<char*> argv;
-        argv.push_back(const_cast<char*>("isolator"));
+        argv.push_back(const_cast<char*>("recodex-guardian"));
         for (auto* a : args) {
             argv.push_back(const_cast<char*>(a));
         }
