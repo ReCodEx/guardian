@@ -146,7 +146,7 @@ namespace tasks {
         config::task_stats wait_for_task(pid_t task_pid) {
             int stat{};
             pid_t p;
-            auto stime = std::chrono::system_clock::now();
+            auto stime = std::chrono::steady_clock::now();
             auto wall_limit = std::chrono::duration<double>(
                 task_config_->rlimits().wall_time());
 
@@ -155,7 +155,7 @@ namespace tasks {
             while (true) {
                 // WNOHANG flag so that we don't block here.
                 p = waitpid(task_pid, &stat, WNOHANG);
-                auto wtime = std::chrono::system_clock::now() - stime;
+                auto wtime = std::chrono::steady_clock::now() - stime;
 
                 if (p < 0) {
                     terminate(
