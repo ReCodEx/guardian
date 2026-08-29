@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Build products of the harness and probes.
+harness/build/
+harness/barerun
+harness/workloads/*.o
+
+# Collected data is kept (it is the point), but scratch and renders are not.
+analysis/writeup.pdf
+data/*.tmp
