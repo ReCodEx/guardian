@@ -3,6 +3,8 @@
 
 #include <fcntl.h>
 #include <linux/quota.h>
+#include <linux/sched.h>
+#include <poll.h>
 #include <sys/quota.h>
 #include <sys/resource.h>
 #include <sys/time.h>
@@ -20,7 +22,6 @@
 #include <ctime>
 #include <filesystem>
 #include <string>
-#include <thread>
 
 #include "cgrps.hpp"
 #include "config.hpp"
@@ -55,8 +56,9 @@ namespace tasks {
         /// @brief Prepare and execute the task and return metadata about the
         /// execution.
         config::task_stats run_task() {
-            pid_t pid = launch_task();
-            auto stats = wait_for_task(pid);
+            int pidfd = -1;
+            pid_t pid = launch_task(pidfd);
+            auto stats = wait_for_task(pid, pidfd);
             task_config_->finalize_task(stats);
             return stats;
         }
@@ -141,79 +143,113 @@ namespace tasks {
 
         /// @brief Wait for a task process to terminate and return metadata
         /// about the execution.
+        ///
+        /// Blocks on the task's pidfd, which becomes readable the moment the
+        /// task turns into a zombie. The ppoll() timeout is the time left on
+        /// the wall-time limit, so a single call answers both questions this
+        /// function has: the task finished (POLLIN), or it ran out of wall time
+        /// (timeout). Waking on the exit itself is what makes the reported wall
+        /// time the task's real duration.
+        ///
         /// @param task_pid PID of the task process (Returned by clone3()).
+        /// @param task_pidfd pidfd for the task, from the same clone3().
         /// @return task_stats struct as defined in the config source file.
-        config::task_stats wait_for_task(pid_t task_pid) {
+        config::task_stats wait_for_task(pid_t task_pid, int task_pidfd) {
             int stat{};
-            pid_t p;
             auto stime = std::chrono::steady_clock::now();
             auto wall_limit = std::chrono::duration<double>(
                 task_config_->rlimits().wall_time());
 
-            // Periodically check if the task has terminated and kill() if it
-            // exceeds wall time limit.
+            pollfd pfd{.fd = task_pidfd, .events = POLLIN, .revents = 0};
+            bool timed_out = false;
+
             while (true) {
-                // WNOHANG flag so that we don't block here.
-                p = waitpid(task_pid, &stat, WNOHANG);
-                auto wtime = std::chrono::steady_clock::now() - stime;
-
-                if (p < 0) {
-                    terminate(
-                        "waitpid() for task \"{}\" failed. Stat: {}, Errno: {}",
-                        task_config_->name(), stat, errno);
-                } else if (p == 0) {
-                    if (wtime < wall_limit) {
-                        // logs::debug("Task \"{}\" still running after {}s",
-                        // task_config_->name(),
-                        // std::chrono::duration_cast<std::chrono::seconds>(wtime).count());
-                        std::this_thread::sleep_for(waiting_time());
-                    } else {
-                        logs::debug(
-                            "Sending SIGKILL to task \"{}\" for exceeding wall "
-                            "time limit",
-                            task_config_->name());
-                        kill(task_pid, SIGKILL);
-                        p = waitpid(task_pid, &stat, 0);
-                        logs::debug(
-                            "Task \"{}\" exited. WTERMSIG: {}, WEXITSTATUS : "
-                            "{}, Errno: {}",
-                            task_config_->name(), WTERMSIG(stat),
-                            WEXITSTATUS(stat), errno);
-                        return generate_task_stats(
-                            task_cgrp_, stat,
-                            std::chrono::duration_cast<
-                                std::chrono::milliseconds>(wtime)
-                                .count(),
-                            config::exit_status::WALL_TIME_EXCEEDED);
-                    }
-
-                } else {
-                    logs::debug(
-                        "Task \"{}\" exited. WTERMSIG: {}, WEXITSTATUS : {}, "
-                        "Errno: {}",
-                        task_config_->name(), WTERMSIG(stat), WEXITSTATUS(stat),
-                        errno);
-                    return generate_task_stats(
-                        task_cgrp_, stat,
-                        std::chrono::duration_cast<std::chrono::milliseconds>(
-                            wtime)
-                            .count());
+                auto left =
+                    wall_limit - (std::chrono::steady_clock::now() - stime);
+                if (left <= decltype(left)::zero()) {
+                    timed_out = true;
+                    break;
                 }
+                auto ns =
+                    std::chrono::duration_cast<std::chrono::nanoseconds>(left);
+                timespec ts{
+                    .tv_sec = static_cast<time_t>(ns.count() / 1'000'000'000),
+                    .tv_nsec = static_cast<long>(ns.count() % 1'000'000'000),
+                };
+
+                int rv = ppoll(&pfd, 1, &ts, nullptr);
+                if (rv < 0) {
+                    // A signal delivered to the proxy is neither an exit nor a
+                    // timeout: loop on the recomputed remainder, so it can
+                    // shorten neither the wait nor the limit.
+                    if (errno == EINTR) {
+                        continue;
+                    }
+                    terminate(
+                        "ppoll() on the pidfd of task \"{}\" failed. Errno: {}",
+                        task_config_->name(), errno);
+                } else if (rv == 0) {
+                    timed_out = true;
+                } else if (!(pfd.revents & POLLIN)) {
+                    // A pidfd reports nothing but POLLIN. Anything else means
+                    // the descriptor is not what we think it is, and carrying
+                    // on would leave the wall-time limit unenforced without
+                    // saying so -- the one failure this loop must not have.
+                    terminate(
+                        "ppoll() on the pidfd of task \"{}\" returned revents "
+                        "{}, expected POLLIN",
+                        task_config_->name(), pfd.revents);
+                }
+                break;
             }
+
+            auto wtime = std::chrono::steady_clock::now() - stime;
+            auto exit = config::exit_status::OK;
+
+            if (timed_out) {
+                logs::debug(
+                    "Sending SIGKILL to task \"{}\" for exceeding wall time "
+                    "limit",
+                    task_config_->name());
+                kill(task_pid, SIGKILL);
+                exit = config::exit_status::WALL_TIME_EXCEEDED;
+            }
+
+            // The task is a zombie (or is about to be, after the SIGKILL
+            // above), so this blocking waitpid() only reaps it -- it does not
+            // wait on the clock.
+            close(task_pidfd);
+            if (waitpid(task_pid, &stat, 0) < 0) {
+                terminate(
+                    "waitpid() for task \"{}\" failed. Stat: {}, Errno: {}",
+                    task_config_->name(), stat, errno);
+            }
+
+            logs::debug(
+                "Task \"{}\" exited. WTERMSIG: {}, WEXITSTATUS : {}, Errno: {}",
+                task_config_->name(), WTERMSIG(stat), WEXITSTATUS(stat), errno);
+
+            return generate_task_stats(
+                task_cgrp_, stat,
+                std::chrono::duration_cast<std::chrono::milliseconds>(wtime)
+                    .count(),
+                exit);
         }
 
         /// @brief Clone() the task process, prepare the task-specific part of
         /// the environment (like resource limits) and call execve().
+        /// @param pidfd Out parameter: a pidfd for the task, obtained from
+        /// clone3() itself. wait_for_task() blocks on it.
         /// @return PID of the task to use in wait_for_task(). Doesn't return in
         /// the task process.
-        pid_t launch_task() {
+        pid_t launch_task(int& pidfd) {
             logs::debug("Launching the task process for \"{}\"",
                         task_config_->name());
 
             /// TODO: remove usage of FD to get into the cgroup, use add_me()
             /// instead.
             auto fd = task_cgrp_.open_fd();
-            pid_t clone_rv = clone3_task(stack_, fd);
+            pid_t clone_rv = clone3_task(stack_, fd, pidfd);
 
             if (clone_rv < 0) {
                 terminate("clone3() failed for task \"{}\". Errno: {}",
@@ -245,9 +281,10 @@ namespace tasks {
         /// configuration, and call clone3().
         /// @param stack Currently unused and nullptr is passed.
         /// @param cgrp_fd FD of the directory of this task's cgroup.
+        /// @param pidfd Out parameter, filled by the kernel (CLONE_PIDFD).
         /// @return PID of the task process.
-        pid_t clone3_task(void* stack, uint64_t cgrp_fd) {
-            auto args = task_clone_args(*task_config_, stack, cgrp_fd);
+        pid_t clone3_task(void* stack, uint64_t cgrp_fd, int& pidfd) {
+            auto args = task_clone_args(*task_config_, stack, cgrp_fd, pidfd);
             return syscall(SYS_clone3, &args, sizeof(clone_args));
         }
 
@@ -255,12 +292,17 @@ namespace tasks {
         /// @param task_conf Task configuration node.
         /// @param stack Currently unused.
         /// @param cgrp_fd FD of the directory of this task's cgroup.
+        /// @param pidfd Out parameter, filled by the kernel (CLONE_PIDFD).
         /// @return struct clone_args to pass to clone3.
         clone_args task_clone_args(const config::task_config& task_conf,
-                                   void* stack, uint64_t cgrp_fd) {
+                                   void* stack, uint64_t cgrp_fd, int& pidfd) {
             clone_args args{0};
             args.exit_signal = SIGCHLD;
-            args.flags = CLONE_INTO_CGROUP;
+            // CLONE_PIDFD has the kernel hand back the descriptor as part of
+            // the clone, so wait_for_task() can block on the task itself rather
+            // than look it up by a pid that is only unique until it is reaped.
+            args.flags = CLONE_INTO_CGROUP | CLONE_PIDFD;
+            args.pidfd = reinterpret_cast<uint64_t>(&pidfd);
 
             args.cgroup = cgrp_fd;
             return args;
@@ -480,10 +522,6 @@ namespace tasks {
                     "\"{}\". Errno: {}",
                     task_config_->name(), errno);
             }
-        }
-
-        std::chrono::milliseconds waiting_time() {
-            return std::chrono::milliseconds(100);
         }
 
         /// @brief Get the rusage struct with total accounting for all tasks
