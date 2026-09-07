@@ -59,15 +59,6 @@ An instance is three processes with distinct privilege/responsibility (see [Deci
 - **Mock evaluator** (`tests/recodex`) — a stand-in for ReCodEx that replays *real, production-harvested job configs* (C++, Python, C#, Maven) to validate toolchains, limits, and job-shaped task sequences. It drives the Guardian in **standalone mode**, so it deliberately covers no part of the compatibility CLI. Named for what it substitutes (the evaluator's job-running behaviour), not for the **Worker** (whose CLI contract it does not exercise).
 - **Compat-phase test** — a workload test that drives the three-phase **compatibility mode** lifecycle (`--init` / `--run` / `--cleanup`) through the binary using Isolate's flag spelling, asserting the meta-file and the box-root-on-stdout contract (`tests/workload/test_compat_phases.py`). It stands in for the Worker at the *CLI* level; validation against the real Worker process happens in ReCodEx's own integration pipeline, not in this repo — see [Decisions](#decisions).
 
-### Performance evaluation
-
-- **Sandboxing overhead** — the performance difference between running a program as a Guardian **task** and running the same program outside any sandbox. Deliberately *not* one number: it decomposes into **perturbation**, **launch cost** and **lifecycle cost**, which have different baselines and are never collapsed into a single ratio.
-- **Perturbation** — the slowdown of the program's *own* execution caused by running inside the sandbox. Measured from a phase the program times itself, so that the instrument is identical in both conditions rather than varying with the treatment. The Guardian's own **meta-file** metrics are never the instrument here — they exist in only one of the two conditions.
-- **Launch cost** — the part of a `--run` phase spent outside the program: namespace creation, filesystem assembly, the [ownership dance](#tool-concepts), cgroup setup and `execve` before the first instruction, plus stat collection and teardown after the last. A bare process spawn is its counterpart, so it is expressible as a difference.
-- **Lifecycle cost** — the `--init` and `--cleanup` phases. Creating and destroying a sandbox has **no counterpart outside a sandbox**, so it is reported as an absolute per-task cost and never as a ratio. The Worker pays it once per *external task*, not once per submission — a job of one compilation and N test cases pays it N+1 times.
-- **Bare run** — the control condition: the same program executed with no sandbox. A **naive bare run** inherits the launching shell's environment, credentials, rlimits and stdio. A **matched bare run** reproduces every *non-isolation* action a task's launch performs — constructed `envp`, box credentials, the same rlimits, the same working directory, stdio redirected to files, an equivalent cgroup — leaving isolation as the only remaining difference. Only the matched form supports a causal claim about isolation; the gap between the two measures how much an uncontrolled comparison over-reports.
-
-
 ---
 
 ## Decisions
