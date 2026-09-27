@@ -2,10 +2,8 @@
 #define TASKS
 
 #include <fcntl.h>
-#include <linux/quota.h>
 #include <linux/sched.h>
 #include <poll.h>
-#include <sys/quota.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -26,10 +24,10 @@
 #include "cgrps.hpp"
 #include "config.hpp"
 #include "credentials.hpp"
-#include "devices.hpp"
 #include "environment.hpp"
 #include "logs.hpp"
 #include "process.hpp"
+#include "quota.hpp"
 #include "terminate.hpp"
 
 namespace tasks {
@@ -394,7 +392,7 @@ namespace tasks {
                 set_processes_count(rlimits.processes().value());
             }
             if (rlimits.disk_usage()) {
-                set_disk_quota_quotactl(rlimits.disk_usage().value());
+                set_disk_quota(rlimits.disk_usage().value());
             }
             if (rlimits.open_files()) {
                 set_open_files(rlimits.open_files().value());
@@ -412,29 +410,16 @@ namespace tasks {
             task_cgrp_.set_strict_memory_limit(bytes);
         }
 
-        /// @brief Set the limit on disk usage (sum of file sizes owned by
-        /// box_uid). Works only on filesystems supporting quotactl() (i.e. not
-        /// btrfs).
-        /// @param bytes The limit in bytes.
-        /// TODO: add inodes limit?
-        void set_disk_quota_quotactl(size_t bytes) {
-            /// TODO: comments
-            std::string device = devices::find_device_for_dir(fs::path("."));
-            uid_t box_uid = credentials_->box_uid();
-            // std::cout << device << std::endl;
-            // std::cout << box_uid << std::endl;
-            struct dqblk dq = {
-                .dqb_bhardlimit = bytes / 1024,
-                .dqb_bsoftlimit = bytes / 1024,
-                // .dqb_ihardlimit = 10,
-                // .dqb_isoftlimit = 10,
-                .dqb_valid = QIF_LIMITS,
-                //.dqb_valid = QIF_BLIMITS,
-            };
-            if (quotactl(QCMD(Q_SETQUOTA, USRQUOTA), device.c_str(), box_uid,
-                         (caddr_t)&dq) < 0) {
-                terminate("quotactl() failed, errno: {}", errno);
-            }
+        /// @brief Set the box's disk quota from standalone `disk-usage`: a
+        /// block cap of @p bytes, rounded up to whole 1 KiB quota blocks, with
+        /// no inode cap; 0 leaves it unlimited. The quota is kept
+        /// against box_uid, so it is box-wide: it counts every file the box
+        /// user owns, including those earlier tasks left behind.
+        /// @details "/" is the box root after pivot_root, on the box-tree
+        /// filesystem.
+        void set_disk_quota(size_t bytes) {
+            quota::set("/", credentials_->box_uid(),
+                       {.blocks = quota::blocks_for_bytes(bytes)});
         }
 
         /// @brief Set the limit on the total number of processes the task

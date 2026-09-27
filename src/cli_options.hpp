@@ -5,6 +5,7 @@
 
 #include <charconv>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <format>
@@ -16,6 +17,7 @@
 #include <vector>
 
 #include "logs.hpp"
+#include "quota.hpp"
 
 /// @brief Hand-rolled, library-agnostic command-line front-end.
 /// @details Replaces Boost.program_options (ADR 0002): a single flat
@@ -49,8 +51,10 @@ namespace cli {
         /// phases.
         std::optional<std::size_t> box_id;
 
-        /// @brief `--quota=<blocks>,<inodes>` (accepted; enforcement deferred).
-        std::optional<std::string> quota;
+        /// @brief `--quota=<blocks>,<inodes>`: the box's disk quota, in 1 KiB
+        /// quota blocks and inodes. Set by `--init` and `--run`, ignored by
+        /// `--cleanup`.
+        std::optional<quota::limits> quota;
 
         /// @brief `--meta=<host path>` for the Isolate-format meta-file.
         std::optional<std::string> meta;
@@ -67,7 +71,6 @@ namespace cli {
         std::optional<std::size_t> file_size;   ///< `--fsize`.
         std::optional<std::size_t> open_files;  ///< `--open-files`.
         std::optional<std::size_t> core;        ///< `--core`.
-        std::optional<std::size_t> disk_usage;  ///< `--disk-usage`.
 
         /// @brief `--processes[=N]`: absent = nullopt, bare = 0 (unlimited),
         /// else the limit.
@@ -204,6 +207,37 @@ namespace cli {
             return std::string(list);
         }
 
+        /// @brief Parse Isolate's `--quota=<blocks>,<inodes>`: two non-negative
+        /// integers joined by one comma, e.g. `1048576,100`. A 0 is accepted in
+        /// either and leaves that cap unlimited.
+        inline quota::limits parse_quota(const char* arg) {
+            const std::string_view value(arg);
+
+            const auto parse_count =
+                [](std::string_view s) -> std::optional<std::uint64_t> {
+                std::uint64_t count = 0;
+                const char* end = s.data() + s.size();
+                auto [ptr, ec] = std::from_chars(s.data(), end, count);
+                if (ec != std::errc{} || ptr != end) {
+                    return std::nullopt;
+                }
+                return count;
+            };
+
+            const std::size_t comma = value.find(',');
+            const auto blocks = parse_count(value.substr(0, comma));
+            const auto inodes = comma == std::string_view::npos
+                                    ? std::nullopt
+                                    : parse_count(value.substr(comma + 1));
+            if (!blocks || !inodes) {
+                usage_error(
+                    "Invalid quota for --quota: '{}' (expected "
+                    "<blocks>,<inodes>, e.g. 1048576,100)",
+                    value);
+            }
+            return {.blocks = *blocks, .inodes = *inodes};
+        }
+
         /// @brief Set @p mode to @p next, refusing a second conflicting phase
         /// flag.
         inline void select_mode(run_mode& mode, run_mode next,
@@ -260,7 +294,6 @@ namespace cli {
             OPT_FSIZE,
             OPT_OPEN_FILES,
             OPT_CORE,
-            OPT_DISK_USAGE,
             OPT_PROCESSES,
             OPT_STDIN,
             OPT_STDOUT,
@@ -305,7 +338,6 @@ namespace cli {
             {.name="fsize",            .has_arg=required_argument, .flag=nullptr, .val=OPT_FSIZE},
             {.name="open-files",       .has_arg=required_argument, .flag=nullptr, .val=OPT_OPEN_FILES},
             {.name="core",             .has_arg=required_argument, .flag=nullptr, .val=OPT_CORE},
-            {.name="disk-usage",       .has_arg=required_argument, .flag=nullptr, .val=OPT_DISK_USAGE},
             {.name="processes",        .has_arg=optional_argument, .flag=nullptr, .val=OPT_PROCESSES},
             {.name="stdin",            .has_arg=required_argument, .flag=nullptr, .val=OPT_STDIN},
             {.name="stdout",           .has_arg=required_argument, .flag=nullptr, .val=OPT_STDOUT},
@@ -357,7 +389,7 @@ namespace cli {
                     opts.box_id = parse_size("box-id", optarg);
                     break;
                 case OPT_QUOTA:
-                    opts.quota = optarg;
+                    opts.quota = parse_quota(optarg);
                     break;
                 case OPT_META:
                     opts.meta = optarg;
@@ -392,9 +424,6 @@ namespace cli {
                     break;
                 case OPT_CORE:
                     opts.core = parse_size("core", optarg);
-                    break;
-                case OPT_DISK_USAGE:
-                    opts.disk_usage = parse_size("disk-usage", optarg);
                     break;
                 case OPT_PROCESSES:
                     // Bare `--processes` (optarg == nullptr) means unlimited;

@@ -234,9 +234,6 @@ namespace config {
             if (opts.core) {
                 core_size_ = *opts.core * KB;
             }
-            if (opts.disk_usage) {
-                disk_usage_ = *opts.disk_usage;
-            }
         }
 
         auto cpu_time() const { return cpu_time_; }
@@ -293,7 +290,10 @@ namespace config {
         /// @brief Maximum number of child processes and threads.
         std::optional<size_t> processes_;
 
-        /// @brief Maximum total size of files on the disk.
+        /// @brief Standalone `disk-usage`: the box's disk quota as a block cap
+        /// in bytes (no inode cap; 0 = unlimited). Box-wide despite being set
+        /// per task — it counts every file the box user owns. Compatibility
+        /// mode sets the quota from `--quota` in the root process instead.
         std::optional<size_t> disk_usage_;
 
         /// @brief Limit on the number of simultaneously opened file
@@ -1139,6 +1139,10 @@ namespace config {
             return cpuset_mems_;
         }
 
+        /// @brief The box's disk quota (`--quota`). Set for `--init` and
+        /// `--run` only; absent ⇒ `--init` clears the cap, `--run` leaves it.
+        const std::optional<quota::limits>& quota() const { return quota_; }
+
        private:
         cli::run_mode mode_ = cli::run_mode::none;
         credentials_config creds_config_;
@@ -1146,6 +1150,7 @@ namespace config {
         std::optional<fs::path> meta_;
         std::optional<std::string> cpuset_cpus_;
         std::optional<std::string> cpuset_mems_;
+        std::optional<quota::limits> quota_;
 
         void parse_options(int argc, char** argv) {
             cli::cli_options opts = cli::parse(argc, argv);
@@ -1176,9 +1181,14 @@ namespace config {
                 // --cleanup would hit task_config's empty-program terminate().
                 // Pinning is also --run only: the box's cgroup exists only
                 // within a --run, so --init/--cleanup accept and ignore it.
+                // The disk quota is set by --init and --run alike; --cleanup
+                // removes the box's files, leaving no cap to set.
                 creds_config_ = credentials_config(opts);
                 if (opts.meta) {
                     meta_ = fs::path(*opts.meta);
+                }
+                if (mode_ != cli::run_mode::cleanup) {
+                    quota_ = opts.quota;
                 }
                 if (mode_ == cli::run_mode::run) {
                     proxy_config_ = proxy_config(opts);

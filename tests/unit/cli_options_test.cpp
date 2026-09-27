@@ -232,6 +232,76 @@ namespace {
             "Invalid cpuset list for --cpuset-cpus");
     }
 
+    // --- disk quota: --quota=<blocks>,<inodes> -------------------------------
+
+    TEST(cli_quota, absent_is_nullopt) {
+        EXPECT_FALSE(parse_args({"--init", "--box-id=0"}).quota.has_value());
+    }
+
+    TEST(cli_quota, blocks_and_inodes) {
+        auto o = parse_args({"--init", "--box-id=0", "--quota=1048576,100"});
+        ASSERT_TRUE(o.quota.has_value());
+        EXPECT_EQ(o.quota->blocks, 1048576u);
+        EXPECT_EQ(o.quota->inodes, 100u);
+    }
+
+    // A 0 leaves that one cap unlimited — the kernel's own reading of a 0
+    // limit — so neither number refuses it, and each stands alone.
+    TEST(cli_quota, zeros_accepted) {
+        auto inodes_only = parse_args({"--init", "--box-id=0", "--quota=0,100"});
+        EXPECT_EQ(inodes_only.quota->blocks, 0u);
+        EXPECT_EQ(inodes_only.quota->inodes, 100u);
+
+        auto blocks_only =
+            parse_args({"--init", "--box-id=0", "--quota=1024,0"});
+        EXPECT_EQ(blocks_only.quota->blocks, 1024u);
+        EXPECT_EQ(blocks_only.quota->inodes, 0u);
+
+        EXPECT_TRUE(parse_args({"--init", "--box-id=0", "--quota=0,0"})
+                        .quota->unlimited());
+    }
+
+    // The Worker sends it on --init only; --run applies it too and --cleanup
+    // ignores it, but every phase parses it.
+    TEST(cli_quota, accepted_in_every_phase) {
+        EXPECT_TRUE(parse_args({"--run", "--box-id=0", "--quota=1,1", "--",
+                                "/bin/true"})
+                        .quota.has_value());
+        EXPECT_TRUE(parse_args({"--cleanup", "--box-id=0", "--quota=1,1"})
+                        .quota.has_value());
+    }
+
+    TEST(cli_quota, malformed_rejected) {
+        for (const std::string bad :
+             {"", ",", "100", "100,", ",100", "1,2,3", "a,1", "1,b", "-1,1",
+              "+1,1", " 1,1", "1, 1", "1,1 ", "99999999999999999999,1"}) {
+            SCOPED_TRACE(bad);
+            const std::string flag = "--quota=" + bad;
+            EXPECT_EXIT(
+                { parse_args({"--init", "--box-id=0", flag.c_str()}); },
+                ::testing::ExitedWithCode(2), "Invalid quota for --quota");
+        }
+    }
+
+    // Like the cpuset lists: a malformed value fails in a phase that would
+    // ignore it, too.
+    TEST(cli_quota, checked_in_every_phase) {
+        EXPECT_EXIT(
+            { parse_args({"--cleanup", "--box-id=0", "--quota=abc"}); },
+            ::testing::ExitedWithCode(2), "Invalid quota for --quota");
+    }
+
+    // --disk-usage was the Guardian's own quota flag before --quota was wired;
+    // compatibility mode sets the quota through --quota alone.
+    TEST(cli_quota, disk_usage_flag_removed) {
+        EXPECT_EXIT(
+            {
+                parse_args({"--run", "--box-id=0", "--disk-usage=1024", "--",
+                            "/bin/true"});
+            },
+            ::testing::ExitedWithCode(2), "Unknown option");
+    }
+
     // --- usage errors: exit(2) + message -------------------------------------
 
     TEST(cli_errors, unknown_option) {

@@ -16,6 +16,7 @@ set(UNIT_TESTS
   credentials_test
   lock_test
   meta_file_test
+  quota_test
   utils_test
 )
 

@@ -36,7 +36,7 @@ An instance runs three different processes with distinct responsibilities:
   linked. For an offline build, point `FETCHCONTENT_SOURCE_DIR_YAML-CPP` at a
   pre-fetched tree.
 - `rpm-build` only if you want to produce the RPM
-- For disk usage quotas, the sandbox must be on a filesystem supporting `QUOTACTL(2)` (e.g., ext4)
+- For disk quotas (`--quota`, standalone `disk-usage`), the box tree (`/var/lib/recodex-guardian/boxes`) must be on a filesystem that enforces user quotas (`QUOTACTL(2)`, e.g. ext4 mounted `usrquota`)
 
 ---
 
@@ -387,7 +387,7 @@ tasks:
       cpu-time: 3                           # CPU time limit in seconds
       wall-time: 5                          # Wall clock time limit in seconds
       extra-time: 0.5                       # Grace period after CPU limit in seconds
-      disk-usage: 1000000                   # Disk quota in blocks
+      disk-usage: 1000000                   # Disk quota in bytes (box-wide, no inode cap)
       processes: 10                         # Maximum number of processes/threads
       open-files: 64                        # Maximum open file descriptors
       fsize: 1024                           # Maximum file size in KB
@@ -407,10 +407,13 @@ tasks:
 ### Omitted vs. zero limits
 
 Every limit is optional; **omit it to mean "no limit"**. A limit written as `0` is
-never silently read as "unlimited":
+never silently read as "unlimited" — with the one exception of the disk quota:
 
-- `mem`, `as-size`, `fsize`, `open-files`, `core` and `disk-usage` **enforce a
-  literal `0`** — ask for zero and you get zero.
+- `mem`, `as-size`, `fsize`, `open-files` and `core` **enforce a literal `0`** —
+  ask for zero and you get zero.
+- `disk-usage: 0` **is unlimited**: the kernel's quota interface stores a 0
+  limit as "no limit" and has no way to write a zero cap. Any non-zero value is
+  rounded *up* to whole 1 KiB quota blocks, so a small cap never becomes 0.
 - `stack: 0` and `processes: 0` are **refused** as a usage error (exit code 2). A
   zero stack leaves the task unable to `execve` at all, and a process cap of `0`
   merely duplicates `1`, so both are mistakes rather than strict settings.

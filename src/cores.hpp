@@ -27,6 +27,7 @@
 #include "logs.hpp"
 #include "meta_file.hpp"
 #include "meta_sink.hpp"
+#include "quota.hpp"
 #include "tasks.hpp"
 #include "terminate.hpp"
 #include "utils.hpp"
@@ -378,8 +379,8 @@ namespace cores {
         }
 
         /// @brief `--init`: create the persistent box directory tree keyed by
-        /// `--box-id` and print its root, so the Worker can stage job files
-        /// before a later `--run`. No cgroup, no mounts.
+        /// `--box-id`, set its disk quota, and print its root, so the Worker
+        /// can stage job files before a later `--run`. No cgroup, no mounts.
         /// @details Derives the box identity, then sequences the lock around
         /// the build as reset-first / set-last: the `is_initialized` bit is
         /// cleared before any on-disk change and set only once the tree is
@@ -411,6 +412,13 @@ namespace cores {
             }
 
             init_box_dir();
+
+            // Every --init sets the disk quota: to --quota's caps, or cleared
+            // when it is absent, so the box never inherits a cap left against
+            // the same box_uid. Before the box root reaches
+            // stdout: a quota failure is an --init failure.
+            quota::set(box_root, credentials_.box_uid(),
+                       root_config_.quota().value_or(quota::limits{}));
 
             // stdout carries only the box-root path (the Worker appends /box);
             // every log byte goes to stderr.
@@ -444,6 +452,15 @@ namespace cores {
             if (!lk.is_initialized()) {
                 terminate("Box {} was not initialized (--init it first)",
                           credentials_.box_id());
+            }
+
+            // A --run given --quota changes the box's disk quota for this run
+            // and later ones; without it, the cap --init set stays. Set here in
+            // root, not by the task: a failure then reaches the meta as
+            // status:XX rather than passing for the task's own exit.
+            if (root_config_.quota()) {
+                quota::set(credentials_.box_root(), credentials_.box_uid(),
+                           *root_config_.quota());
             }
 
             remove_instance_cgroup();  // stale cgroup from a crashed --run

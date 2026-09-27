@@ -27,9 +27,9 @@ zero-valued flags applying literal zeros where Isolate applies nothing (#22).
 We do **not** adopt Isolate's silent sentinel. A zero is either a real limit we
 enforce, or an input we refuse — never a value that quietly disables the cap:
 
-- **Enforced literally**: `mem`/`cg-mem`, `fsize`, `open-files`, `as-size`,
-  `quota`. A caller asking for zero gets zero. Strict, occasionally
-  pathological (`--fsize=0` forbids all writes), but well-defined.
+- **Enforced literally**: `mem`/`cg-mem`, `fsize`, `open-files`, `as-size`.
+  A caller asking for zero gets zero. Strict, occasionally pathological
+  (`--fsize=0` forbids all writes), but well-defined.
 - **Refused** (usage error, exit 2): `stack` and `processes`, where a literal
   zero is not strict but *meaningless*. `RLIMIT_STACK = 0` leaves the task unable
   to `execve` at all, so every such invocation would fail; and `pids.max = 0` only
@@ -38,6 +38,14 @@ enforce, or an input we refuse — never a value that quietly disables the cap:
   a caller could want.
 - **No rule needed** for `core`: 0 (no core dumps) is a genuine limit for both of
   us, and Isolate applies it unconditionally too.
+- **Zero means unlimited** for the disk quota — both numbers of
+  `--quota=<blocks>,<inodes>` and `disk-usage` (amended with #19). This is the
+  kernel's reading, not ours: the quota interface stores a 0 limit as *no
+  limit*, so a literal zero cannot be expressed at all, and refusing it would
+  break the Worker, which sends `--quota=<blocks>,0` whenever its `disk-files`
+  is unset. The two numbers are independent — `--quota=0,100` still caps
+  inodes at 100 — and a non-zero `disk-usage` byte count is rounded *up* to
+  whole 1 KiB quota blocks, so a small cap can never round down to unlimited.
 
 Asking for *no* limit means **omitting** the flag — or, for processes, the bare
 `--processes`, which stays unlimited because that is what the Worker emits and
@@ -88,3 +96,10 @@ under us. A verdict flip, with nothing zero-valued ever passed.
 - **`--processes` and `--fsize` now disagree about zero** (refused vs. enforced).
   That asymmetry is deliberate and follows from whether a literal zero means
   anything, not from which flag it is.
+- **The disk quota is the one place a zero does mean "no limit"**, because the
+  kernel gives us no other way to write one. It also makes us *stricter* than
+  Isolate on one input the Worker can send: Isolate sets no quota at all when
+  the block count is 0 (`rules.c:510`), dropping the inode cap with it, so a job
+  with `disk-size: 0` on a Worker with `disk-files` set runs uncapped there and
+  inode-capped here. Accepted because silently discarding a limit the caller
+  did give is the trap this ADR exists to avoid.

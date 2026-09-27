@@ -344,4 +344,33 @@ namespace {
         }
     }
 
+    // --- root_configuration: the disk quota reaches --init and --run ---------
+
+    TEST(root_configuration_cli, init_and_run_carry_quota) {
+        auto init = root_config({"--init", "--box-id=0", "--quota=2048,10"});
+        ASSERT_TRUE(init.quota().has_value());
+        EXPECT_EQ(init.quota()->blocks, 2048u);
+        EXPECT_EQ(init.quota()->inodes, 10u);
+
+        auto run = root_config(
+            {"--run", "--box-id=0", "--quota=0,5", "--", "/bin/true"});
+        ASSERT_TRUE(run.quota().has_value());
+        EXPECT_EQ(run.quota()->blocks, 0u);
+        EXPECT_EQ(run.quota()->inodes, 5u);
+    }
+
+    TEST(root_configuration_cli, absent_quota_stays_unset) {
+        EXPECT_FALSE(root_config({"--init", "--box-id=0"}).quota().has_value());
+        EXPECT_FALSE(root_config({"--run", "--box-id=0", "--", "/bin/true"})
+                         .quota()
+                         .has_value());
+    }
+
+    // --cleanup removes the box's files; there is no cap left to set.
+    TEST(root_configuration_cli, cleanup_ignores_quota) {
+        EXPECT_FALSE(root_config({"--cleanup", "--box-id=0", "--quota=1,1"})
+                         .quota()
+                         .has_value());
+    }
+
 }  // namespace

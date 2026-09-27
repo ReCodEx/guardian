@@ -114,11 +114,24 @@ Maximum number of open file descriptors.
 .BI \-\-core= KB
 Maximum core-dump size in kilobytes.
 .TP
-.BI \-\-disk\-usage= KB
-Disk-usage limit in kilobytes.
-.TP
 .BI \-\-quota= "BLOCKS,INODES"
-Disk quota (blocks and inodes); requires a quota-capable filesystem.
+Disk quota of the box: at most
+.I BLOCKS
+1\ KiB quota blocks (not filesystem blocks) and
+.I INODES
+files, kept by the kernel against the box's user, so it counts every file
+the box owns.
+A 0 leaves that cap unlimited.
+Set by
+.B \-\-init
+(which clears any earlier cap when the flag is absent), changed by a
+.B \-\-run
+that passes it, and ignored by
+.BR \-\-cleanup .
+The box tree must be on a filesystem that enforces user quotas (e.g. ext4
+mounted
+.BR usrquota );
+otherwise the phase fails with exit status 2.
 .TP
 .BR \-\-processes [ =\fIN\fR ]
 Maximum number of processes/threads. Bare
