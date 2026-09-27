@@ -27,7 +27,8 @@ An instance runs three different processes with distinct responsibilities:
 
 ## 🛠️ System Requirements
 
-- Linux kernel with cgroupv2 enabled.
+- Linux kernel with cgroupv2 enabled, with the `cpu`, `cpuset`, `memory` and
+  `pids` controllers available (every `--run` enables all four).
 - CMake 3.20+ and a compiler supporting C++23 (on Rocky 9 that means
   `gcc-toolset-14`; the system GCC 11.5 is not enough)
 - `libcap` development headers (`libcap-devel` / `libcap-dev`)

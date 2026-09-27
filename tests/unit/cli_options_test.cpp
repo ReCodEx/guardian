@@ -1,4 +1,4 @@
-// Unit tests for the hand-rolled CLI front-end (cli::parse, ADR 0002).
+// Unit tests for the hand-rolled CLI front-end (cli::parse).
 // Happy paths run in-process; usage errors exit(2) and are checked as death
 // tests against the message on stderr.
 
@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
 #include <vector>
 
 namespace {
@@ -150,6 +151,85 @@ namespace {
                              "--share-net", "--", "/bin/true"});
         EXPECT_TRUE(
             o.share_net);  // --cg / --cg-timing are accepted and ignored.
+    }
+
+    // --- pinning: cpuset lists ------------------------------------
+
+    TEST(cli_cpuset, absent_is_nullopt) {
+        auto o = parse_args({"--run", "--box-id=0", "--", "/bin/true"});
+        EXPECT_FALSE(o.cpuset_cpus.has_value());
+        EXPECT_FALSE(o.cpuset_mems.has_value());
+    }
+
+    TEST(cli_cpuset, lists_kept_verbatim) {
+        for (const std::string list : {"2", "0,2,4", "1-4,6", "3-3", "007"}) {
+            SCOPED_TRACE(list);
+            const std::string cpus = "--cpuset-cpus=" + list;
+            const std::string mems = "--cpuset-mems=" + list;
+            auto o = parse_args({"--run", "--box-id=0", cpus.c_str(),
+                                 mems.c_str(), "--", "/bin/true"});
+            ASSERT_TRUE(o.cpuset_cpus.has_value());
+            EXPECT_EQ(*o.cpuset_cpus, list);
+            ASSERT_TRUE(o.cpuset_mems.has_value());
+            EXPECT_EQ(*o.cpuset_mems, list);
+        }
+    }
+
+    TEST(cli_cpuset, flags_are_independent) {
+        auto o = parse_args(
+            {"--run", "--box-id=0", "--cpuset-mems=1", "--", "/bin/true"});
+        EXPECT_FALSE(o.cpuset_cpus.has_value());
+        ASSERT_TRUE(o.cpuset_mems.has_value());
+        EXPECT_EQ(*o.cpuset_mems, "1");
+    }
+
+    // The Worker may send one flag set to every phase; only --run uses it.
+    TEST(cli_cpuset, accepted_on_init_and_cleanup) {
+        EXPECT_EQ(*parse_args({"--init", "--box-id=0", "--cpuset-cpus=2"})
+                       .cpuset_cpus,
+                  "2");
+        EXPECT_EQ(*parse_args({"--cleanup", "--box-id=0", "--cpuset-mems=0"})
+                       .cpuset_mems,
+                  "0");
+    }
+
+    // Stricter than the kernel: no strides, `N` or `all`, and an empty list
+    // (the kernel's "inherit the parent's set") is refused, not read as
+    // unpinned.
+    TEST(cli_cpuset, malformed_lists_rejected) {
+        for (const std::string bad :
+             {"", ",", "1,", ",1", "1,,2", "3-1", "1-", "-1", " 1", "1 ",
+              "1-2-3", "0-7:2/4", "all", "0-N", "+1", "a",
+              "99999999999999999999"}) {
+            SCOPED_TRACE(bad);
+            const std::string flag = "--cpuset-cpus=" + bad;
+            EXPECT_EXIT(
+                {
+                    parse_args(
+                        {"--run", "--box-id=0", flag.c_str(), "--", "/bin/true"});
+                },
+                ::testing::ExitedWithCode(2),
+                "Invalid cpuset list for --cpuset-cpus");
+        }
+    }
+
+    TEST(cli_cpuset, mems_list_checked_too) {
+        EXPECT_EXIT(
+            {
+                parse_args({"--run", "--box-id=0", "--cpuset-mems=0-", "--",
+                            "/bin/true"});
+            },
+            ::testing::ExitedWithCode(2),
+            "Invalid cpuset list for --cpuset-mems");
+    }
+
+    // A malformed list fails at parse time whatever the phase, not only when
+    // --run would write it.
+    TEST(cli_cpuset, checked_in_every_phase) {
+        EXPECT_EXIT(
+            { parse_args({"--init", "--box-id=0", "--cpuset-cpus=abc"}); },
+            ::testing::ExitedWithCode(2),
+            "Invalid cpuset list for --cpuset-cpus");
     }
 
     // --- usage errors: exit(2) + message -------------------------------------

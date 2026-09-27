@@ -1127,11 +1127,25 @@ namespace config {
         /// writer (ADR 0005). Absent ⇒ no meta-file is written.
         const std::optional<fs::path>& meta() const { return meta_; }
 
+        /// @brief CPU cores the box is pinned to (`--cpuset-cpus`), verbatim
+        /// for `cpuset.cpus`. Set for `--run` only; absent ⇒ unpinned.
+        const std::optional<std::string>& cpuset_cpus() const {
+            return cpuset_cpus_;
+        }
+
+        /// @brief NUMA memory nodes the box is pinned to (`--cpuset-mems`),
+        /// verbatim for `cpuset.mems`. Set for `--run` only; absent ⇒ unpinned.
+        const std::optional<std::string>& cpuset_mems() const {
+            return cpuset_mems_;
+        }
+
        private:
         cli::run_mode mode_ = cli::run_mode::none;
         credentials_config creds_config_;
         proxy_config proxy_config_;
         std::optional<fs::path> meta_;
+        std::optional<std::string> cpuset_cpus_;
+        std::optional<std::string> cpuset_mems_;
 
         void parse_options(int argc, char** argv) {
             cli::cli_options opts = cli::parse(argc, argv);
@@ -1160,12 +1174,16 @@ namespace config {
                 // run, so proxy_config_ (which builds a task from the positional
                 // program) is built for --run alone: building it for --init /
                 // --cleanup would hit task_config's empty-program terminate().
+                // Pinning is also --run only: the box's cgroup exists only
+                // within a --run, so --init/--cleanup accept and ignore it.
                 creds_config_ = credentials_config(opts);
                 if (opts.meta) {
                     meta_ = fs::path(*opts.meta);
                 }
                 if (mode_ == cli::run_mode::run) {
                     proxy_config_ = proxy_config(opts);
+                    cpuset_cpus_ = opts.cpuset_cpus;
+                    cpuset_mems_ = opts.cpuset_mems;
                 }
             }
         }

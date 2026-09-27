@@ -6,6 +6,8 @@
 
 #include <gtest/gtest.h>
 
+#include <vector>
+
 #include "yaml-cpp/yaml.h"
 
 namespace {
@@ -296,6 +298,50 @@ namespace {
         EXPECT_EQ(rules[6].string(), "proc=proc:fs");
         EXPECT_EQ(rules[7].string(), "tmp:tmp");
         EXPECT_EQ(rules[8].string(), "usr");
+    }
+
+    // --- root_configuration: pinning reaches --run only -----------
+
+    // Build a root_configuration from an argv (with a dummy argv[0]), as main()
+    // does. The string literals have static storage, so the pointers stay
+    // valid for the call.
+    config::root_configuration root_config(
+        const std::vector<const char*>& args) {
+        std::vector<char*> argv;
+        argv.push_back(const_cast<char*>("recodex-guardian"));
+        for (auto* a : args) {
+            argv.push_back(const_cast<char*>(a));
+        }
+        argv.push_back(nullptr);
+        return config::root_configuration(static_cast<int>(argv.size()) - 1,
+                                          argv.data());
+    }
+
+    TEST(root_configuration_cli, run_carries_pinning) {
+        auto rc = root_config({"--run", "--box-id=0", "--cpuset-cpus=0-1",
+                               "--cpuset-mems=0", "--", "/bin/true"});
+        ASSERT_TRUE(rc.cpuset_cpus().has_value());
+        EXPECT_EQ(*rc.cpuset_cpus(), "0-1");
+        ASSERT_TRUE(rc.cpuset_mems().has_value());
+        EXPECT_EQ(*rc.cpuset_mems(), "0");
+    }
+
+    TEST(root_configuration_cli, run_without_flags_is_unpinned) {
+        auto rc = root_config({"--run", "--box-id=0", "--", "/bin/true"});
+        EXPECT_FALSE(rc.cpuset_cpus().has_value());
+        EXPECT_FALSE(rc.cpuset_mems().has_value());
+    }
+
+    // The box's cgroup exists only within a --run, so the other phases accept
+    // the flags and drop them.
+    TEST(root_configuration_cli, init_and_cleanup_ignore_pinning) {
+        for (const char* mode : {"--init", "--cleanup"}) {
+            SCOPED_TRACE(mode);
+            auto rc = root_config(
+                {mode, "--box-id=0", "--cpuset-cpus=2", "--cpuset-mems=0"});
+            EXPECT_FALSE(rc.cpuset_cpus().has_value());
+            EXPECT_FALSE(rc.cpuset_mems().has_value());
+        }
     }
 
 }  // namespace

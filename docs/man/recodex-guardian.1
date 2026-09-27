@@ -124,6 +124,55 @@ Disk quota (blocks and inodes); requires a quota-capable filesystem.
 Maximum number of processes/threads. Bare
 .B \-\-processes
 means unlimited.
+.SS CPU and memory-node pinning
+Restrict the whole box (the supervising processes and every task) to a
+set of CPU cores and NUMA memory nodes, through the cgroup cpuset controller.
+Only
+.B \-\-run
+is pinned: the box's control group is rebuilt on every run, so pass the flags
+on every
+.BR \-\-run .
+.B \-\-init
+and
+.B \-\-cleanup
+accept and ignore them.
+.PP
+A
+.I LIST
+is comma-separated ids or ranges, e.g.
+.BR 2 ,
+.B 0,2,4
+or
+.BR 1\-4,6 .
+Other forms the kernel accepts (strides,
+.BR N ,
+.BR all )
+and an empty list are refused (exit status 2).
+.PP
+Pinning is exact: if the kernel rejects the list (no such CPU or node), or
+grants less than all of it (a requested CPU or node is offline), the run fails
+with exit status 2 and
+.B status:XX
+rather than proceeding on a different set.
+The Guardian does not check boxes against each other; overlapping sets are the
+caller's choice.
+Pin with these flags, not with
+.BR taskset (1)
+around the Guardian: on kernels 6.2 and later the two masks intersect, and on
+older ones the
+.BR taskset (1)
+mask is lost.
+.TP
+.BI \-\-cpuset\-cpus= LIST
+CPU cores the box may run on (written to
+.IR cpuset.cpus ).
+.TP
+.BI \-\-cpuset\-mems= LIST
+NUMA memory nodes the box may allocate memory from (written to
+.IR cpuset.mems ).
+This does not move the box onto the nodes' CPUs; combine it with
+.B \-\-cpuset\-cpus
+for that.
 .SS Input/output
 .TP
 .BI \-\-stdin= FILE

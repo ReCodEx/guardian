@@ -101,6 +101,98 @@ namespace cgroup {
         }
     };
 
+    /// @brief Interface for the cgroup cpuset controller, which implements
+    /// pinning.
+    class cpuset_cntrlr : public controller {
+        inline static const std::string type = "cpuset";
+
+       public:
+        using controller::controller;
+
+        /// @brief Pin the cgroup to the CPU cores in @p list (a cpuset list,
+        /// written verbatim), terminating unless exactly that set is granted.
+        void pin_cpus(const std::string& list) {
+            pin(CPUSET_CPUS(), CPUSET_CPUS_EFFECTIVE(), list);
+        }
+
+        /// @brief Pin the cgroup to the NUMA memory nodes in @p list (a cpuset
+        /// list, written verbatim), terminating unless exactly that set is
+        /// granted.
+        void pin_mems(const std::string& list) {
+            pin(CPUSET_MEMS(), CPUSET_MEMS_EFFECTIVE(), list);
+        }
+
+       protected:
+        /// @brief Override cntrlr_type() with "cpuset".
+        /// @return "cpuset"
+        const std::string& cntrlr_type() const override { return type; }
+
+       private:
+        /// @brief Write @p list into the @p requested file and verify the
+        /// kernel granted all of it.
+        /// @details The kernel rejects the write for a malformed list or an id
+        /// beyond what the machine could ever have. It does *not* reject an id
+        /// that is possible but offline (e.g. an SMT sibling after
+        /// `smt/control=off`): the effective set is then the requested one
+        /// minus the offline ids, and if nothing is left it silently becomes
+        /// the parent's, leaving the box unpinned. Both files print the
+        /// kernel's canonical list form, so string equality of the two means
+        /// the whole request was granted.
+        void pin(const fs::path& requested, const fs::path& effective,
+                 const std::string& list) {
+            logs::debug("Pinning cgroup {}: {} = {}", cgrp_path_->string(),
+                        requested.string(), list);
+            if (!file_utils::write_text(*cgrp_path_ / requested, list)) {
+                terminate(
+                    "Failed to pin cgroup {}: the kernel rejected {} = '{}' "
+                    "(no such CPU or memory node?)",
+                    cgrp_path_->string(), requested.string(), list);
+            }
+
+            const std::string wanted = first_line(*cgrp_path_ / requested);
+            const std::string granted = first_line(*cgrp_path_ / effective);
+            if (wanted != granted) {
+                terminate(
+                    "Failed to pin cgroup {}: requested {} = '{}', but the "
+                    "kernel granted '{}' (offline CPU or memory node?)",
+                    cgrp_path_->string(), requested.string(), wanted, granted);
+            }
+        }
+
+        /// @brief The first line of @p path, without the newline ("" if it
+        /// cannot be read).
+        static std::string first_line(const fs::path& path) {
+            std::ifstream f(path);
+            std::string line;
+            std::getline(f, line);
+            return line;
+        }
+
+        /// @brief Returns the name of the cgroup cpuset.cpus file.
+        static const fs::path& CPUSET_CPUS() {
+            static fs::path fname("cpuset.cpus");
+            return fname;
+        }
+
+        /// @brief Returns the name of the cgroup cpuset.cpus.effective file.
+        static const fs::path& CPUSET_CPUS_EFFECTIVE() {
+            static fs::path fname("cpuset.cpus.effective");
+            return fname;
+        }
+
+        /// @brief Returns the name of the cgroup cpuset.mems file.
+        static const fs::path& CPUSET_MEMS() {
+            static fs::path fname("cpuset.mems");
+            return fname;
+        }
+
+        /// @brief Returns the name of the cgroup cpuset.mems.effective file.
+        static const fs::path& CPUSET_MEMS_EFFECTIVE() {
+            static fs::path fname("cpuset.mems.effective");
+            return fname;
+        }
+    };
+
     /// @brief Interface for the cgroup memory controller.
     class memory_cntrlr : public controller {
         inline static const std::string type = "memory";
@@ -250,6 +342,7 @@ namespace cgroup {
         cgroupv2_t(const fs::path& rel_cgrp_path)
             : cgrp_path_(CGROUP_FS_PATH() / rel_cgrp_path),
               cpu_(cgrp_path_),
+              cpuset_(cgrp_path_),
               mem_(cgrp_path_),
               pid_(cgrp_path_) {
             init();
@@ -276,10 +369,11 @@ namespace cgroup {
             }
         }
 
-        /// @brief Enable all relevant controllers (cpu, memory, pids) for child
-        /// cgroups.
+        /// @brief Enable all relevant controllers (cpu, cpuset, memory, pids)
+        /// for child cgroups.
         void enable_all_cntrlrs() {
-            if (!(cpu_.enable() && mem_.enable() && pid_.enable())) {
+            if (!(cpu_.enable() && cpuset_.enable() && mem_.enable() &&
+                  pid_.enable())) {
                 terminate("Failed to enable cgroup controllers in {}",
                           cgrp_path_.string());
             }
@@ -332,6 +426,14 @@ namespace cgroup {
         /// @param n
         void set_processes_limit(size_t n) { pid_.set_pids_max(n); }
 
+        /// @brief Pin this cgroup to the CPU cores in @p list (a cpuset list).
+        /// Terminates unless exactly that set is granted.
+        void pin_cpus(const std::string& list) { cpuset_.pin_cpus(list); }
+
+        /// @brief Pin this cgroup to the NUMA memory nodes in @p list (a
+        /// cpuset list). Terminates unless exactly that set is granted.
+        void pin_mems(const std::string& list) { cpuset_.pin_mems(list); }
+
         /// @brief Print the PIDS in this cgroup to stdout (for debugging).
         void list_procs() const {
             auto cgroup_procs(cgrp_path_ / CGROUP_PROCS());
@@ -345,6 +447,9 @@ namespace cgroup {
 
         /// @brief Cpu controller
         cpu_cntrlr cpu_;
+
+        /// @brief Cpuset controller
+        cpuset_cntrlr cpuset_;
 
         /// @brief Memory controller
         memory_cntrlr mem_;
@@ -381,13 +486,15 @@ namespace cgroup {
         root_cgroupv2_t()
             : cgrp_path_(CGROUP_FS_PATH()),
               cpu_(CGROUP_FS_PATH()),
+              cpuset_(CGROUP_FS_PATH()),
               mem_(CGROUP_FS_PATH()),
               pid_(CGROUP_FS_PATH()) {}
 
-        /// @brief Enable relevant controllers (cpu, memory, pids) for child
-        /// cgroups.
+        /// @brief Enable relevant controllers (cpu, cpuset, memory, pids) for
+        /// child cgroups.
         void enable_all_cntrlrs() {
-            if (!(cpu_.enable() && mem_.enable() && pid_.enable())) {
+            if (!(cpu_.enable() && cpuset_.enable() && mem_.enable() &&
+                  pid_.enable())) {
                 terminate(
                     "Failed to enable cgroup controllers in the root cgroup");
             }
@@ -400,6 +507,9 @@ namespace cgroup {
 
         /// @brief Cpu controller
         cpu_cntrlr cpu_;
+
+        /// @brief Cpuset controller
+        cpuset_cntrlr cpuset_;
 
         /// @brief Memory controller
         memory_cntrlr mem_;
@@ -476,6 +586,9 @@ namespace cgroup {
             ensure_boxes_parent(instance_cg.parent_path());
 
             instance_cgrp_ = std::make_unique<cgroupv2_t>(instance_cg);
+            // Pin before any process enters: the root process (via leaf), the
+            // proxy and every task below inherit the set.
+            pin_instance();
             leaf_cgrp_ =
                 std::make_unique<cgroupv2_t>(instance_cg / fs::path("leaf"));
             proxy_cgrp_ =
@@ -517,14 +630,27 @@ namespace cgroup {
         /// run().
         std::unique_ptr<cgroup::cgroupv2_t> leaf_cgrp_;
 
+        /// @brief Pin the instance cgroup to the `--cpuset-cpus` /
+        /// `--cpuset-mems` sets, if given. Unpinned boxes keep the empty
+        /// cpuset files they were created with, which inherit the parent's
+        /// set.
+        void pin_instance() {
+            if (config_->cpuset_cpus()) {
+                instance_cgrp_->pin_cpus(*config_->cpuset_cpus());
+            }
+            if (config_->cpuset_mems()) {
+                instance_cgrp_->pin_mems(*config_->cpuset_mems());
+            }
+        }
+
         /// @brief Idempotently arrange the shared recodex-guardian parent cgroup:
-        /// create it if absent and enable the cpu/memory/pids controllers in
-        /// its subtree_control. Unlike the per-box cgroups (whose ctor
+        /// create it if absent and enable the cpu/cpuset/memory/pids
+        /// controllers in its subtree_control. Unlike the per-box cgroups (whose ctor
         /// terminates on an existing dir), this parent is created once per boot
         /// yet touched by every --run and by concurrent peers, so an existing
         /// dir and already-enabled controllers are success — cgroup v2 treats a
-        /// repeated "+cpu" write as a no-op. Replaces guardian_init.sh (ADR
-        /// 0007). Must run after the root-level enable so the controllers are
+        /// repeated "+cpu" write as a no-op.
+        /// Must run after the root-level enable so the controllers are
         /// available here.
         static void ensure_boxes_parent(const fs::path& parent) {
             std::error_code ec;
@@ -534,9 +660,11 @@ namespace cgroup {
                           parent.string(), ec.message());
             }
             cpu_cntrlr cpu(parent);
+            cpuset_cntrlr cpuset(parent);
             memory_cntrlr mem(parent);
             pid_cntrlr pid(parent);
-            if (!(cpu.enable() && mem.enable() && pid.enable())) {
+            if (!(cpu.enable() && cpuset.enable() && mem.enable() &&
+                  pid.enable())) {
                 terminate("Failed to enable controllers in boxes parent {}",
                           parent.string());
             }

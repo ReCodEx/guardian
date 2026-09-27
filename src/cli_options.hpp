@@ -88,6 +88,15 @@ namespace cli {
 
         bool share_net = false;  ///< `--share-net`.
 
+        // --- pinning ---
+
+        /// @brief `--cpuset-cpus=<list>`: CPU cores the box's `--run` is
+        /// pinned to, kept verbatim for `cpuset.cpus`.
+        std::optional<std::string> cpuset_cpus;
+        /// @brief `--cpuset-mems=<list>`: NUMA memory nodes the box allocates
+        /// from, kept verbatim for `cpuset.mems`.
+        std::optional<std::string> cpuset_mems;
+
         // --- standalone YAML mode ---
 
         std::optional<std::string> yaml;  ///< `--yaml=<file>`.
@@ -145,6 +154,54 @@ namespace cli {
                 usage_error("Invalid numeric value for --{}: {}", flag, arg);
             }
             return value;
+        }
+
+        /// @brief Parse a cpuset list (`--cpuset-cpus` / `--cpuset-mems`):
+        /// comma-separated ids or `N-M` ranges with `N <= M`, e.g. `2`,
+        /// `0,2,4`, `1-4,6`. Stricter than the kernel, which also takes
+        /// strides, `N` and `all`, so the accepted format does not vary with
+        /// its version. An empty list, which the kernel reads as "inherit the
+        /// parent's set", is refused rather than silently leaving the box
+        /// unpinned. Whether the ids exist is checked only during `--run`
+        inline std::string parse_cpuset_list(std::string_view flag,
+                                             const char* arg) {
+            const std::string_view list(arg);
+
+            const auto parse_id =
+                [](std::string_view s) -> std::optional<std::size_t> {
+                std::size_t value = 0;
+                const char* end = s.data() + s.size();
+                auto [ptr, ec] = std::from_chars(s.data(), end, value);
+                if (ec != std::errc{} || ptr != end) {
+                    return std::nullopt;
+                }
+                return value;
+            };
+            const auto is_item = [&](std::string_view item) {
+                const std::size_t dash = item.find('-');
+                const auto lo = parse_id(item.substr(0, dash));
+                const auto hi = dash == std::string_view::npos
+                                    ? lo
+                                    : parse_id(item.substr(dash + 1));
+                return lo && hi && *lo <= *hi;
+            };
+
+            bool valid = !list.empty();
+            for (std::size_t start = 0; valid;) {
+                const std::size_t comma = list.find(',', start);
+                valid = is_item(list.substr(start, comma - start));
+                if (comma == std::string_view::npos) {
+                    break;
+                }
+                start = comma + 1;
+            }
+            if (!valid) {
+                usage_error(
+                    "Invalid cpuset list for --{}: '{}' (expected ids or "
+                    "ranges, e.g. 2, 0,2,4 or 1-4,6)",
+                    flag, list);
+            }
+            return std::string(list);
         }
 
         /// @brief Set @p mode to @p next, refusing a second conflicting phase
@@ -213,6 +270,8 @@ namespace cli {
             OPT_ENV,
             OPT_DIR,
             OPT_SHARE_NET,
+            OPT_CPUSET_CPUS,
+            OPT_CPUSET_MEMS,
             OPT_YAML,
         };
 
@@ -256,6 +315,8 @@ namespace cli {
             {.name="env",              .has_arg=required_argument, .flag=nullptr, .val=OPT_ENV},
             {.name="dir",              .has_arg=required_argument, .flag=nullptr, .val=OPT_DIR},
             {.name="share-net",        .has_arg=no_argument,       .flag=nullptr, .val=OPT_SHARE_NET},
+            {.name="cpuset-cpus",      .has_arg=required_argument, .flag=nullptr, .val=OPT_CPUSET_CPUS},
+            {.name="cpuset-mems",      .has_arg=required_argument, .flag=nullptr, .val=OPT_CPUSET_MEMS},
             {.name="yaml",             .has_arg=required_argument, .flag=nullptr, .val=OPT_YAML},
             {.name=nullptr,            .has_arg=0,                 .flag=nullptr, .val=0},
         };
@@ -366,6 +427,13 @@ namespace cli {
                     break;
                 case OPT_SHARE_NET:
                     opts.share_net = true;
+                    break;
+
+                case OPT_CPUSET_CPUS:
+                    opts.cpuset_cpus = parse_cpuset_list("cpuset-cpus", optarg);
+                    break;
+                case OPT_CPUSET_MEMS:
+                    opts.cpuset_mems = parse_cpuset_list("cpuset-mems", optarg);
                     break;
 
                 case OPT_YAML:

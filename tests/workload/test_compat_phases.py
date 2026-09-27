@@ -2,7 +2,7 @@
 
 Exercises the drop-in path the ReCodEx Worker uses: three independent
 invocations keyed by --box-id, sharing state only on disk, emitting an
-Isolate-format meta-file and 0/1/2 exit codes (ADR 0001, ADR 0005).
+Isolate-format meta-file and 0/1/2 exit codes.
 
 B4 wired --run with a crude exit-code bridge (proxy 0/1, root 0/1/2); the
 meta-file and the full exit-code contract land in C1, so only the meta test
@@ -14,6 +14,7 @@ import shutil
 import stat
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 import pytest
@@ -27,10 +28,7 @@ BOX_ID = 0
 def setuid_run():
     """Invoke a root-owned 4755 copy of the Guardian as the non-root caller.
 
-    Emulates the real install (ADR 0002): the child's real uid is dropped to
-    the invoking user (SUDO_UID), so euid reaches 0 only through the setuid
-    bit — the genuine Worker path, where orig_uid is a non-root user distinct
-    from box_uid. Yields (run, caller_uid). Skips if we cannot drop to a
+    Emulates the real install. Yields (run, caller_uid). Skips if we cannot drop to a
     non-root uid.
     """
     sudo_uid = os.environ.get("SUDO_UID")
@@ -155,12 +153,13 @@ def test_run_lazily_creates_cgroup_parent_and_uses_new_paths():
         assert run.returncode == 0, run.stderr
 
         # The parent exists and carries cpu/memory/pids in its subtree_control
-        # (proof the idempotent enable ran, not merely the mkdir).
+        # (proof the idempotent enable ran, not merely the mkdir). cpuset is
+        # enabled on every --run, pinned or not.
         assert cg_parent.is_dir()
         enabled = set(
             (cg_parent / "cgroup.subtree_control").read_text().split()
         )
-        assert {"cpu", "memory", "pids"} <= enabled, enabled
+        assert {"cpu", "cpuset", "memory", "pids"} <= enabled, enabled
     finally:
         assert _run("--cleanup").returncode == 0
 
@@ -738,3 +737,161 @@ def test_meta_file_internal_error_is_xx(tmp_path):
     parsed = _parse_meta(meta)
     assert parsed.get("status") == "XX"
     assert "message" in parsed
+
+
+# --- pinning: --cpuset-cpus / --cpuset-mems -----------------------
+#
+# CPUs are picked from this process's own affinity, not from every online CPU:
+# on kernels >= 6.2 a caller's sched_setaffinity mask is intersected with the
+# box's cpuset, so a test runner under `taskset` would otherwise see narrower
+# sets than it asked for.
+
+INSTANCE_CG = Path("/sys/fs/cgroup/recodex-guardian") / str(BOX_ID)
+
+
+def _parse_cpu_list(text: str) -> set[int]:
+    """Expand a kernel cpu/node list (`0-2,5`) into a set of ids."""
+    ids: set[int] = set()
+    for item in filter(None, text.strip().split(",")):
+        lo, _, hi = item.partition("-")
+        ids.update(range(int(lo), int(hi or lo) + 1))
+    return ids
+
+
+def _status_field(status: str, key: str) -> set[int]:
+    """The id set on a /proc/<pid>/status line such as `Cpus_allowed_list:`."""
+    for line in status.splitlines():
+        if line.startswith(f"{key}:"):
+            return _parse_cpu_list(line.split(":", 1)[1])
+    raise AssertionError(f"{key} missing from status:\n{status}")
+
+
+def _available_cpus() -> list[int]:
+    return sorted(os.sched_getaffinity(0))
+
+
+def _box_status(*flags, pid="self") -> str:
+    """`/proc/<pid>/status` as seen by a task in a --run with extra flags."""
+    run = _run("--run", *flags, "--", "/bin/cat", f"/proc/{pid}/status")
+    assert run.returncode == 0, run.stderr
+    return run.stdout
+
+
+def test_cpuset_cpus_pins_the_task():
+    cpus = _available_cpus()
+    sets = [[cpus[0]]] + ([cpus[:2]] if len(cpus) >= 2 else [])
+    try:
+        assert _run("--init").returncode == 0
+        for want in sets:
+            flag = "--cpuset-cpus=" + ",".join(map(str, want))
+            status = _box_status(flag)
+            assert _status_field(status, "Cpus_allowed_list") == set(want)
+    finally:
+        _run("--cleanup")
+
+
+def test_cpuset_mems_pins_the_task():
+    try:
+        assert _run("--init").returncode == 0
+        status = _box_status("--cpuset-mems=0")
+        assert _status_field(status, "Mems_allowed_list") == {0}
+    finally:
+        _run("--cleanup")
+
+
+def test_cpuset_pins_the_proxy():
+    # The whole box is pinned, not only the task: the proxy is PID 1 in the
+    # box's PID namespace and must carry the same set.
+    cpu = _available_cpus()[0]
+    try:
+        assert _run("--init").returncode == 0
+        status = _box_status(f"--cpuset-cpus={cpu}", pid=1)
+        assert _status_field(status, "Cpus_allowed_list") == {cpu}
+    finally:
+        _run("--cleanup")
+
+
+def test_cpuset_pins_the_root_supervisor():
+    # The root process sits in the instance cgroup's `leaf` while the task
+    # runs; peek at it from outside during a sleep.
+    cpu = _available_cpus()[0]
+    leaf_procs = INSTANCE_CG / "leaf" / "cgroup.procs"
+    try:
+        assert _run("--init").returncode == 0
+        proc = subprocess.Popen(
+            ["sudo", str(GUARDIAN_BIN), f"--box-id={BOX_ID}", "--run",
+             f"--cpuset-cpus={cpu}", "--", "/bin/sleep", "3"],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        try:
+            deadline = time.monotonic() + 2
+            pids: list[str] = []
+            while time.monotonic() < deadline and not pids:
+                try:
+                    pids = leaf_procs.read_text().split()
+                except OSError:
+                    pass
+                time.sleep(0.05)
+            assert pids, "root supervisor never appeared in the leaf cgroup"
+            for pid in pids:
+                status = Path(f"/proc/{pid}/status").read_text()
+                assert _status_field(status, "Cpus_allowed_list") == {cpu}
+        finally:
+            _, err = proc.communicate(timeout=10)
+        assert proc.returncode == 0, err
+    finally:
+        _run("--cleanup")
+
+
+def test_cpuset_rejected_by_kernel_is_xx(tmp_path):
+    # Well-formed lists naming a CPU / node the machine can never have: the
+    # kernel refuses the write, and the run is a Guardian-internal error.
+    for i, flag in enumerate(("--cpuset-cpus=100000", "--cpuset-mems=100000")):
+        meta = tmp_path / f"meta{i}.txt"
+        try:
+            assert _run("--init").returncode == 0
+            run = _run("--run", flag, "--", "/bin/true", meta=str(meta))
+            assert run.returncode == 2, (flag, run.stderr)
+            parsed = _parse_meta(meta)
+            assert parsed.get("status") == "XX", (flag, parsed)
+            assert "Failed to pin" in parsed.get("message", ""), parsed
+        finally:
+            _run("--cleanup")
+
+
+def test_cpuset_offline_cpu_is_xx(tmp_path):
+    # cgroup v2 accepts a possible-but-offline CPU (e.g. an SMT sibling after
+    # smt/control=off) and would silently run the box on the parent's set; we
+    # refuse to run instead. Needs a host that has such a CPU.
+    sysfs = Path("/sys/devices/system/cpu")
+    offline = _parse_cpu_list((sysfs / "possible").read_text()) - \
+        _parse_cpu_list((sysfs / "online").read_text())
+    if not offline:
+        pytest.skip("no possible-but-offline CPU on this host")
+    meta = tmp_path / "meta.txt"
+    try:
+        assert _run("--init").returncode == 0
+        run = _run("--run", f"--cpuset-cpus={min(offline)}", "--", "/bin/true",
+                   meta=str(meta))
+        assert run.returncode == 2, run.stderr
+        parsed = _parse_meta(meta)
+        assert parsed.get("status") == "XX", parsed
+        assert "granted" in parsed.get("message", ""), parsed
+    finally:
+        _run("--cleanup")
+
+
+def test_cpuset_does_not_leak_into_the_next_run():
+    # The instance cgroup is rebuilt on every --run, so pinning is per run:
+    # an unpinned --run after a pinned one in the same box is unpinned.
+    cpus = _available_cpus()
+    if len(cpus) < 2:
+        pytest.skip("needs at least 2 CPUs")
+    try:
+        assert _run("--init").returncode == 0
+        pinned = _box_status(f"--cpuset-cpus={cpus[0]}")
+        assert _status_field(pinned, "Cpus_allowed_list") == {cpus[0]}
+        unpinned = _status_field(_box_status(), "Cpus_allowed_list")
+        assert unpinned >= set(cpus), unpinned
+    finally:
+        _run("--cleanup")
