@@ -5,7 +5,7 @@ set -e
 DOTNET_DIR="/opt/dotnet"
 DOTNET_VERSIONS="6.0.420 7.0.400 8.0.100"
 
-LATEST_RUNTIME="7.0.10"  # The 'latest' symlinks for ReCoDex
+LATEST_RUNTIME="7.0.10"  # The 'latest' symlinks for ReCodEx
 LATEST_SDK="7.0.400"
 
 ARCH="x64"
@@ -27,7 +27,7 @@ for VERSION in $DOTNET_VERSIONS; do
 
 done
 
-# === Set Latest Version for ReCoDex ===
+# === Set Latest Version for ReCodEx ===
 SDK_DIR="$DOTNET_DIR/sdk/$LATEST_SDK"
 RUNTIME_DIR="$DOTNET_DIR/shared/Microsoft.NETCore.App/$LATEST_RUNTIME"
 

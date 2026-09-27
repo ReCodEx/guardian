@@ -78,4 +78,4 @@ if __name__ == "__main__":
     remove_test_data()
     remove_worker()
     # remove_pandas()
-    print("Cleanup of ReCoDex specific directories completed successfully.")
+    print("Cleanup of ReCodEx specific directories completed successfully.")

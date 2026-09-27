@@ -1,6 +1,6 @@
 # ReCodEx Guardian
 
-Lightweight Linux containerization tool written from scratch for the ReCoDex assignment evaluation system. 
+Lightweight Linux containerization tool written from scratch for the ReCodEx assignment evaluation system. 
 
 ---
 
