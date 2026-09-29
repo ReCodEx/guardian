@@ -247,6 +247,10 @@ def test_meta_file_wall_time_exceeded_is_to_killed(tmp_path):
         parsed = _parse_meta(meta)
         assert parsed.get("status") == "TO"
         assert parsed.get("killed") == "1"
+        # As in Isolate, a TO reports neither how the task ended nor the
+        # SIGKILL that ended it: no exitsig:9, no exitcode.
+        assert "exitsig" not in parsed, parsed
+        assert "exitcode" not in parsed, parsed
     finally:
         _run("--cleanup")
 
@@ -722,6 +726,40 @@ def test_compat_stack_limit_still_bites():
             "--stack=1024 (KB) must not admit a ~32 MiB stack; "
             f"got rc=0 with stdout {run.stdout!r}"
         )
+    finally:
+        _run("--cleanup")
+
+
+def _swap_is_on() -> bool:
+    # /proc/swaps is a header line plus one line per active swap area.
+    return len(Path("/proc/swaps").read_text().splitlines()) > 1
+
+
+def test_compat_memory_limit_ooms_promptly_with_swap_on(tmp_path):
+    # With swap on, a box at its memory.max was swapped out rather than
+    # OOM-killed, and crawled on until its time limit (TO plus cg-oom-killed).
+    # memory.swap.max = 0 keeps it off swap, as in Isolate, so the kernel
+    # OOM-kills it at the limit: SG, long before the wall time. Without swap
+    # there is nothing to swap out to, so the test would prove nothing.
+    if not _swap_is_on():
+        pytest.skip("needs swap on (see /proc/swaps)")
+    if not (PROBES_DIR / "memory_many_allocations").exists():
+        pytest.skip("memory_many_allocations workload not built")
+    meta = tmp_path / "meta.txt"
+    try:
+        init = _run("--init")
+        assert init.returncode == 0, init.stderr
+        _stage_probe(Path(init.stdout.strip()), "memory_many_allocations")
+
+        # 256 MiB of 1 KiB allocations under a 32 MiB cap (--cg-mem is in KB).
+        run = _run("--cg-mem=32768", "--wall-time=60", "--stdout=/dev/null",
+                   "--run", "--", "/box/memory_many_allocations",
+                   str(256 * 1024 * 1024), meta=str(meta))
+        assert run.returncode == 1, run.stderr
+        parsed = _parse_meta(meta)
+        assert parsed.get("status") == "SG", parsed
+        assert parsed.get("cg-oom-killed") == "1", parsed
+        assert float(parsed["time-wall"]) < 10, parsed
     finally:
         _run("--cleanup")
 

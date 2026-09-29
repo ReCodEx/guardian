@@ -115,6 +115,9 @@ namespace {
     }
 
     // Wall-time overrun -> TO, with killed:1 (the Guardian SIGKILLed the task).
+    // No exitsig: Isolate reports a time-out before it looks at how the task
+    // ended, so a TO carries neither exitsig nor exitcode — the SIGKILL is
+    // ours, not the task's.
     TEST_F(MetaFileTest, wall_time_exceeded_is_TO_killed) {
         auto s = baseline();
         s.exited_normally = false;
@@ -125,7 +128,6 @@ namespace {
         EXPECT_EQ(read_back(),
                   "status:TO\n"
                   "killed:1\n"
-                  "exitsig:9\n"
                   "time:1.234\n"
                   "time-wall:2.500\n"
                   "max-rss:4096\n"
@@ -145,7 +147,6 @@ namespace {
         EXPECT_EQ(read_back(),
                   "status:TO\n"
                   "killed:1\n"
-                  "exitsig:9\n"
                   "time:1.234\n"
                   "time-wall:2.500\n"
                   "max-rss:4096\n"
@@ -176,6 +177,23 @@ namespace {
                   "cg-oom-killed:1\n");
     }
 
+    // A task that exited on its own but past its CPU-time limit is still TO,
+    // and the exit code is dropped with the verdict, as in Isolate.
+    TEST_F(MetaFileTest, to_omits_exitcode_of_a_normal_exit) {
+        auto s = baseline();
+        s.exit = config::exit_status::CPU_TIME_EXCEEDED;
+        meta::write_result(path_, s);
+        EXPECT_EQ(read_back(),
+                  "status:TO\n"
+                  "killed:1\n"
+                  "time:1.234\n"
+                  "time-wall:2.500\n"
+                  "max-rss:4096\n"
+                  "csw-voluntary:10\n"
+                  "csw-forced:3\n"
+                  "cg-mem:2048\n");
+    }
+
     // Discriminators are independent facts: a timeout run in which a child was
     // also OOM-killed carries both killed:1 and cg-oom-killed:1, status stays TO.
     TEST_F(MetaFileTest, to_with_incidental_oom_carries_both) {
@@ -189,7 +207,6 @@ namespace {
         EXPECT_EQ(read_back(),
                   "status:TO\n"
                   "killed:1\n"
-                  "exitsig:9\n"
                   "time:1.234\n"
                   "time-wall:2.500\n"
                   "max-rss:4096\n"

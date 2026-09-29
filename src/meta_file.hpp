@@ -78,14 +78,14 @@ namespace meta {
 
     /// @brief Write the Isolate-format meta-file for a completed task.
     /// @details Emits `status:` (omitted on OK), `exitcode:` (when the task
-    /// exited normally) and `exitsig:` (when it died on a signal), followed by
-    /// the metric superset in Isolate's emission order: `time` (CPU, cgroup),
-    /// `time-wall`, `max-rss` (rusage KB), `csw-voluntary`/`csw-forced`, and
-    /// `cg-mem` (cgroup peak KB). Every metric key is always present except
-    /// `cg-mem`, which is omitted when cgroup memory was unmeasurable — leaving
-    /// `max-rss` as the memory signal (ADR 0006). The `killed` / `cg-oom-killed`
-    /// discriminators are added in a later slice. Best-effort: never throws,
-    /// never `terminate()`s.
+    /// exited normally) and `exitsig:` (when it died on a signal) — neither on
+    /// a `TO`, as in Isolate — followed by the metric superset in Isolate's
+    /// emission order: `time` (CPU, cgroup), `time-wall`, `max-rss` (rusage
+    /// KB), `csw-voluntary`/`csw-forced`, and `cg-mem` (cgroup peak KB). Every
+    /// metric key is always present except `cg-mem`, which is omitted when
+    /// cgroup memory was unmeasurable — leaving `max-rss` as the memory signal
+    /// (ADR 0006). The `killed` / `cg-oom-killed` discriminators are added in
+    /// a later slice. Best-effort: never throws, never `terminate()`s.
     inline void write_result(const fs::path& path,
                              const config::task_stats& s) {
         std::string out;
@@ -95,14 +95,18 @@ namespace meta {
         }
         // killed:1 — the Guardian SIGKILLed the task (the timeout path). A
         // discriminator, derived from the TO verdict, not a separate signal.
+        // A TO carries no exitcode/exitsig: Isolate reports the time-out
+        // before it looks at how the task ended, and the SIGKILL is ours, not
+        // a signal the task died of.
         if (rc == result_code::to) {
             out += "killed:1\n";
-        }
-        if (s.exited_normally) {
-            out += std::format("exitcode:{}\n", s.exit_code);
-        }
-        if (s.signalled) {
-            out += std::format("exitsig:{}\n", s.signal);
+        } else {
+            if (s.exited_normally) {
+                out += std::format("exitcode:{}\n", s.exit_code);
+            }
+            if (s.signalled) {
+                out += std::format("exitsig:{}\n", s.signal);
+            }
         }
         out += std::format("time:{}\n", units::sec_from_usec(s.cg_total_time_usec));
         out += std::format("time-wall:{}\n", units::sec_from_ms(s.wall_time_ms));

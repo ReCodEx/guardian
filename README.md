@@ -504,8 +504,8 @@ writes so the ReCodEx Worker parses it unchanged:
 | Key | When |
 | --- | --- |
 | `status` | only on failure — `RE` / `SG` / `TO` / `XX`; absent means success, as in Isolate |
-| `exitcode` | the task exited normally |
-| `exitsig` | the task died on a signal |
+| `exitcode` | the task exited normally (not on `TO`) |
+| `exitsig` | the task died on a signal (not on `TO`: a time-out's `SIGKILL` is ours, as in Isolate) |
 | `killed:1` | *we* `SIGKILL`ed it — the wall/CPU-timeout path |
 | `time`, `time-wall`, `max-rss`, `csw-voluntary`, `csw-forced` | always |
 | `cg-mem` | cgroup memory was measurable (omitted otherwise, leaving `max-rss` as the memory signal) |

@@ -229,6 +229,25 @@ namespace cgroup {
             return true;
         }
 
+        /// @brief Turn off swap for the cgroup: `memory.swap.max` = 0
+        /// @details The file is absent only when the kernel does no swap
+        /// accounting for cgroups.
+        /// @return true if the write happened, false if the file is absent.
+        bool set_memory_swap_max_zero() {
+            // Equivalent to "echo 0 > memory.swap.max".
+            fs::path swap_max(*cgrp_path_ / MEMORY_SWAP_MAX());
+            if (!fs::exists(swap_max)) {
+                logs::debug("No memory.swap.max in cgroup {}, not capping swap",
+                            cgrp_path_->string());
+                return false;
+            }
+            if (!file_utils::write_formatted(swap_max, "0")) {
+                terminate("Failed to write memory.swap.max in cgroup {}",
+                          cgrp_path_->string());
+            }
+            return true;
+        }
+
         /// @brief Peak memory usage of the cgroup, in bytes, from the
         /// memory.peak file.
         /// @return the peak in bytes, or nullopt when memory.peak is
@@ -296,6 +315,12 @@ namespace cgroup {
         /// @brief Returns the name of the cgroup memory.min file.
         static const fs::path& MEMORY_MIN() {
             static fs::path fname("memory.min");
+            return fname;
+        }
+
+        /// @brief Returns the name of the cgroup memory.swap.max file.
+        static const fs::path& MEMORY_SWAP_MAX() {
+            static fs::path fname("memory.swap.max");
             return fname;
         }
     };
@@ -408,18 +433,20 @@ namespace cgroup {
         /// @brief Setup the memory controller so that processes are killed upon
         /// exceeding a limit on memory utilization.
         /// @param bytes The limit in bytes.
-        /// @note Swap has to disabled in order for this to work properly.
         /// @details As I understand from experimenting, the memory.min is a
         /// soft limit which causes lighter page reclaim when exceeded.
         /// memory.max causes very aggresive page reclaim when exceeded and
         /// killing the process if pages can't be reclaimed. So we set the
         /// memory.min to "max", not to get in the way and the memory.max to the
-        /// intended limit. But swap has to be disabled even with this setup.
+        /// intended limit. memory.swap.max = 0 keeps the box off swap, as
+        /// Isolate does: on a host with swap on, the kernel would otherwise
+        /// swap the box out at memory.max instead of OOM-killing it.
         void set_strict_memory_limit(size_t bytes) {
             logs::debug("Setting memory limit for cgroup {} to {} bytes",
                         cgrp_path_.string(), bytes);
             mem_.set_memory_max(bytes);
             mem_.set_memory_min_to_max();
+            mem_.set_memory_swap_max_zero();
         }
 
         /// @brief Set the limit of PIDS in this cgroup to 'n'.
